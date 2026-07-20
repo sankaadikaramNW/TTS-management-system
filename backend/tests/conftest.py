@@ -33,7 +33,7 @@ def setup_database():
             id='user-slaf-admin',
             username='admin',
             email='admin@slaf.lk',
-            hashed_password='$2b$12$R9h/lIPzNgbC.V.aGvQ8X.7w/KpxsX.uR.y6bN50H1DqZf6sZ0eU2', # Admin@123
+            hashed_password='$2b$12$mtZ8.IsD3Dt60K8x73tpgOC8sWZRzKKx0sU.O5zvzsfAzyOSNc4kG', # Admin@123
             full_name='SLAF Administrator',
             role_id='role-super-admin',
             is_active=True

@@ -24,6 +24,7 @@ def test_create_and_search_student(client):
         "emergency_contact_name": "Ranasinghe Senior",
         "emergency_contact_phone": "0771234567",
         "blood_group": "O+",
+        "religion": "Buddhist",
         "permanent_address": "No 10, Galle Road, Colombo"
     }
     

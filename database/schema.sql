@@ -397,9 +397,9 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 ('role-co', 'perm-room-read'), ('role-co', 'perm-academic-read');
 
 -- Seed Default Admin User (username: admin, password: hashed Admin@123 using bcrypt)
--- bcrypt hash of "Admin@123" = $2b$12$R9h/lIPzNgbC.V.aGvQ8X.7w/KpxsX.uR.y6bN50H1DqZf6sZ0eU2
+-- bcrypt hash of "Admin@123" = $2b$12$mtZ8.IsD3Dt60K8x73tpgOC8sWZRzKKx0sU.O5zvzsfAzyOSNc4kG
 INSERT INTO users (id, username, email, hashed_password, full_name, role_id, is_active) VALUES
-('user-slaf-admin', 'admin', 'admin@slaf.lk', '$2b$12$R9h/lIPzNgbC.V.aGvQ8X.7w/KpxsX.uR.y6bN50H1DqZf6sZ0eU2', 'SLAF Administrator', 'role-super-admin', 1);
+('user-slaf-admin', 'admin', 'admin@slaf.lk', '$2b$12$mtZ8.IsD3Dt60K8x73tpgOC8sWZRzKKx0sU.O5zvzsfAzyOSNc4kG', 'SLAF Administrator', 'role-super-admin', 1);
 
 -- Seed Default Courses
 INSERT INTO courses (id, code, name, description, duration_weeks) VALUES
