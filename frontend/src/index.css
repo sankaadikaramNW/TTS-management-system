@@ -1,0 +1,311 @@
+/* Import Bootstrap Styles */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import 'react-toastify/dist/ReactToastify.css';
+
+/* Theme Design Tokens */
+:root {
+  /* Common Fonts */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Primary Air Force Theme Colors (Light Mode) */
+  --bg-app: #f4f6fa;
+  --bg-card: #ffffff;
+  --bg-sidebar: #0f1d3a;
+  --bg-sidebar-hover: #1e3a6d;
+  --color-primary: #1d4ed8;
+  --color-primary-rgb: 29, 78, 216;
+  --color-accent: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-text-main: #1f2937;
+  --color-text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 15px rgba(29, 78, 216, 0.15);
+  
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='dark'] {
+  /* Dark Mode tokens */
+  --bg-app: #080c14;
+  --bg-card: #111827;
+  --bg-sidebar: #080e1a;
+  --bg-sidebar-hover: #111d33;
+  --color-primary: #3b82f6;
+  --color-primary-rgb: 59, 130, 246;
+  --color-accent: #60a5fa;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-text-main: #f3f4f6;
+  --color-text-muted: #9ca3af;
+  --border-color: #374151;
+  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
+  
+  --glass-bg: rgba(17, 24, 39, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Global Reset & Body */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--color-text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .display-font {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Glassmorphism Classes */
+.glass-header {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+  border-radius: 12px;
+}
+
+/* Premium Card Components */
+.slaf-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+}
+.slaf-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  border-color: rgba(var(--color-primary-rgb), 0.3);
+}
+
+.kpi-card {
+  overflow: hidden;
+  position: relative;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--color-primary);
+}
+.kpi-card.success::before { background: var(--color-success); }
+.kpi-card.warning::before { background: var(--color-warning); }
+.kpi-card.danger::before { background: var(--color-danger); }
+
+/* Sidebar Layout & Transitions */
+.slaf-sidebar {
+  background-color: var(--bg-sidebar);
+  color: #f3f4f6;
+  width: 260px;
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+}
+
+.slaf-sidebar .nav-link {
+  color: #d1d5db;
+  border-radius: 8px;
+  margin: 4px 16px;
+  padding: 10px 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.slaf-sidebar .nav-link:hover, 
+.slaf-sidebar .nav-link.active {
+  background-color: var(--bg-sidebar-hover);
+  color: #ffffff;
+}
+
+.slaf-sidebar .nav-link.active {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+
+/* Page Layout Wrappers */
+.main-wrapper {
+  margin-left: 260px;
+  min-height: 100vh;
+  padding-top: 70px; /* space for glass-header */
+  transition: margin-left 0.3s ease;
+}
+
+/* Beautiful Form styling */
+.form-control, .form-select {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--color-text-main);
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus, .form-select:focus {
+  background-color: var(--bg-card);
+  color: var(--color-text-main);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
+}
+
+/* Custom Table Theme */
+.table-responsive {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+.slaf-table {
+  background-color: var(--bg-card);
+  color: var(--color-text-main);
+  margin-bottom: 0;
+}
+.slaf-table th {
+  background-color: var(--bg-app);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.slaf-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+.slaf-table tbody tr:hover {
+  background-color: rgba(var(--color-primary-rgb), 0.02);
+}
+
+/* Interactive Badge state colors */
+.slaf-badge {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 50rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.slaf-badge.active, .slaf-badge.present {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+}
+.slaf-badge.sick, .slaf-badge.sick-report, .slaf-badge.hospital {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+.slaf-badge.awol, .slaf-badge.absent {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+.slaf-badge.leave, .slaf-badge.excused {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--color-accent);
+}
+
+/* FullCalendar styling overrides */
+.fc {
+  background: var(--bg-card);
+  color: var(--color-text-main);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+.fc-theme-bootstrap5 th, .fc-theme-bootstrap5 td {
+  border-color: var(--border-color) !important;
+}
+
+/* Accommodation Visual Map Billet Grids */
+.bed-grid-item {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 2px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+}
+.bed-grid-item.vacant:hover {
+  border-color: var(--color-success);
+  background-color: rgba(16, 185, 129, 0.05);
+}
+.bed-grid-item.occupied {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background-color: rgba(29, 78, 216, 0.1);
+  color: var(--color-primary);
+}
+.bed-grid-item.maintenance {
+  border-style: solid;
+  border-color: var(--color-danger);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+}
+
+/* Animation Micro-effects */
+.fade-in-slide {
+  animation: fadeInSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
