@@ -47,3 +47,13 @@ class ParadeStateSummary(BaseModel):
     course_visit: int
     detached_duty: int
     awol: int
+
+class ParadeStatusTypeResponse(BaseModel):
+    id: str
+    code: str
+    label: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+

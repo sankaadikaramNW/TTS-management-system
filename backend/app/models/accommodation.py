@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
@@ -11,6 +11,7 @@ class AccommodationBuilding(Base, TimeStampedModelMixin):
     name = Column(String(100), unique=True, nullable=False)
     type = Column(String(30), nullable=False)  # Officers, Airmen, Airwomen
     capacity = Column(Integer, nullable=False)
+    current_occupancy = Column(Integer, default=0)
 
     # Relationships
     billets = relationship("AccommodationBillet", back_populates="building", cascade="all, delete-orphan")
@@ -22,33 +23,22 @@ class AccommodationBillet(Base, TimeStampedModelMixin):
     building_id = Column(String(36), ForeignKey('accommodation_buildings.id', ondelete='CASCADE'), nullable=False)
     name = Column(String(100), nullable=False)
     capacity = Column(Integer, nullable=False)
+    current_occupancy = Column(Integer, default=0)
 
     # Relationships
     building = relationship("AccommodationBuilding", back_populates="billets")
-    rooms = relationship("AccommodationRoom", back_populates="billet", cascade="all, delete-orphan")
-
-class AccommodationRoom(Base, TimeStampedModelMixin):
-    __tablename__ = 'accommodation_rooms'
-
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    billet_id = Column(String(36), ForeignKey('accommodation_billets.id', ondelete='CASCADE'), nullable=False)
-    room_number = Column(String(30), nullable=False)
-    capacity = Column(Integer, nullable=False)
-
-    # Relationships
-    billet = relationship("AccommodationBillet", back_populates="rooms")
-    beds = relationship("AccommodationBed", back_populates="room", cascade="all, delete-orphan")
+    beds = relationship("AccommodationBed", back_populates="billet", cascade="all, delete-orphan")
 
 class AccommodationBed(Base, TimeStampedModelMixin):
     __tablename__ = 'accommodation_beds'
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    room_id = Column(String(36), ForeignKey('accommodation_rooms.id', ondelete='CASCADE'), nullable=False)
+    billet_id = Column(String(36), ForeignKey('accommodation_billets.id', ondelete='CASCADE'), nullable=False)
     bed_number = Column(String(30), nullable=False)
-    status = Column(String(30), default='Vacant')  # Vacant, Occupied, Maintenance
+    status = Column(String(30), default='Vacant')  # Vacant, Occupied, Maintenance, Reserved
 
     # Relationships
-    room = relationship("AccommodationRoom", back_populates="beds")
+    billet = relationship("AccommodationBillet", back_populates="beds")
     allocations = relationship("AccommodationAllocation", back_populates="bed", cascade="all, delete-orphan")
 
 class AccommodationAllocation(Base):
@@ -58,7 +48,11 @@ class AccommodationAllocation(Base):
     student_id = Column(String(36), ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
     bed_id = Column(String(36), ForeignKey('accommodation_beds.id', ondelete='CASCADE'), nullable=False)
     allocated_at = Column(DateTime, default=datetime.utcnow)
+    allocated_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     vacated_at = Column(DateTime, nullable=True)
+    vacated_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    vacate_reason = Column(String(100), nullable=True)
+    remarks = Column(Text, nullable=True)
     status = Column(String(20), default='Active')  # Active, History
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -66,3 +60,5 @@ class AccommodationAllocation(Base):
     # Relationships
     student = relationship("Student", back_populates="allocations")
     bed = relationship("AccommodationBed", back_populates="allocations")
+    allocator = relationship("User", foreign_keys=[allocated_by])
+    vacator = relationship("User", foreign_keys=[vacated_by])

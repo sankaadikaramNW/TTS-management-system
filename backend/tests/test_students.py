@@ -43,3 +43,39 @@ def test_create_and_search_student(client):
     assert response_search.status_code == 200
     assert response_search.json()["total"] == 1
     assert response_search.json()["items"][0]["service_number"] == "SLAF/12345"
+
+
+def test_get_student_statuses(client):
+    headers = get_auth_headers(client)
+    response = client.get("/api/v1/students/statuses", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) > 0
+    # Check that Active, Sick Report, and Leave exist in the returned list
+    codes = [item["code"] for item in data]
+    assert "ACTIVE" in codes
+    assert "SICK_REPORT" in codes
+    assert "LEAVE" in codes
+
+
+def test_get_student_ranks_and_trades(client):
+    headers = get_auth_headers(client)
+    
+    # Check ranks endpoint
+    response_ranks = client.get("/api/v1/students/ranks", headers=headers)
+    assert response_ranks.status_code == 200
+    ranks_data = response_ranks.json()
+    assert len(ranks_data) > 0
+    rank_codes = [r["code"] for r in ranks_data]
+    assert "AC" in rank_codes
+    assert "LAC" in rank_codes
+
+    # Check trades endpoint
+    response_trades = client.get("/api/v1/students/trades", headers=headers)
+    assert response_trades.status_code == 200
+    trades_data = response_trades.json()
+    assert len(trades_data) > 0
+    trade_codes = [t["code"] for t in trades_data]
+    assert "AIRFRAME" in trade_codes
+    assert "AVIONICS" in trade_codes
+

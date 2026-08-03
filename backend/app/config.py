@@ -1,8 +1,11 @@
 import os
+from dotenv import load_dotenv
 
-# Load env file manually if needed, but BaseSettings handles it if configured
-# Pydantic v2 has BaseSettings in pydantic-settings package
-# To keep dependencies simple and robust, let's write a standard config loader:
+# Try loading .env from parent directories (e.g. root folder)
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
+# Also fallback to local .env if any
+load_dotenv()
+
 class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     PORT: int = int(os.getenv("PORT", "8000"))

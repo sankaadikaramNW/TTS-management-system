@@ -111,6 +111,84 @@ CREATE TABLE students (
     INDEX idx_student_course (course_id)
 ) ENGINE=InnoDB;
 
+-- 6.5. PARADE STATUS TYPES TABLE
+DROP TABLE IF EXISTS parade_status_types;
+CREATE TABLE parade_status_types (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO parade_status_types (id, code, label) VALUES
+('ps-present', 'PRESENT', 'Present'),
+('ps-sick-report', 'SICK_REPORT', 'Sick Report'),
+('ps-hospital', 'HOSPITAL', 'Hospital'),
+('ps-leave', 'LEAVE', 'Leave'),
+('ps-temp-duty', 'TEMPORARY_DUTY', 'Temporary Duty'),
+('ps-course-visit', 'COURSE_VISIT', 'Course Visit'),
+('ps-detached-duty', 'DETACHED_DUTY', 'Detached Duty'),
+('ps-awol', 'AWOL', 'AWOL');
+
+-- 6.6. STUDENT STATUS TYPES TABLE
+DROP TABLE IF EXISTS student_status_types;
+CREATE TABLE student_status_types (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO student_status_types (id, code, label) VALUES
+('ss-active', 'ACTIVE', 'Active'),
+('ss-sick-report', 'SICK_REPORT', 'Sick Report'),
+('ss-leave', 'LEAVE', 'Leave'),
+('ss-awol', 'AWOL', 'AWOL'),
+('ss-passed-out', 'PASSED_OUT', 'Passed Out'),
+('ss-suspended', 'SUSPENDED', 'Suspended');
+
+-- 6.7. RANKS TABLE
+DROP TABLE IF EXISTS ranks;
+CREATE TABLE ranks (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO ranks (id, code, label) VALUES
+('rank-ac', 'AC', 'Aircraftman'),
+('rank-lac', 'LAC', 'Leading Aircraftman'),
+('rank-cpl', 'CPL', 'Corporal'),
+('rank-sgt', 'SGT', 'Sergeant'),
+('rank-fsgt', 'FSGT', 'Flight Sergeant'),
+('rank-wo', 'WO', 'Warrant Officer');
+
+-- 6.8. TRADES TABLE
+DROP TABLE IF EXISTS trades;
+CREATE TABLE trades (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO trades (id, code, label) VALUES
+('trade-airframe', 'AIRFRAME', 'Airframe'),
+('trade-avionics', 'AVIONICS', 'Avionics'),
+('trade-safety', 'SAFETY_EQUIPMENT', 'Safety Equipment'),
+('trade-engine', 'ENGINE', 'Engine'),
+('trade-logistical', 'LOGISTICAL', 'Logistical'),
+('trade-admin', 'ADMINISTRATIVE', 'Administrative');
+
 -- 7. DAILY PARADE STATE TABLE
 DROP TABLE IF EXISTS parade_states;
 CREATE TABLE parade_states (
@@ -136,6 +214,7 @@ CREATE TABLE accommodation_buildings (
     name VARCHAR(100) UNIQUE NOT NULL,
     type VARCHAR(30) NOT NULL, -- Officers, Airmen, Airwomen
     capacity INT NOT NULL,
+    current_occupancy INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL
@@ -148,6 +227,7 @@ CREATE TABLE accommodation_billets (
     building_id VARCHAR(36) NOT NULL,
     name VARCHAR(100) NOT NULL,
     capacity INT NOT NULL,
+    current_occupancy INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -155,47 +235,39 @@ CREATE TABLE accommodation_billets (
     UNIQUE KEY uq_building_billet (building_id, name)
 ) ENGINE=InnoDB;
 
--- 10. ACCOMMODATION ROOMS
-DROP TABLE IF EXISTS accommodation_rooms;
-CREATE TABLE accommodation_rooms (
+-- 10. ACCOMMODATION BEDS
+DROP TABLE IF EXISTS accommodation_beds;
+CREATE TABLE accommodation_beds (
     id VARCHAR(36) PRIMARY KEY,
     billet_id VARCHAR(36) NOT NULL,
-    room_number VARCHAR(30) NOT NULL,
-    capacity INT NOT NULL,
+    bed_number VARCHAR(30) NOT NULL,
+    status VARCHAR(30) DEFAULT 'Vacant', -- Vacant, Occupied, Maintenance, Reserved
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (billet_id) REFERENCES accommodation_billets(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_billet_room (billet_id, room_number)
+    UNIQUE KEY uq_billet_bed (billet_id, bed_number)
 ) ENGINE=InnoDB;
 
--- 11. ACCOMMODATION BEDS
-DROP TABLE IF EXISTS accommodation_beds;
-CREATE TABLE accommodation_beds (
-    id VARCHAR(36) PRIMARY KEY,
-    room_id VARCHAR(36) NOT NULL,
-    bed_number VARCHAR(30) NOT NULL,
-    status VARCHAR(30) DEFAULT 'Vacant', -- Vacant, Occupied, Maintenance
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    FOREIGN KEY (room_id) REFERENCES accommodation_rooms(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_room_bed (room_id, bed_number)
-) ENGINE=InnoDB;
-
--- 12. ACCOMMODATION ALLOCATIONS
+-- 11. ACCOMMODATION ALLOCATIONS
 DROP TABLE IF EXISTS accommodation_allocations;
 CREATE TABLE accommodation_allocations (
     id VARCHAR(36) PRIMARY KEY,
     student_id VARCHAR(36) NOT NULL,
     bed_id VARCHAR(36) NOT NULL,
     allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    allocated_by VARCHAR(36),
     vacated_at TIMESTAMP NULL,
+    vacated_by VARCHAR(36),
+    vacate_reason VARCHAR(100),
+    remarks TEXT,
     status VARCHAR(20) DEFAULT 'Active', -- Active, History
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
     FOREIGN KEY (bed_id) REFERENCES accommodation_beds(id) ON DELETE CASCADE,
+    FOREIGN KEY (allocated_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (vacated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_alloc_student (student_id),
     INDEX idx_alloc_bed (bed_id),
     INDEX idx_alloc_status (status)
@@ -418,18 +490,233 @@ INSERT INTO lessons (id, subject_id, name, description) VALUES
 ('less-aero-bernoulli', 'subj-aer-aerodynamics', 'Bernoullis Principle & Fluid Flow', 'Study of pressure differentials, Venturi tubes, and stream flows.'),
 ('less-aero-airfoils', 'subj-aer-aerodynamics', 'Airfoil Geometry and Lift Mechanics', 'Analyzing chord lines, camber, angle of attack, and stall profiles.');
 
--- Seed Default Accommodation Buildings, Billets, Rooms, Beds
+-- Seed Default Accommodation Buildings, Billets, Beds
 INSERT INTO accommodation_buildings (id, name, type, capacity) VALUES
 ('bldg-t1', 'Training Block Alpha (T1)', 'Airmen', 48);
 
 INSERT INTO accommodation_billets (id, building_id, name, capacity) VALUES
 ('bill-t1-a', 'bldg-t1', 'Billet Alpha-1', 24);
 
-INSERT INTO accommodation_rooms (id, billet_id, room_number, capacity) VALUES
-('room-t1-a-101', 'bill-t1-a', 'Room 101', 4);
+INSERT INTO accommodation_beds (id, billet_id, bed_number, status) VALUES
+('bed-t1-a-1', 'bill-t1-a', 'Bed 01', 'Vacant'),
+('bed-t1-a-2', 'bill-t1-a', 'Bed 02', 'Vacant'),
+('bed-t1-a-3', 'bill-t1-a', 'Bed 03', 'Vacant'),
+('bed-t1-a-4', 'bill-t1-a', 'Bed 04', 'Vacant');
 
-INSERT INTO accommodation_beds (id, room_id, bed_number, status) VALUES
-('bed-t1-a-101-1', 'room-t1-a-101', 'Bed 01', 'Vacant'),
-('bed-t1-a-101-2', 'room-t1-a-101', 'Bed 02', 'Vacant'),
-('bed-t1-a-101-3', 'room-t1-a-101', 'Bed 03', 'Vacant'),
-('bed-t1-a-101-4', 'room-t1-a-101', 'Bed 04', 'Vacant');
+
+-- ==========================================
+-- ACCOMMODATION STORED PROCEDURES & TRIGGERS
+-- ==========================================
+
+DELIMITER //
+
+-- Building Management Procedures
+CREATE PROCEDURE SP_AddBuilding(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_type VARCHAR(30),
+    IN p_capacity INT
+)
+BEGIN
+    INSERT INTO accommodation_buildings (id, name, type, capacity, current_occupancy)
+    VALUES (p_id, p_name, p_type, p_capacity, 0);
+END //
+
+CREATE PROCEDURE SP_UpdateBuilding(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_type VARCHAR(30),
+    IN p_capacity INT
+)
+BEGIN
+    UPDATE accommodation_buildings
+    SET name = p_name, type = p_type, capacity = p_capacity
+    WHERE id = p_id;
+END //
+
+-- Billet Management Procedures
+CREATE PROCEDURE SP_AddBillet(
+    IN p_id VARCHAR(36),
+    IN p_building_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_capacity INT
+)
+BEGIN
+    INSERT INTO accommodation_billets (id, building_id, name, capacity, current_occupancy)
+    VALUES (p_id, p_building_id, p_name, p_capacity, 0);
+END //
+
+CREATE PROCEDURE SP_UpdateBillet(
+    IN p_id VARCHAR(36),
+    IN p_name VARCHAR(100),
+    IN p_capacity INT
+)
+BEGIN
+    UPDATE accommodation_billets
+    SET name = p_name, capacity = p_capacity
+    WHERE id = p_id;
+END //
+
+-- Bed Management Procedures
+CREATE PROCEDURE SP_AddBed(
+    IN p_id VARCHAR(36),
+    IN p_billet_id VARCHAR(36),
+    IN p_bed_number VARCHAR(30),
+    IN p_status VARCHAR(30)
+)
+BEGIN
+    INSERT INTO accommodation_beds (id, billet_id, bed_number, status)
+    VALUES (p_id, p_billet_id, p_bed_number, p_status);
+END //
+
+CREATE PROCEDURE SP_UpdateBed(
+    IN p_id VARCHAR(36),
+    IN p_status VARCHAR(30)
+)
+BEGIN
+    UPDATE accommodation_beds
+    SET status = p_status
+    WHERE id = p_id;
+END //
+
+-- Allocation Procedure
+CREATE PROCEDURE SP_AllocateBed(
+    IN p_id VARCHAR(36),
+    IN p_student_id VARCHAR(36),
+    IN p_bed_id VARCHAR(36),
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    -- Update Bed Status to Occupied
+    UPDATE accommodation_beds SET status = 'Occupied' WHERE id = p_bed_id;
+    
+    -- Insert active allocation
+    INSERT INTO accommodation_allocations (id, student_id, bed_id, allocated_at, allocated_by, status)
+    VALUES (p_id, p_student_id, p_bed_id, NOW(), p_user_id, 'Active');
+END //
+
+-- Bed Transfer Procedure
+CREATE PROCEDURE SP_TransferBed(
+    IN p_student_id VARCHAR(36),
+    IN p_new_bed_id VARCHAR(36),
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    DECLARE v_current_alloc_id VARCHAR(36);
+    DECLARE v_current_bed_id VARCHAR(36);
+    DECLARE v_new_alloc_id VARCHAR(36);
+
+    -- Get current active allocation
+    SELECT id, bed_id INTO v_current_alloc_id, v_current_bed_id
+    FROM accommodation_allocations
+    WHERE student_id = p_student_id AND status = 'Active'
+    LIMIT 1;
+
+    IF v_current_alloc_id IS NOT NULL THEN
+        -- Vacate old bed
+        UPDATE accommodation_beds SET status = 'Vacant' WHERE id = v_current_bed_id;
+        UPDATE accommodation_allocations
+        SET vacated_at = NOW(), vacated_by = p_user_id, status = 'History', vacate_reason = 'Transfer'
+        WHERE id = v_current_alloc_id;
+    END IF;
+
+    -- Allocate new bed
+    UPDATE accommodation_beds SET status = 'Occupied' WHERE id = p_new_bed_id;
+    
+    -- Generate new allocation UUID
+    SET v_new_alloc_id = UUID();
+    INSERT INTO accommodation_allocations (id, student_id, bed_id, allocated_at, allocated_by, status)
+    VALUES (v_new_alloc_id, p_student_id, p_new_bed_id, NOW(), p_user_id, 'Active');
+END //
+
+-- Vacate Bed Procedure
+CREATE PROCEDURE SP_VacateBed(
+    IN p_allocation_id VARCHAR(36),
+    IN p_reason VARCHAR(100),
+    IN p_remarks TEXT,
+    IN p_user_id VARCHAR(36)
+)
+BEGIN
+    DECLARE v_bed_id VARCHAR(36);
+
+    -- Find the bed
+    SELECT bed_id INTO v_bed_id
+    FROM accommodation_allocations
+    WHERE id = p_allocation_id;
+
+    -- Free the bed
+    IF v_bed_id IS NOT NULL THEN
+        UPDATE accommodation_beds SET status = 'Vacant' WHERE id = v_bed_id;
+    END IF;
+
+    -- Update allocation record
+    UPDATE accommodation_allocations
+    SET vacated_at = NOW(), vacated_by = p_user_id, status = 'History', vacate_reason = p_reason, remarks = p_remarks
+    WHERE id = p_allocation_id;
+END //
+
+-- Occupancy Dashboard Summary Procedure
+CREATE PROCEDURE SP_GetOccupancy()
+BEGIN
+    SELECT 
+        (SELECT COUNT(*) FROM accommodation_buildings) AS total_buildings,
+        (SELECT COUNT(*) FROM accommodation_billets) AS total_billets,
+        (SELECT COUNT(*) FROM accommodation_beds) AS total_beds,
+        (SELECT COUNT(*) FROM accommodation_beds WHERE status = 'Occupied') AS occupied_beds,
+        (SELECT COUNT(*) FROM accommodation_beds WHERE status = 'Vacant') AS vacant_beds,
+        (SELECT COUNT(*) FROM accommodation_beds WHERE status = 'Reserved') AS reserved_beds,
+        (SELECT COUNT(*) FROM accommodation_beds WHERE status = 'Maintenance') AS maintenance_beds;
+END //
+
+-- Get Vacancy by Billet Procedure
+CREATE PROCEDURE SP_GetVacancy(
+    IN p_billet_id VARCHAR(36)
+)
+BEGIN
+    SELECT id, bed_number, status
+    FROM accommodation_beds
+    WHERE billet_id = p_billet_id AND status = 'Vacant';
+END //
+
+-- TRIGGERS TO UPDATE OCCUPANCY
+CREATE TRIGGER TR_UpdateBilletOccupancy_OnAllocate
+AFTER INSERT ON accommodation_allocations
+FOR EACH ROW
+BEGIN
+    IF NEW.status = 'Active' THEN
+        -- Increment occupancy for Billet
+        UPDATE accommodation_billets
+        SET current_occupancy = current_occupancy + 1
+        WHERE id = (SELECT billet_id FROM accommodation_beds WHERE id = NEW.bed_id);
+
+        -- Increment occupancy for Building
+        UPDATE accommodation_buildings
+        SET current_occupancy = current_occupancy + 1
+        WHERE id = (
+            SELECT building_id FROM accommodation_billets 
+            WHERE id = (SELECT billet_id FROM accommodation_beds WHERE id = NEW.bed_id)
+        );
+    END IF;
+END //
+
+CREATE TRIGGER TR_UpdateBilletOccupancy_OnVacate
+AFTER UPDATE ON accommodation_allocations
+FOR EACH ROW
+BEGIN
+    IF OLD.status = 'Active' AND NEW.status = 'History' THEN
+        -- Decrement occupancy for Billet
+        UPDATE accommodation_billets
+        SET current_occupancy = GREATEST(0, current_occupancy - 1)
+        WHERE id = (SELECT billet_id FROM accommodation_beds WHERE id = OLD.bed_id);
+
+        -- Decrement occupancy for Building
+        UPDATE accommodation_buildings
+        SET current_occupancy = GREATEST(0, current_occupancy - 1)
+        WHERE id = (
+            SELECT building_id FROM accommodation_billets 
+            WHERE id = (SELECT billet_id FROM accommodation_beds WHERE id = OLD.bed_id)
+        );
+    END IF;
+END //
+
+DELIMITER ;

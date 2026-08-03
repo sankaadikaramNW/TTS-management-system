@@ -1,5 +1,5 @@
 import React from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export const ProtectedRoute = ({ permissionCode }) => {
@@ -30,9 +30,9 @@ export const ProtectedRoute = ({ permissionCode }) => {
           <p className="text-muted mb-4">
             You do not have the required permissions to access this page. Please contact the administrator if you believe this is in error.
           </p>
-          <a href="/" className="btn btn-primary px-4 py-2">
+          <Link to="/dashboard" className="btn btn-primary px-4 py-2">
             Return to Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     )

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
@@ -35,14 +36,67 @@ export const CourseList = () => {
   const [students, setStudents] = useState([])
   const [attendanceRecords, setAttendanceRecords] = useState([])
 
+  // Trade & Rank Management and Statistics states
+  const [searchParams, setSearchParams] = useSearchParams()
+  const showTradeManagement = searchParams.get('view') === 'trades'
+  const showRankManagement = searchParams.get('view') === 'ranks'
+  
+  const [allTrades, setAllTrades] = useState([])
+  const [editingTrade, setEditingTrade] = useState(null)
+  const [tradeForm, setTradeForm] = useState({ code: '', label: '', is_active: true })
+
+  const [allRanks, setAllRanks] = useState([])
+  const [editingRank, setEditingRank] = useState(null)
+  const [rankForm, setRankForm] = useState({ code: '', label: '', is_active: true })
+
+  const [academicStats, setAcademicStats] = useState({
+    course_count: 0,
+    active_students: 0,
+    average_pass_rate: 0,
+    active_timetables_today: 0
+  })
+
+  const fetchAllTrades = async () => {
+    try {
+      const res = await axios.get('/api/v1/students/trades', {
+        params: { include_inactive: true }
+      })
+      setAllTrades(res.data)
+    } catch (err) {
+      console.error('Failed to fetch trades', err)
+      toast.error('Failed to load trades list')
+    }
+  }
+
+  const fetchAllRanks = async () => {
+    try {
+      const res = await axios.get('/api/v1/students/ranks', {
+        params: { include_inactive: true }
+      })
+      setAllRanks(res.data)
+    } catch (err) {
+      console.error('Failed to fetch ranks', err)
+      toast.error('Failed to load ranks list')
+    }
+  }
+
+  useEffect(() => {
+    if (showTradeManagement) {
+      fetchAllTrades()
+    }
+  }, [showTradeManagement])
+
+  useEffect(() => {
+    if (showRankManagement) {
+      fetchAllRanks()
+    }
+  }, [showRankManagement])
+
   const fetchCourses = async () => {
     setLoading(true)
     try {
       const res = await axios.get('/api/v1/academic/courses')
       setCourses(res.data)
-      if (res.data.length > 0 && !selectedCourse) {
-        setSelectedCourse(res.data[0])
-      }
     } catch (err) {
       toast.error('Failed to load courses')
     } finally {
@@ -52,6 +106,23 @@ export const CourseList = () => {
 
   useEffect(() => {
     fetchCourses()
+
+    // Fetch overview statistics for the landing view
+    const fetchAcademicStats = async () => {
+      try {
+        const res = await axios.get('/api/v1/dashboard/summary')
+        const studentsRes = await axios.get('/api/v1/students', { params: { limit: 1 } })
+        setAcademicStats({
+          course_count: res.data.academic.course_count,
+          active_students: studentsRes.data.total,
+          average_pass_rate: res.data.academic.average_pass_rate,
+          active_timetables_today: res.data.academic.active_timetables_today
+        })
+      } catch (err) {
+        console.error('Failed to load statistics', err)
+      }
+    }
+    fetchAcademicStats()
   }, [])
 
   // Sync details when course or tab changes
@@ -82,6 +153,11 @@ export const CourseList = () => {
           } else {
             setSelectedExam(null)
           }
+        } else if (activeTab === 'trainees') {
+          const stRes = await axios.get('/api/v1/students', {
+            params: { course_id: selectedCourse.id, limit: 100 }
+          })
+          setStudents(stRes.data.items)
         }
       } catch (err) {
         console.error(err)
@@ -124,6 +200,107 @@ export const CourseList = () => {
     }
   }
 
+  const handleSaveTrade = async (e) => {
+    e.preventDefault()
+    try {
+      if (editingTrade) {
+        await axios.put(`/api/v1/students/trades/${editingTrade.id}`, {
+          code: tradeForm.code,
+          label: tradeForm.label,
+          is_active: tradeForm.is_active
+        })
+        toast.success('Trade updated successfully')
+      } else {
+        await axios.post('/api/v1/students/trades', {
+          code: tradeForm.code,
+          label: tradeForm.label,
+          is_active: tradeForm.is_active
+        })
+        toast.success('Trade created successfully')
+      }
+      setEditingTrade(null)
+      setTradeForm({ code: '', label: '', is_active: true })
+      fetchAllTrades()
+    } catch (err) {
+      console.error(err)
+      const detail = err.response?.data?.detail || 'Failed to save trade'
+      toast.error(detail)
+    }
+  }
+
+  const handleEditTradeClick = (trade) => {
+    setEditingTrade(trade)
+    setTradeForm({ code: trade.code, label: trade.label, is_active: trade.is_active })
+  }
+
+  const handleDeleteTrade = async (tradeId) => {
+    if (!window.confirm('Are you sure you want to delete this trade?')) return
+    try {
+      await axios.delete(`/api/v1/students/trades/${tradeId}`)
+      toast.success('Trade deleted successfully')
+      fetchAllTrades()
+    } catch (err) {
+      console.error(err)
+      const detail = err.response?.data?.detail || 'Failed to delete trade'
+      toast.error(detail)
+    }
+  }
+
+  const handleCancelTradeEdit = () => {
+    setEditingTrade(null)
+    setTradeForm({ code: '', label: '', is_active: true })
+  }
+
+  const handleSaveRank = async (e) => {
+    e.preventDefault()
+    try {
+      if (editingRank) {
+        await axios.put(`/api/v1/students/ranks/${editingRank.id}`, {
+          label: rankForm.label,
+          is_active: rankForm.is_active
+        })
+        toast.success('Rank updated successfully')
+      } else {
+        await axios.post('/api/v1/students/ranks', {
+          code: rankForm.code,
+          label: rankForm.label,
+          is_active: rankForm.is_active
+        })
+        toast.success('Rank added successfully')
+      }
+      setRankForm({ code: '', label: '', is_active: true })
+      setEditingRank(null)
+      fetchAllRanks()
+    } catch (err) {
+      console.error(err)
+      const detail = err.response?.data?.detail || 'Failed to save rank'
+      toast.error(detail)
+    }
+  }
+
+  const handleEditRankClick = (rank) => {
+    setEditingRank(rank)
+    setRankForm({ code: rank.code, label: rank.label, is_active: rank.is_active })
+  }
+
+  const handleDeleteRank = async (rankId) => {
+    if (!window.confirm('Are you sure you want to delete this rank?')) return
+    try {
+      await axios.delete(`/api/v1/students/ranks/${rankId}`)
+      toast.success('Rank deleted successfully')
+      fetchAllRanks()
+    } catch (err) {
+      console.error(err)
+      const detail = err.response?.data?.detail || 'Failed to delete rank'
+      toast.error(detail)
+    }
+  }
+
+  const handleCancelRankEdit = () => {
+    setEditingRank(null)
+    setRankForm({ code: '', label: '', is_active: true })
+  }
+
   const handleAddExam = async (e) => {
     e.preventDefault()
     if (!newExamSubjectId || !newExamDate) return
@@ -154,7 +331,8 @@ export const CourseList = () => {
       </div>
 
       <div className="row g-4">
-        {/* Left Side: Course Selection List */}
+        {/* Left Side: Course Selection List – only shown in Course Syllabus view */}
+        {!showTradeManagement && !showRankManagement && (
         <div className="col-lg-3 col-md-12">
           <div className="card slaf-card p-3 mb-4">
             <h5 className="display-font text-muted mb-3 border-bottom pb-2">Active Courses</h5>
@@ -165,8 +343,11 @@ export const CourseList = () => {
                 {courses.map(c => (
                   <button 
                     key={c.id} 
-                    className={`list-group-item list-group-item-action border-0 px-2 py-2.5 rounded-3 mb-1 text-start fw-semibold ${selectedCourse?.id === c.id ? 'bg-primary-subtle text-primary' : ''}`}
-                    onClick={() => setSelectedCourse(c)}
+                    className={`list-group-item list-group-item-action border-0 px-2 py-2.5 rounded-3 mb-1 text-start fw-semibold ${(selectedCourse?.id === c.id) ? 'bg-primary-subtle text-primary' : ''}`}
+                    onClick={() => {
+                      setSelectedCourse(c);
+                      setSearchParams({});
+                    }}
                   >
                     <i className="bi bi-mortarboard me-2"></i> {c.name} ({c.code})
                   </button>
@@ -188,10 +369,253 @@ export const CourseList = () => {
             )}
           </div>
         </div>
+        )}
 
-        {/* Right Side: Tabular Course Workspace */}
-        <div className="col-lg-9 col-md-12">
-          {selectedCourse ? (
+        {/* Right Side: Tabular Course Workspace / Trade & Rank Management Panel */}
+        <div className={`${(showTradeManagement || showRankManagement) ? 'col-12' : 'col-lg-9 col-md-12'}`}>
+          {showTradeManagement ? (
+            <div className="card slaf-card p-4">
+              <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <div>
+                  <h3 className="display-font mb-0 text-primary">Trade Management</h3>
+                  <p className="text-muted mb-0">Create, update, and manage student trade options</p>
+                </div>
+              </div>
+
+              <div className="row g-4">
+                {/* Form to Add/Edit Trade */}
+                <div className="col-xl-4 col-lg-12">
+                  <div className="card border-0 shadow-sm p-4 bg-light">
+                    <h5 className="fw-semibold mb-3">{editingTrade ? 'Edit Trade' : 'Add New Trade'}</h5>
+                    <form onSubmit={handleSaveTrade}>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Trade Code *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="e.g. COMPUTER_TECHNICIAN"
+                          value={tradeForm.code}
+                          onChange={e => setTradeForm({ ...tradeForm, code: e.target.value.toUpperCase() })}
+                          required
+                          disabled={!!editingTrade}
+                        />
+                        <small className="text-muted">A unique uppercase identifier.</small>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Trade Name (Label) *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="e.g. Computer Technician"
+                          value={tradeForm.label}
+                          onChange={e => setTradeForm({ ...tradeForm, label: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3 form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="tradeActiveSwitch"
+                          checked={tradeForm.is_active}
+                          onChange={e => setTradeForm({ ...tradeForm, is_active: e.target.checked })}
+                        />
+                        <label className="form-check-label fw-semibold" htmlFor="tradeActiveSwitch">
+                          Active Status
+                        </label>
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button type="submit" className="btn btn-primary w-100 fw-semibold">
+                          {editingTrade ? 'Update' : 'Save'}
+                        </button>
+                        {editingTrade && (
+                          <button type="button" className="btn btn-secondary w-100 fw-semibold" onClick={handleCancelTradeEdit}>
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Table of Trades */}
+                <div className="col-xl-8 col-lg-12">
+                  <div className="card border-0 shadow-sm p-4">
+                    <div className="table-responsive">
+                      <table className="table slaf-table align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '35%' }}>Code</th>
+                            <th style={{ width: '35%' }}>Label</th>
+                            <th style={{ width: '15%' }}>Status</th>
+                            <th className="text-end" style={{ width: '15%' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allTrades.length === 0 ? (
+                            <tr>
+                              <td colSpan="4" className="text-center py-4 text-muted">
+                                No trades loaded.
+                              </td>
+                            </tr>
+                          ) : (
+                            allTrades.map(t => (
+                              <tr key={t.id}>
+                                <td className="fw-bold">{t.code}</td>
+                                <td>{t.label}</td>
+                                <td>
+                                  <span className={`slaf-badge ${t.is_active ? 'active' : 'awol'}`}>
+                                    {t.is_active ? 'Active' : 'Inactive'}
+                                  </span>
+                                </td>
+                                <td className="text-end">
+                                  <button
+                                    className="btn btn-outline-primary btn-sm px-2 me-1"
+                                    onClick={() => handleEditTradeClick(t)}
+                                    title="Edit Trade"
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-danger btn-sm px-2"
+                                    onClick={() => handleDeleteTrade(t.id)}
+                                    title="Delete Trade"
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : showRankManagement ? (
+            <div className="card slaf-card p-4">
+              <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <div>
+                  <h3 className="display-font mb-0 text-primary">Rank Management</h3>
+                  <p className="text-muted mb-0">Create, update, and manage student rank options</p>
+                </div>
+              </div>
+
+              <div className="row g-4">
+                {/* Form to Add/Edit Rank */}
+                <div className="col-xl-4 col-lg-12">
+                  <div className="card border-0 shadow-sm p-4 bg-light">
+                    <h5 className="fw-semibold mb-3">{editingRank ? 'Edit Rank' : 'Add New Rank'}</h5>
+                    <form onSubmit={handleSaveRank}>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Rank Code *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="e.g. CPL"
+                          value={rankForm.code}
+                          onChange={e => setRankForm({ ...rankForm, code: e.target.value.toUpperCase() })}
+                          required
+                          disabled={!!editingRank}
+                        />
+                        <small className="text-muted">A unique uppercase identifier.</small>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold">Rank Name (Label) *</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="e.g. Corporal"
+                          value={rankForm.label}
+                          onChange={e => setRankForm({ ...rankForm, label: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3 form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="rankActiveSwitch"
+                          checked={rankForm.is_active}
+                          onChange={e => setRankForm({ ...rankForm, is_active: e.target.checked })}
+                        />
+                        <label className="form-check-label fw-semibold" htmlFor="rankActiveSwitch">
+                          Active Status
+                        </label>
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button type="submit" className="btn btn-primary w-100 fw-semibold">
+                          {editingRank ? 'Update' : 'Save'}
+                        </button>
+                        {editingRank && (
+                          <button type="button" className="btn btn-secondary w-100 fw-semibold" onClick={handleCancelRankEdit}>
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Table of Ranks */}
+                <div className="col-xl-8 col-lg-12">
+                  <div className="card border-0 shadow-sm p-4">
+                    <div className="table-responsive">
+                      <table className="table slaf-table align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '35%' }}>Code</th>
+                            <th style={{ width: '35%' }}>Label</th>
+                            <th style={{ width: '15%' }}>Status</th>
+                            <th className="text-end" style={{ width: '15%' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allRanks.length === 0 ? (
+                            <tr>
+                              <td colSpan="4" className="text-center py-4 text-muted">
+                                No ranks loaded.
+                              </td>
+                            </tr>
+                          ) : (
+                            allRanks.map(r => (
+                              <tr key={r.id}>
+                                <td className="fw-bold">{r.code}</td>
+                                <td>{r.label}</td>
+                                <td>
+                                  <span className={`slaf-badge ${r.is_active ? 'active' : 'awol'}`}>
+                                    {r.is_active ? 'Active' : 'Inactive'}
+                                  </span>
+                                </td>
+                                <td className="text-end">
+                                  <button
+                                    className="btn btn-outline-primary btn-sm px-2 me-1"
+                                    onClick={() => handleEditRankClick(r)}
+                                    title="Edit Rank"
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-danger btn-sm px-2"
+                                    onClick={() => handleDeleteRank(r.id)}
+                                    title="Delete Rank"
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : selectedCourse ? (
             <div className="card slaf-card p-4">
               <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
                 <div>
@@ -208,6 +632,9 @@ export const CourseList = () => {
                   </button>
                   <button className={`nav-link px-3 py-1.5 fw-semibold ${activeTab === 'marks' ? 'active bg-primary' : 'text-body'}`} onClick={() => setActiveTab('marks')}>
                     Grade Sheet
+                  </button>
+                  <button className={`nav-link px-3 py-1.5 fw-semibold ${activeTab === 'trainees' ? 'active bg-primary' : 'text-body'}`} onClick={() => setActiveTab('trainees')}>
+                    Trainees
                   </button>
                 </div>
               </div>
@@ -240,14 +667,14 @@ export const CourseList = () => {
               {/* Tab Content 2: Timetable */}
               {activeTab === 'timetable' && (
                 <div>
-                  <h5 className="fw-semibold mb-3">Today's Class Schedule</h5>
+                  <h5 className="fw-semibold mb-3">Today's Timetable</h5>
                   <div className="table-responsive">
                     <table className="table slaf-table mb-0">
                       <thead>
                         <tr>
                           <th>Period</th>
                           <th>Subject</th>
-                          <th>Topic</th>
+                          <th>Lesson</th>
                           <th>Location</th>
                         </tr>
                       </thead>
@@ -318,16 +745,14 @@ export const CourseList = () => {
                       </table>
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-muted">No examinations scheduled yet for this course.</div>
+                    <div className="text-muted">No examinations scheduled yet for this course.</div>
                   )}
 
-                  {hasPermission('academic:write') && (
-                    <form onSubmit={handleAddExam} className="border-top pt-4 mt-4 row g-3">
-                      <div className="col-12">
-                        <h6 className="fw-semibold mb-0">Schedule New Exam Slot</h6>
-                      </div>
+                  {hasPermission('academic:write') && subjects.length > 0 && (
+                    <form onSubmit={handleAddExam} className="row g-2 align-items-end mt-4 p-3 bg-light rounded-3">
+                      <h6 className="fw-semibold mb-2">Schedule Examination Slot</h6>
                       <div className="col-md-3">
-                        <select className="form-select" value={newExamType} onChange={e => setNewExamType(e.target.value)}>
+                        <select className="form-select" value={newExamType} onChange={e => setNewExamType(e.target.value)} required>
                           <option value="Phase Test">Phase Test</option>
                           <option value="Final Exam">Final Exam</option>
                         </select>
@@ -350,9 +775,94 @@ export const CourseList = () => {
                   )}
                 </div>
               )}
+
+              {/* Tab Content 4: Trainees */}
+              {activeTab === 'trainees' && (
+                <div>
+                  <h5 className="fw-semibold mb-3">Enrolled Trainees</h5>
+                  <div className="table-responsive">
+                    <table className="table slaf-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>Service Number</th>
+                          <th>Rank & Full Name</th>
+                          <th>Batch</th>
+                          <th>Status</th>
+                          <th className="text-end">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {students.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="text-center py-4 text-muted">
+                              No trainees are assigned to this course.
+                            </td>
+                          </tr>
+                        ) : (
+                          students.map(s => (
+                            <tr key={s.id}>
+                              <td className="fw-semibold text-primary">{s.service_number}</td>
+                              <td>
+                                <span className="fw-semibold d-block">{s.rank} {s.initials}</span>
+                                <small className="text-muted">{s.full_name}</small>
+                              </td>
+                              <td>{s.batch}</td>
+                              <td>
+                                <span className={`slaf-badge ${s.status.toLowerCase().replace(' ', '-')}`}>
+                                  {s.status}
+                                </span>
+                              </td>
+                              <td className="text-end">
+                                <Link to={`/students/${s.id}`} className="btn btn-outline-primary btn-sm px-2.5" title="View Profile">
+                                  <i className="bi bi-eye"></i>
+                                </Link>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-center py-5 card slaf-card text-muted">Please select or add a course to start managing academics.</div>
+            <div className="card slaf-card p-4">
+              <h3 className="display-font text-primary mb-4 border-bottom pb-2">Academic Activities Overview</h3>
+              <div className="row g-4 mb-4">
+                <div className="col-md-6 col-xl-3">
+                  <div className="card border-0 shadow-sm p-4 text-center bg-primary-subtle text-primary">
+                    <i className="bi bi-mortarboard-fill mb-2" style={{ fontSize: '2.5rem' }}></i>
+                    <h5 className="text-muted fw-semibold">Active Courses</h5>
+                    <h2 className="display-font fw-bold mb-0">{academicStats.course_count}</h2>
+                  </div>
+                </div>
+                <div className="col-md-6 col-xl-3">
+                  <div className="card border-0 shadow-sm p-4 text-center bg-success-subtle text-success">
+                    <i className="bi bi-people-fill mb-2" style={{ fontSize: '2.5rem' }}></i>
+                    <h5 className="text-muted fw-semibold">Enrolled Trainees</h5>
+                    <h2 className="display-font fw-bold mb-0">{academicStats.active_students}</h2>
+                  </div>
+                </div>
+                <div className="col-md-6 col-xl-3">
+                  <div className="card border-0 shadow-sm p-4 text-center bg-warning-subtle text-warning">
+                    <i className="bi bi-calendar3 mb-2" style={{ fontSize: '2.5rem' }}></i>
+                    <h5 className="text-muted fw-semibold">Classes Today</h5>
+                    <h2 className="display-font fw-bold mb-0">{academicStats.active_timetables_today}</h2>
+                  </div>
+                </div>
+                <div className="col-md-6 col-xl-3">
+                  <div className="card border-0 shadow-sm p-4 text-center bg-info-subtle text-info">
+                    <i className="bi bi-graph-up-arrow mb-2" style={{ fontSize: '2.5rem' }}></i>
+                    <h5 className="text-muted fw-semibold">Avg Pass Rate</h5>
+                    <h2 className="display-font fw-bold mb-0">{academicStats.average_pass_rate}%</h2>
+                  </div>
+                </div>
+              </div>
+              <div className="text-center py-4 bg-light rounded-3 text-muted">
+                Please select an active course from the directory list to manage syllabus, timetables, grades, and assigned trainees.
+              </div>
+            </div>
           )}
         </div>
       </div>

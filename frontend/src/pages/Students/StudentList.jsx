@@ -12,6 +12,9 @@ export const StudentList = () => {
   const [rank, setRank] = useState('')
   const [trade, setTrade] = useState('')
   const [status, setStatus] = useState('')
+  const [statuses, setStatuses] = useState([])
+  const [ranks, setRanks] = useState([])
+  const [trades, setTrades] = useState([])
   const [skip, setSkip] = useState(0)
   const [limit] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -34,6 +37,44 @@ export const StudentList = () => {
   useEffect(() => {
     fetchStudents()
   }, [search, rank, trade, status, skip])
+
+  useEffect(() => {
+    const loadStatuses = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/statuses')
+        if (res.data && res.data.length > 0) {
+          setStatuses(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student status types from DB', err)
+      }
+    }
+    loadStatuses()
+
+    const loadRanks = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/ranks')
+        if (res.data && res.data.length > 0) {
+          setRanks(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student ranks from DB', err)
+      }
+    }
+    loadRanks()
+
+    const loadTrades = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/trades')
+        if (res.data && res.data.length > 0) {
+          setTrades(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student trades from DB', err)
+      }
+    }
+    loadTrades()
+  }, [])
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to soft-delete this student record?')) return
@@ -106,28 +147,31 @@ export const StudentList = () => {
           <div className="col-md-2">
             <select className="form-select" value={rank} onChange={(e) => { setRank(e.target.value); setSkip(0); }}>
               <option value="">All Ranks</option>
-              <option value="Aircraftman">Aircraftman (AC)</option>
-              <option value="Leading Aircraftman">Leading Aircraftman (LAC)</option>
-              <option value="Corporal">Corporal (Cpl)</option>
-              <option value="Sergeant">Sergeant (Sgt)</option>
+              {ranks.map(r => (
+                <option key={r.id} value={r.label}>
+                  {r.label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="col-md-3">
             <select className="form-select" value={trade} onChange={(e) => { setTrade(e.target.value); setSkip(0); }}>
               <option value="">All Trades</option>
-              <option value="Airframe">Airframe Fitters</option>
-              <option value="Avionics">Avionics Fitters</option>
-              <option value="Safety Equipment">Safety Equipment Fitters</option>
+              {trades.map(t => (
+                <option key={t.id} value={t.label}>
+                  {t.label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="col-md-3">
             <select className="form-select" value={status} onChange={(e) => { setStatus(e.target.value); setSkip(0); }}>
               <option value="">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Sick Report">Sick Report</option>
-              <option value="Leave">Leave</option>
-              <option value="AWOL">AWOL</option>
-              <option value="Passed Out">Passed Out</option>
+              {statuses.map(st => (
+                <option key={st.id || st.code} value={st.label}>
+                  {st.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

@@ -74,7 +74,7 @@ export const StudentDetail = () => {
         <div className="d-flex gap-2">
           <Link to="/students" className="btn btn-outline-secondary">
             <i className="bi bi-arrow-left"></i> Back to list
-          </legend>
+          </Link>
           <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={handlePrintQR}>
             <i className="bi bi-printer"></i> Print QR Card
           </button>

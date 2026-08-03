@@ -1,6 +1,7 @@
 import io
 import base64
 import qrcode
+from datetime import date
 from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -36,7 +37,7 @@ class StudentService:
             squadron=student_in.squadron,
             unit=student_in.unit,
             posting=student_in.posting,
-            joining_date=student_in.joining_date,
+            joining_date=student_in.joining_date or date.today(),
             passing_out_date=student_in.passing_out_date,
             status=student_in.status or "Active",
             phone=student_in.phone,

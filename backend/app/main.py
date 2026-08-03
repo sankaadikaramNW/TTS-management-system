@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.routers import auth, student, parade, accommodation, academic, dashboard, system
+from app.routers import auth, student, parade, accommodation, academic, dashboard, system, public
 
 # Create database tables automatically if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -16,7 +16,8 @@ def auto_seed_database():
     try:
         from app.models.user import Role, Permission, User
         from app.models.academic import Course, Subject
-        from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationRoom, AccommodationBed
+        from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationBed
+        from app.models.student import ParadeStatusType, StudentStatusType, Rank, Trade
         
         # 1. Seed Roles
         if db.query(Role).count() == 0:
@@ -100,17 +101,79 @@ def auto_seed_database():
             db.add(billet)
             db.commit()
             
-            room = AccommodationRoom(id='room-t1-a-101', billet_id='bill-t1-a', room_number='Room 101', capacity=4)
-            db.add(room)
-            db.commit()
-            
             beds = [
-                AccommodationBed(id='bed-t1-a-101-1', room_id='room-t1-a-101', bed_number='Bed 01', status='Vacant'),
-                AccommodationBed(id='bed-t1-a-101-2', room_id='room-t1-a-101', bed_number='Bed 02', status='Vacant'),
-                AccommodationBed(id='bed-t1-a-101-3', room_id='room-t1-a-101', bed_number='Bed 03', status='Vacant'),
-                AccommodationBed(id='bed-t1-a-101-4', room_id='room-t1-a-101', bed_number='Bed 04', status='Vacant')
+                AccommodationBed(id='bed-t1-a-1', billet_id='bill-t1-a', bed_number='Bed 01', status='Vacant'),
+                AccommodationBed(id='bed-t1-a-2', billet_id='bill-t1-a', bed_number='Bed 02', status='Vacant'),
+                AccommodationBed(id='bed-t1-a-3', billet_id='bill-t1-a', bed_number='Bed 03', status='Vacant'),
+                AccommodationBed(id='bed-t1-a-4', billet_id='bill-t1-a', bed_number='Bed 04', status='Vacant')
             ]
             db.bulk_save_objects(beds)
+            db.commit()
+
+        # 6. Seed Public Notices (Notifications with user_id = None)
+        from app.models.notification import Notification
+        if db.query(Notification).filter(Notification.user_id == None).count() == 0:
+            notices = [
+                Notification(id='notice-1', user_id=None, title='New Batch Registration', message='New batch registration starts next week. Please ensure all student documents are prepared.', type='INFO'),
+                Notification(id='notice-2', user_id=None, title='Timetable Release', message='Examination timetable for BA-AER-01 has been released on the portal.', type='INFO'),
+                Notification(id='notice-3', user_id=None, title='Accommodation Inspection', message='Billet inspection scheduled for Training Block Alpha this Friday at 0900 hrs.', type='WARNING'),
+                Notification(id='notice-4', user_id=None, title='Parade State Submission', message='Reminder: Daily parade state must be submitted before 0800 hrs daily.', type='ALERT')
+            ]
+            db.bulk_save_objects(notices)
+            db.commit()
+
+        # 7. Seed Parade Status Types
+        if db.query(ParadeStatusType).count() == 0:
+            status_types = [
+                ParadeStatusType(code='PRESENT', label='Present'),
+                ParadeStatusType(code='SICK_REPORT', label='Sick Report'),
+                ParadeStatusType(code='HOSPITAL', label='Hospital'),
+                ParadeStatusType(code='LEAVE', label='Leave'),
+                ParadeStatusType(code='TEMPORARY_DUTY', label='Temporary Duty'),
+                ParadeStatusType(code='COURSE_VISIT', label='Course Visit'),
+                ParadeStatusType(code='DETACHED_DUTY', label='Detached Duty'),
+                ParadeStatusType(code='AWOL', label='AWOL')
+            ]
+            db.bulk_save_objects(status_types)
+            db.commit()
+
+        # 8. Seed Student Status Types
+        if db.query(StudentStatusType).count() == 0:
+            student_statuses = [
+                StudentStatusType(id='ss-active', code='ACTIVE', label='Active'),
+                StudentStatusType(id='ss-sick-report', code='SICK_REPORT', label='Sick Report'),
+                StudentStatusType(id='ss-leave', code='LEAVE', label='Leave'),
+                StudentStatusType(id='ss-awol', code='AWOL', label='AWOL'),
+                StudentStatusType(id='ss-passed-out', code='PASSED_OUT', label='Passed Out'),
+                StudentStatusType(id='ss-suspended', code='SUSPENDED', label='Suspended')
+            ]
+            db.bulk_save_objects(student_statuses)
+            db.commit()
+
+        # 9. Seed Ranks
+        if db.query(Rank).count() == 0:
+            ranks = [
+                Rank(id='rank-ac', code='AC', label='Aircraftman'),
+                Rank(id='rank-lac', code='LAC', label='Leading Aircraftman'),
+                Rank(id='rank-cpl', code='CPL', label='Corporal'),
+                Rank(id='rank-sgt', code='SGT', label='Sergeant'),
+                Rank(id='rank-fsgt', code='FSGT', label='Flight Sergeant'),
+                Rank(id='rank-wo', code='WO', label='Warrant Officer')
+            ]
+            db.bulk_save_objects(ranks)
+            db.commit()
+
+        # 10. Seed Trades
+        if db.query(Trade).count() == 0:
+            trades = [
+                Trade(id='trade-airframe', code='AIRFRAME', label='Airframe'),
+                Trade(id='trade-avionics', code='AVIONICS', label='Avionics'),
+                Trade(id='trade-safety', code='SAFETY_EQUIPMENT', label='Safety Equipment'),
+                Trade(id='trade-engine', code='ENGINE', label='Engine'),
+                Trade(id='trade-logistical', code='LOGISTICAL', label='Logistical'),
+                Trade(id='trade-admin', code='ADMINISTRATIVE', label='Administrative')
+            ]
+            db.bulk_save_objects(trades)
             db.commit()
 
     except Exception as e:
@@ -151,6 +214,7 @@ app.include_router(accommodation.router, prefix="/api/v1")
 app.include_router(academic.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
+app.include_router(public.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():

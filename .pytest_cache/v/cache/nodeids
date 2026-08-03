@@ -1,0 +1,8 @@
+[
+  "backend/tests/test_accommodation.py::test_accommodation_full_workflow",
+  "backend/tests/test_auth.py::test_login_invalid_password",
+  "backend/tests/test_auth.py::test_login_success",
+  "backend/tests/test_students.py::test_create_and_search_student",
+  "backend/tests/test_students.py::test_get_student_ranks_and_trades",
+  "backend/tests/test_students.py::test_get_student_statuses"
+]

@@ -9,6 +9,15 @@ export const Navbar = () => {
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
+  const [currentDateTime, setCurrentDateTime] = useState(new Date())
+
+  // Dynamic live clock in header
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Fetch unread notifications every 30 seconds
   const fetchNotifications = async () => {
@@ -36,11 +45,30 @@ export const Navbar = () => {
     }
   }
 
+  // Determine active module title for header
+  const getModuleName = () => {
+    const path = window.location.pathname
+    if (path.startsWith('/accommodation')) return 'Accommodation Management Module'
+    if (path.startsWith('/students')) return 'Student Details Management Module'
+    if (path.startsWith('/parade')) return 'Daily Parade State Board'
+    if (path.startsWith('/academic')) return 'Academic Activities Module'
+    if (path.startsWith('/reports')) return 'Reports & Analytics Module'
+    if (path.startsWith('/admin')) return 'System Administration Module'
+    return 'TTS Management Portal'
+  }
+
   return (
     <header className="glass-header d-flex align-items-center justify-content-between px-4 py-2 fixed-top" style={{ marginLeft: '260px', height: '70px', zIndex: 900 }}>
-      {/* Search Header placeholder / Title */}
+      {/* Header Module Name and Current DateTime */}
       <div className="d-flex align-items-center gap-3">
-        <h4 className="mb-0 display-font text-primary">TTS Management Portal</h4>
+        <div>
+          <h4 className="mb-0 display-font text-primary fw-bold" style={{ fontSize: '1.2rem', letterSpacing: '0.3px' }}>
+            {getModuleName()}
+          </h4>
+          <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+            {currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | {currentDateTime.toLocaleTimeString()}
+          </small>
+        </div>
       </div>
 
       {/* Control Buttons */}
@@ -97,8 +125,8 @@ export const Navbar = () => {
         {/* Logged user section */}
         <div className="d-flex align-items-center gap-3">
           <div className="text-end">
-            <div className="fw-semibold" style={{ fontSize: '0.9rem' }}>{user?.full_name}</div>
-            <div className="text-muted" style={{ fontSize: '0.75rem' }}>{user?.role?.name}</div>
+            <div className="fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>{user?.full_name}</div>
+            <div className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{user?.role?.name}</div>
           </div>
           <button className="btn btn-outline-danger btn-sm px-3 py-1.5 rounded-pill" onClick={logout}>
             <i className="bi bi-box-arrow-right me-1"></i> Logout

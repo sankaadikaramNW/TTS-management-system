@@ -9,7 +9,7 @@ export const Layout = () => {
       <Sidebar />
       <div className="w-100">
         <Navbar />
-        <main className="main-wrapper px-4 py-4">
+        <main className="main-wrapper px-4 pb-4">
           <Outlet />
         </main>
       </div>

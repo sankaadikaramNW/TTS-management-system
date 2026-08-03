@@ -7,13 +7,14 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import Layout from './components/Layout'
 
 // Pages import
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import StudentList from './pages/Students/StudentList'
 import StudentDetail from './pages/Students/StudentDetail'
 import StudentForm from './pages/Students/StudentForm'
 import DailyParade from './pages/ParadeState/DailyParade'
-import AllocationMap from './pages/Accommodation/AllocationMap'
+import AccommodationPanel from './pages/Accommodation/AccommodationPanel'
 import CourseList from './pages/Academic/CourseList'
 import ReportGenerator from './pages/Reports/ReportGenerator'
 import UserManagement from './pages/Admin/UserManagement'
@@ -22,15 +23,16 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-            {/* Public route */}
+            {/* Public routes */}
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
 
             {/* Shielded routes inside Layout shell */}
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 
                 {/* Student Management */}
                 <Route element={<ProtectedRoute permissionCode="student:read" />}>
@@ -49,7 +51,8 @@ function App() {
 
                 {/* Accommodation */}
                 <Route element={<ProtectedRoute permissionCode="room:read" />}>
-                  <Route path="/accommodation" element={<AllocationMap />} />
+                  <Route path="/accommodation" element={<AccommodationPanel />} />
+                  <Route path="/accommodation/:subview" element={<AccommodationPanel />} />
                 </Route>
 
                 {/* Academics */}

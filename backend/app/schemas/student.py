@@ -16,7 +16,7 @@ class StudentBase(BaseModel):
     squadron: Optional[str] = "Training Squadron"
     unit: Optional[str] = "SLAF TTS Ekala"
     posting: Optional[str] = None
-    joining_date: date
+    joining_date: Optional[date] = None
     passing_out_date: Optional[date] = None
     status: Optional[str] = "Active"
     phone: Optional[str] = None
@@ -87,3 +87,59 @@ class StudentResponse(StudentBase):
 class StudentListResponse(BaseModel):
     total: int
     items: List[StudentResponse]
+
+
+class StudentStatusTypeResponse(BaseModel):
+    id: str
+    code: str
+    label: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class RankResponse(BaseModel):
+    id: str
+    code: str
+    label: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class TradeResponse(BaseModel):
+    id: str
+    code: str
+    label: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class TradeCreate(BaseModel):
+    code: str
+    label: str
+    is_active: Optional[bool] = True
+
+
+class TradeUpdate(BaseModel):
+    code: Optional[str] = None
+    label: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class RankCreate(BaseModel):
+    code: str
+    label: str
+    is_active: Optional[bool] = True
+
+
+class RankUpdate(BaseModel):
+    code: Optional[str] = None
+    label: Optional[str] = None
+    is_active: Optional[bool] = None
+
+

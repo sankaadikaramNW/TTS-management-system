@@ -9,6 +9,9 @@ export const StudentForm = () => {
   const isEdit = !!id
 
   const [courses, setCourses] = useState([])
+  const [statuses, setStatuses] = useState([])
+  const [ranks, setRanks] = useState([])
+  const [trades, setTrades] = useState([])
   const [formData, setFormData] = useState({
     service_number: '',
     initials: '',
@@ -53,6 +56,45 @@ export const StudentForm = () => {
     }
     loadCourses()
 
+    // Load student status types from DB
+    const loadStatuses = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/statuses')
+        if (res.data && res.data.length > 0) {
+          setStatuses(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student status types from DB', err)
+      }
+    }
+    loadStatuses()
+
+    // Load student ranks from DB
+    const loadRanks = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/ranks')
+        if (res.data && res.data.length > 0) {
+          setRanks(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student ranks from DB', err)
+      }
+    }
+    loadRanks()
+
+    // Load student trades from DB
+    const loadTrades = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/trades')
+        if (res.data && res.data.length > 0) {
+          setTrades(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student trades from DB', err)
+      }
+    }
+    loadTrades()
+
     if (isEdit) {
       const loadStudent = async () => {
         try {
@@ -63,7 +105,15 @@ export const StudentForm = () => {
           if (data.joining_date) data.joining_date = data.joining_date.substring(0, 10)
           if (data.passing_out_date) data.passing_out_date = data.passing_out_date.substring(0, 10)
           
-          setFormData(data)
+          // Replace null values with empty strings to prevent React warnings on inputs/selects
+          const sanitizedData = { ...data }
+          Object.keys(sanitizedData).forEach(key => {
+            if (sanitizedData[key] === null) {
+              sanitizedData[key] = ''
+            }
+          })
+          
+          setFormData(sanitizedData)
         } catch (err) {
           toast.error('Failed to load student details')
         }
@@ -87,11 +137,11 @@ export const StudentForm = () => {
     try {
       let savedStudent = null
       
-      const payload = {
-        ...formData,
-        course_id: formData.course_id || null,
-        passing_out_date: formData.passing_out_date || null
-      }
+      // Sanitize payload: convert empty strings back to null so they validate correctly in FastAPI/Pydantic
+      const payload = {}
+      Object.keys(formData).forEach(key => {
+        payload[key] = formData[key] === '' ? null : formData[key]
+      })
 
       if (isEdit) {
         const res = await axios.put(`/api/v1/students/${id}`, payload)
@@ -187,18 +237,38 @@ export const StudentForm = () => {
             <div className="col-md-3">
               <label className="form-label fw-semibold">Rank *</label>
               <select className="form-select" name="rank" value={formData.rank} onChange={handleInputChange} required>
-                <option value="Aircraftman">Aircraftman (AC)</option>
-                <option value="Leading Aircraftman">Leading Aircraftman (LAC)</option>
-                <option value="Corporal">Corporal (Cpl)</option>
-                <option value="Sergeant">Sergeant (Sgt)</option>
+                {ranks.length > 0 ? (
+                  ranks.map(r => (
+                    <option key={r.id} value={r.label}>
+                      {r.label} ({r.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Aircraftman">Aircraftman (AC)</option>
+                    <option value="Leading Aircraftman">Leading Aircraftman (LAC)</option>
+                    <option value="Corporal">Corporal (Cpl)</option>
+                    <option value="Sergeant">Sergeant (Sgt)</option>
+                  </>
+                )}
               </select>
             </div>
             <div className="col-md-3">
               <label className="form-label fw-semibold">Trade *</label>
               <select className="form-select" name="trade" value={formData.trade} onChange={handleInputChange} required>
-                <option value="Airframe">Airframe Fitters</option>
-                <option value="Avionics">Avionics Fitters</option>
-                <option value="Safety Equipment">Safety Equipment Fitters</option>
+                {trades.length > 0 ? (
+                  trades.map(t => (
+                    <option key={t.id} value={t.label}>
+                      {t.label}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Airframe">Airframe Fitters</option>
+                    <option value="Avionics">Avionics Fitters</option>
+                    <option value="Safety Equipment">Safety Equipment Fitters</option>
+                  </>
+                )}
               </select>
             </div>
             <div className="col-md-3">
@@ -328,11 +398,11 @@ export const StudentForm = () => {
               <div className="col-md-3">
                 <label className="form-label fw-semibold text-danger">Trainee Status</label>
                 <select className="form-select border-danger text-danger" name="status" value={formData.status} onChange={handleInputChange}>
-                  <option value="Active">Active</option>
-                  <option value="Sick Report">Sick Report</option>
-                  <option value="Leave">Leave</option>
-                  <option value="AWOL">AWOL</option>
-                  <option value="Passed Out">Passed Out</option>
+                  {statuses.map(st => (
+                    <option key={st.id || st.code} value={st.label}>
+                      {st.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}

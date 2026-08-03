@@ -10,6 +10,19 @@ export const DailyParade = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10))
+  const [statuses, setStatuses] = useState([])
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const res = await axios.get('/api/v1/parade/statuses')
+        setStatuses(res.data)
+      } catch (err) {
+        console.error('Failed to load parade statuses from DB', err)
+      }
+    }
+    fetchStatuses()
+  }, [])
 
   const loadTraineesAndParadeState = async () => {
     setLoading(true)
@@ -178,14 +191,11 @@ export const DailyParade = () => {
                             onChange={(e) => handleStatusChange(student.id, e.target.value)}
                             disabled={!hasPermission('parade:write')}
                           >
-                            <option value="Present">Present</option>
-                            <option value="Sick Report">Sick Report</option>
-                            <option value="Hospital">Hospital</option>
-                            <option value="Leave">Leave</option>
-                            <option value="Temporary Duty">Temporary Duty</option>
-                            <option value="Course Visit">Course Visit</option>
-                            <option value="Detached Duty">Detached Duty</option>
-                            <option value="AWOL">AWOL</option>
+                            {statuses.map(st => (
+                              <option key={st.id || st.code} value={st.label}>
+                                {st.label}
+                              </option>
+                            ))}
                           </select>
                         </td>
                         <td>

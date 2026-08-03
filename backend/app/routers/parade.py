@@ -7,9 +7,18 @@ from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
 from app.repositories.parade import parade_repo
 from app.services.parade import parade_service
-from app.schemas.parade import ParadeStateResponse, DailyParadeUpdateRequest, ParadeStateSummary
+from app.schemas.parade import ParadeStateResponse, DailyParadeUpdateRequest, ParadeStateSummary, ParadeStatusTypeResponse
+from app.models.student import ParadeStatusType
 
 router = APIRouter(prefix="/parade", tags=["Daily Parade State"])
+
+@router.get("/statuses", response_model=List[ParadeStatusTypeResponse])
+def get_parade_statuses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return db.query(ParadeStatusType).filter(ParadeStatusType.is_active == True).all()
+
 
 @router.get("/status", response_model=List[ParadeStateResponse])
 def get_daily_parade_state(

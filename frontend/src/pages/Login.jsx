@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export const Login = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,7 +19,8 @@ export const Login = () => {
     setLoading(false)
     
     if (success) {
-      navigate('/')
+      const from = location.state?.from || '/dashboard'
+      navigate(from, { replace: true })
     }
   }
 
@@ -74,6 +76,12 @@ export const Login = () => {
             ) : 'Sign In'}
           </button>
         </form>
+
+        <div className="text-center mt-4 border-top pt-3">
+          <Link to="/" className="text-decoration-none small text-primary d-inline-flex align-items-center gap-1">
+            <i className="bi bi-arrow-left"></i> Back to Main Portal
+          </Link>
+        </div>
       </div>
     </div>
   )

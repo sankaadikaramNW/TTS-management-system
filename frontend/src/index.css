@@ -144,7 +144,7 @@ h1, h2, h3, h4, h5, h6, .display-font {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 950;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
 }
@@ -175,7 +175,7 @@ h1, h2, h3, h4, h5, h6, .display-font {
 .main-wrapper {
   margin-left: 260px;
   min-height: 100vh;
-  padding-top: 70px; /* space for glass-header */
+  padding-top: 86px; /* full space for 70px glass-header + 16px breathing room */
   transition: margin-left 0.3s ease;
 }
 

@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 from app.config import settings
@@ -9,7 +9,8 @@ from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
 from app.repositories.student import student_repo
 from app.services.student import student_service
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse
+from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentStatusTypeResponse, RankResponse, TradeResponse, TradeCreate, TradeUpdate, RankCreate, RankUpdate
+from app.models.student import Student, StudentStatusType, Rank, Trade
 
 router = APIRouter(prefix="/students", tags=["Student Management"])
 
@@ -38,6 +39,187 @@ def list_students(
         limit=limit
     )
     return {"total": total, "items": items}
+
+
+@router.get("/statuses", response_model=List[StudentStatusTypeResponse])
+def get_student_statuses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return db.query(StudentStatusType).filter(StudentStatusType.is_active == True).all()
+
+
+@router.get("/ranks", response_model=List[RankResponse])
+def get_student_ranks(
+    include_inactive: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Rank)
+    if not include_inactive:
+        query = query.filter(Rank.is_active == True)
+    return query.all()
+
+
+@router.post("/ranks", response_model=RankResponse)
+def create_student_rank(
+    rank_in: RankCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    # Check duplicate code
+    if db.query(Rank).filter(Rank.code == rank_in.code).first():
+        raise HTTPException(status_code=400, detail=f"Rank with code '{rank_in.code}' already exists")
+        
+    db_rank = Rank(
+        id=f"rank-{rank_in.code.lower().replace('_', '-')}",
+        code=rank_in.code.upper(),
+        label=rank_in.label,
+        is_active=rank_in.is_active
+    )
+    db.add(db_rank)
+    db.commit()
+    db.refresh(db_rank)
+    return db_rank
+
+
+@router.put("/ranks/{rank_id}", response_model=RankResponse)
+def update_student_rank(
+    rank_id: str,
+    rank_in: RankUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    db_rank = db.query(Rank).filter(Rank.id == rank_id).first()
+    if not db_rank:
+        raise HTTPException(status_code=404, detail="Rank not found")
+        
+    if rank_in.code is not None:
+        # Check duplicate code
+        dup = db.query(Rank).filter(Rank.code == rank_in.code, Rank.id != rank_id).first()
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Rank with code '{rank_in.code}' already exists")
+        db_rank.code = rank_in.code.upper()
+        
+    if rank_in.label is not None:
+        db_rank.label = rank_in.label
+        
+    if rank_in.is_active is not None:
+        db_rank.is_active = rank_in.is_active
+        
+    db.commit()
+    db.refresh(db_rank)
+    return db_rank
+
+
+@router.delete("/ranks/{rank_id}")
+def delete_student_rank(
+    rank_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    db_rank = db.query(Rank).filter(Rank.id == rank_id).first()
+    if not db_rank:
+        raise HTTPException(status_code=404, detail="Rank not found")
+        
+    # Check if there are active students assigned to this rank (by matching label)
+    student_count = db.query(Student).filter(Student.rank == db_rank.label, Student.deleted_at == None).count()
+    if student_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete Rank because there are {student_count} trainees assigned to it. Deactivate it instead."
+        )
+        
+    db.delete(db_rank)
+    db.commit()
+    return {"message": "Rank deleted successfully"}
+
+
+@router.get("/trades", response_model=List[TradeResponse])
+def get_student_trades(
+    include_inactive: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Trade)
+    if not include_inactive:
+        query = query.filter(Trade.is_active == True)
+    return query.all()
+
+
+@router.post("/trades", response_model=TradeResponse)
+def create_student_trade(
+    trade_in: TradeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    # Check duplicate code
+    if db.query(Trade).filter(Trade.code == trade_in.code).first():
+        raise HTTPException(status_code=400, detail=f"Trade with code '{trade_in.code}' already exists")
+        
+    db_trade = Trade(
+        id=f"trade-{trade_in.code.lower().replace('_', '-')}",
+        code=trade_in.code.upper(),
+        label=trade_in.label,
+        is_active=trade_in.is_active
+    )
+    db.add(db_trade)
+    db.commit()
+    db.refresh(db_trade)
+    return db_trade
+
+
+@router.put("/trades/{trade_id}", response_model=TradeResponse)
+def update_student_trade(
+    trade_id: str,
+    trade_in: TradeUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    db_trade = db.query(Trade).filter(Trade.id == trade_id).first()
+    if not db_trade:
+        raise HTTPException(status_code=404, detail="Trade not found")
+        
+    if trade_in.code is not None:
+        # Check duplicate code
+        dup = db.query(Trade).filter(Trade.code == trade_in.code, Trade.id != trade_id).first()
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Trade with code '{trade_in.code}' already exists")
+        db_trade.code = trade_in.code.upper()
+        
+    if trade_in.label is not None:
+        db_trade.label = trade_in.label
+        
+    if trade_in.is_active is not None:
+        db_trade.is_active = trade_in.is_active
+        
+    db.commit()
+    db.refresh(db_trade)
+    return db_trade
+
+
+@router.delete("/trades/{trade_id}")
+def delete_student_trade(
+    trade_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    db_trade = db.query(Trade).filter(Trade.id == trade_id).first()
+    if not db_trade:
+        raise HTTPException(status_code=404, detail="Trade not found")
+        
+    # Check if there are active students assigned to this trade (by matching label)
+    student_count = db.query(Student).filter(Student.trade == db_trade.label, Student.deleted_at == None).count()
+    if student_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete Trade because there are {student_count} trainees assigned to it. Deactivate it instead."
+        )
+        
+    db.delete(db_trade)
+    db.commit()
+    return {"message": "Trade deleted successfully"}
+
 
 @router.get("/{student_id}", response_model=StudentResponse)
 def get_student_details(

@@ -8,6 +8,14 @@ export const ReportGenerator = () => {
   const [loading, setLoading] = useState(false)
   const [squadron, setSquadron] = useState('')
   const [status, setStatus] = useState('')
+  const [statuses, setStatuses] = useState([
+    { code: 'ACTIVE', label: 'Active' },
+    { code: 'SICK_REPORT', label: 'Sick Report' },
+    { code: 'LEAVE', label: 'Leave' },
+    { code: 'AWOL', label: 'AWOL' },
+    { code: 'PASSED_OUT', label: 'Passed Out' },
+    { code: 'SUSPENDED', label: 'Suspended' }
+  ])
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -36,6 +44,21 @@ export const ReportGenerator = () => {
   useEffect(() => {
     handleGenerate()
   }, [reportType])
+
+  useEffect(() => {
+    const loadStatuses = async () => {
+      try {
+        const res = await axios.get('/api/v1/students/statuses')
+        if (res.data && res.data.length > 0) {
+          setStatuses(res.data)
+        }
+      } catch (err) {
+        console.error('Failed to load student status types from DB', err)
+      }
+    }
+    loadStatuses()
+  }, [])
+
 
   const handlePrint = () => {
     window.print()
@@ -78,10 +101,11 @@ export const ReportGenerator = () => {
                 <label className="form-label fw-semibold">Status Filter</label>
                 <select className="form-select" value={status} onChange={e => setStatus(e.target.value)}>
                   <option value="">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Sick Report">Sick Report</option>
-                  <option value="Leave">Leave</option>
-                  <option value="AWOL">AWOL</option>
+                  {statuses.map(st => (
+                    <option key={st.id || st.code} value={st.label}>
+                      {st.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </>
