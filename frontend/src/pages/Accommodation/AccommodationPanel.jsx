@@ -274,6 +274,18 @@ export const AccommodationPanel = () => {
     }
   }
 
+  const handleBulkBedSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await axios.post('/api/v1/accommodation/beds/bulk', bulkBedForm)
+      toast.success(`Generated ${res.data.length} beds successfully!`)
+      setShowBulkBedModal(false)
+      loadData()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to bulk create beds')
+    }
+  }
+
   const handleDeleteBuilding = async (bldgId) => {
     if (!window.confirm('Are you sure you want to delete this building? It will soft-delete the master record.')) return
     try {
@@ -841,9 +853,27 @@ export const AccommodationPanel = () => {
               </div>
               <div className="col-md-4 text-end">
                 {hasPermission('room:write') && selectedBilletFilter && (
-                  <button className="btn btn-primary btn-sm d-flex align-items-center gap-1 ms-auto" onClick={() => { setEditingItem(null); setBedForm({ billet_id: selectedBilletFilter, bed_number: '', status: 'Vacant' }); setShowBedFormModal(true); }}>
-                    <i className="bi bi-plus-lg"></i> Add Bed
-                  </button>
+                  <div className="d-flex justify-content-end gap-2">
+                    <button 
+                      type="button"
+                      className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                      onClick={() => {
+                        setBulkBedForm({
+                          billet_id: selectedBilletFilter,
+                          prefix: 'Bed ',
+                          count: 10,
+                          start_number: 1,
+                          status: 'Vacant'
+                        })
+                        setShowBulkBedModal(true)
+                      }}
+                    >
+                      <i className="bi bi-lightning-fill text-warning"></i> Bulk Add Beds
+                    </button>
+                    <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => { setEditingItem(null); setBedForm({ billet_id: selectedBilletFilter, bed_number: '', status: 'Vacant' }); setShowBedFormModal(true); }}>
+                      <i className="bi bi-plus-lg"></i> Add Bed
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1404,6 +1434,114 @@ export const AccommodationPanel = () => {
                 <div className="modal-footer">
                   <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBedFormModal(false)}>Cancel</button>
                   <button type="submit" className="btn btn-primary">Save Bed</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 8: Bulk Bed Form */}
+      {showBulkBedModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content glass-card">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title fw-bold text-white d-flex align-items-center gap-2">
+                  <i className="bi bi-lightning-fill text-warning"></i> Bulk Bed Generator
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowBulkBedModal(false)}></button>
+              </div>
+              <form onSubmit={handleBulkBedSubmit}>
+                <div className="modal-body">
+                  <div className="alert alert-info border-0 shadow-sm mb-3">
+                    <i className="bi bi-info-circle-fill me-2"></i>
+                    Easily generate multiple beds at once for the selected billet.
+                  </div>
+                  
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Target Billet</label>
+                      <input 
+                        type="text" 
+                        className="form-control bg-light" 
+                        value={
+                          buildings
+                            .flatMap(b => b.billets)
+                            .find(bt => bt.id === bulkBedForm.billet_id)?.name || 'Selected Billet'
+                        } 
+                        disabled 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Default Status</label>
+                      <select 
+                        className="form-select" 
+                        value={bulkBedForm.status}
+                        onChange={(e) => setBulkBedForm({ ...bulkBedForm, status: e.target.value })}
+                      >
+                        <option value="Vacant">Available / Vacant</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Reserved">Reserved</option>
+                      </select>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Bed Prefix</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        value={bulkBedForm.prefix}
+                        onChange={(e) => setBulkBedForm({ ...bulkBedForm, prefix: e.target.value })}
+                        placeholder="e.g. Bed , B-"
+                      />
+                      <small className="text-muted">Space or hyphen supported</small>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Start Number</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={bulkBedForm.start_number}
+                        onChange={(e) => setBulkBedForm({ ...bulkBedForm, start_number: parseInt(e.target.value) || 1 })}
+                        min="1"
+                      />
+                      <small className="text-muted">First bed number</small>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Quantity to Generate *</label>
+                      <input 
+                        type="number" 
+                        className="form-control fw-bold border-primary" 
+                        value={bulkBedForm.count}
+                        onChange={(e) => setBulkBedForm({ ...bulkBedForm, count: parseInt(e.target.value) || 1 })}
+                        min="1"
+                        max="100"
+                        required
+                      />
+                      <small className="text-muted">Max 100 per batch</small>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-light rounded border">
+                    <h6 className="fw-semibold text-primary mb-2">Live Preview of Bed Names to be Created:</h6>
+                    <div className="d-flex flex-wrap gap-1" style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                      {Array.from({ length: Math.min(Math.max(1, bulkBedForm.count || 0), 100) }, (_, i) => {
+                        const num = (bulkBedForm.start_number || 1) + i
+                        return (
+                          <span key={i} className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                            {bulkBedForm.prefix || ''}{num}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBulkBedModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary px-4">
+                    <i className="bi bi-lightning-fill me-1"></i> Generate {bulkBedForm.count} Beds
+                  </button>
                 </div>
               </form>
             </div>
