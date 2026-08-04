@@ -100,20 +100,35 @@ export const StudentForm = () => {
         try {
           const res = await axios.get(`/api/v1/students/${id}`)
           const data = res.data
-          // Format dates for input tags
-          if (data.dob) data.dob = data.dob.substring(0, 10)
-          if (data.joining_date) data.joining_date = data.joining_date.substring(0, 10)
-          if (data.passing_out_date) data.passing_out_date = data.passing_out_date.substring(0, 10)
           
-          // Replace null values with empty strings to prevent React warnings on inputs/selects
-          const sanitizedData = { ...data }
-          Object.keys(sanitizedData).forEach(key => {
-            if (sanitizedData[key] === null) {
-              sanitizedData[key] = ''
-            }
+          setFormData({
+            service_number: data.service_number || '',
+            initials: data.initials || '',
+            full_name: data.full_name || '',
+            nic: data.nic || '',
+            dob: data.dob ? data.dob.substring(0, 10) : '',
+            gender: data.gender || 'Male',
+            rank: data.rank || 'Aircraftman',
+            trade: data.trade || 'Airframe',
+            course_id: data.course_id || '',
+            batch: data.batch || '',
+            squadron: data.squadron || 'Training Squadron',
+            unit: data.unit || 'SLAF TTS Ekala',
+            posting: data.posting || '',
+            joining_date: data.joining_date ? data.joining_date.substring(0, 10) : '',
+            passing_out_date: data.passing_out_date ? data.passing_out_date.substring(0, 10) : '',
+            status: data.status || 'Active',
+            phone: data.phone || '',
+            email: data.email || '',
+            emergency_contact_name: data.emergency_contact_name || '',
+            emergency_contact_phone: data.emergency_contact_phone || '',
+            blood_group: data.blood_group || 'O+',
+            medical_category: data.medical_category || 'A4G4',
+            religion: data.religion || 'Buddhist',
+            nationality: data.nationality || 'Sri Lankan',
+            permanent_address: data.permanent_address || '',
+            temporary_address: data.temporary_address || ''
           })
-          
-          setFormData(sanitizedData)
         } catch (err) {
           toast.error('Failed to load student details')
         }
@@ -140,7 +155,7 @@ export const StudentForm = () => {
       // Sanitize payload: convert empty strings back to null so they validate correctly in FastAPI/Pydantic
       const payload = {}
       Object.keys(formData).forEach(key => {
-        payload[key] = formData[key] === '' ? null : formData[key]
+        payload[key] = (formData[key] === '' || formData[key] === null) ? null : formData[key]
       })
 
       if (isEdit) {
@@ -157,9 +172,7 @@ export const StudentForm = () => {
       if (photoFile && savedStudent) {
         const fileForm = new FormData()
         fileForm.append('file', photoFile)
-        await axios.post(`/api/v1/students/${savedStudent.id}/photo`, fileForm, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
+        await axios.post(`/api/v1/students/${savedStudent.id}/photo`, fileForm)
         toast.success('Profile photo uploaded')
       }
 
@@ -198,6 +211,7 @@ export const StudentForm = () => {
                 onChange={handleInputChange}
                 required
                 disabled={isEdit}
+                placeholder="e.g. 51837"
               />
             </div>
             <div className="col-md-2">
@@ -209,6 +223,7 @@ export const StudentForm = () => {
                 value={formData.initials}
                 onChange={handleInputChange}
                 required
+                placeholder="e.g. W A"
               />
             </div>
             <div className="col-md-4">
@@ -220,6 +235,7 @@ export const StudentForm = () => {
                 value={formData.full_name}
                 onChange={handleInputChange}
                 required
+                placeholder="e.g. Wasala Mudiyanselage Sanka"
               />
             </div>
             <div className="col-md-3">
@@ -231,6 +247,7 @@ export const StudentForm = () => {
                 value={formData.nic}
                 onChange={handleInputChange}
                 required
+                placeholder="e.g. 199612345678"
               />
             </div>
 
@@ -289,12 +306,67 @@ export const StudentForm = () => {
                 value={formData.batch}
                 onChange={handleInputChange}
                 required
+                placeholder="e.g. Intake 171"
+              />
+            </div>
+
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Squadron</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                name="squadron"
+                value={formData.squadron}
+                onChange={handleInputChange}
+                placeholder="Training Squadron"
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Unit / Base</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                name="unit"
+                value={formData.unit}
+                onChange={handleInputChange}
+                placeholder="SLAF TTS Ekala"
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Unit Posting</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                name="posting"
+                value={formData.posting}
+                onChange={handleInputChange}
+                placeholder="e.g. SLAF Katunayake"
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Enlistment / Joining Date</label>
+              <input 
+                type="date" 
+                className="form-control" 
+                name="joining_date"
+                value={formData.joining_date}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Passing Out Date</label>
+              <input 
+                type="date" 
+                className="form-control" 
+                name="passing_out_date"
+                value={formData.passing_out_date}
+                onChange={handleInputChange}
               />
             </div>
           </div>
 
           {/* Section 2: Personal details */}
-          <h5 className="mb-3 display-font text-primary border-bottom pb-2">2. Personal Particulars</h5>
+          <h5 className="mb-3 display-font text-primary border-bottom pb-2">2. Personal & Contact Particulars</h5>
           <div className="row g-3 mb-4">
             <div className="col-md-3">
               <label className="form-label fw-semibold">Date of Birth *</label>
@@ -327,7 +399,7 @@ export const StudentForm = () => {
                 <option value="O-">O-</option>
               </select>
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label fw-semibold">Medical Class Code</label>
               <input 
                 type="text" 
@@ -335,9 +407,10 @@ export const StudentForm = () => {
                 name="medical_category"
                 value={formData.medical_category}
                 onChange={handleInputChange}
+                placeholder="A4G4"
               />
             </div>
-            <div className="col-md-2">
+            <div className="col-md-3">
               <label className="form-label fw-semibold">Religion *</label>
               <input 
                 type="text" 
@@ -346,10 +419,48 @@ export const StudentForm = () => {
                 value={formData.religion}
                 onChange={handleInputChange}
                 required
+                placeholder="e.g. Buddhist"
               />
             </div>
-
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Nationality</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                name="nationality"
+                value={formData.nationality}
+                onChange={handleInputChange}
+                placeholder="Sri Lankan"
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Personal Phone</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="0771234567"
+              />
+            </div>
             <div className="col-md-4">
+              <label className="form-label fw-semibold">Email Address</label>
+              <input 
+                type="email" 
+                className="form-control" 
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="trainee@slaf.gov.lk"
+              />
+            </div>
+          </div>
+
+          {/* Section 3: Address & Emergency Particulars */}
+          <h5 className="mb-3 display-font text-primary border-bottom pb-2">3. Address & Emergency Contacts</h5>
+          <div className="row g-3 mb-4">
+            <div className="col-md-6">
               <label className="form-label fw-semibold">Permanent Address *</label>
               <textarea 
                 className="form-control" 
@@ -358,6 +469,18 @@ export const StudentForm = () => {
                 onChange={handleInputChange}
                 rows="2"
                 required
+                placeholder="Full permanent residential address"
+              ></textarea>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Temporary / Boarding Address</label>
+              <textarea 
+                className="form-control" 
+                name="temporary_address" 
+                value={formData.temporary_address}
+                onChange={handleInputChange}
+                rows="2"
+                placeholder="Temporary or local contact address"
               ></textarea>
             </div>
             <div className="col-md-4">
@@ -369,6 +492,7 @@ export const StudentForm = () => {
                 value={formData.emergency_contact_name}
                 onChange={handleInputChange}
                 required
+                placeholder="Next of Kin / Contact Person"
               />
             </div>
             <div className="col-md-4">
@@ -380,6 +504,7 @@ export const StudentForm = () => {
                 value={formData.emergency_contact_phone}
                 onChange={handleInputChange}
                 required
+                placeholder="0711234567"
               />
             </div>
 

@@ -9,6 +9,13 @@ class BedBase(BaseModel):
 class BedCreate(BedBase):
     billet_id: str
 
+class BulkBedCreate(BaseModel):
+    billet_id: str
+    prefix: Optional[str] = "Bed "
+    count: int
+    start_number: Optional[int] = 1
+    status: Optional[str] = "Vacant"
+
 class BedUpdate(BaseModel):
     bed_number: Optional[str] = None
     status: Optional[str] = None

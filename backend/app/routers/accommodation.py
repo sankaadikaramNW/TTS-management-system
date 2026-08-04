@@ -10,7 +10,7 @@ from app.services.accommodation import accommodation_service
 from app.schemas.accommodation import (
     BuildingCreate, BuildingUpdate, BuildingResponse,
     BilletCreate, BilletUpdate, BilletResponse,
-    BedCreate, BedUpdate, BedResponse,
+    BedCreate, BulkBedCreate, BedUpdate, BedResponse,
     AllocationRequest, AllocationResponse,
     TransferRequest, VacateRequest,
     AccommodationDashboardResponse
@@ -260,6 +260,68 @@ def create_bed(
         status=bed_data.status
     )
     return bed_repo.create(db, obj_in=bed)
+
+@router.post("/beds/bulk", response_model=List[BedResponse])
+def bulk_create_beds(
+    bulk_data: BulkBedCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:write"))
+):
+    billet = billet_repo.get(db, bulk_data.billet_id)
+    if not billet:
+        raise HTTPException(status_code=404, detail="Billet not found")
+
+    if bulk_data.count <= 0:
+        raise HTTPException(status_code=400, detail="Bed count must be greater than 0")
+
+    if bulk_data.count > 100:
+        raise HTTPException(status_code=400, detail="Cannot generate more than 100 beds at a time")
+
+    existing_beds = db.query(AccommodationBed).filter(
+        AccommodationBed.billet_id == bulk_data.billet_id,
+        AccommodationBed.deleted_at == None
+    ).all()
+
+    if len(existing_beds) + bulk_data.count > billet.capacity:
+        remaining = max(0, billet.capacity - len(existing_beds))
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Bulk creation of {bulk_data.count} beds exceeds billet capacity limit. Remaining bed capacity: {remaining} beds."
+        )
+
+    existing_numbers = {b.bed_number for b in existing_beds}
+    prefix = bulk_data.prefix if bulk_data.prefix is not None else "Bed "
+    start_num = bulk_data.start_number if bulk_data.start_number is not None else 1
+
+    created_beds = []
+    for i in range(bulk_data.count):
+        num = start_num + i
+        bed_num = f"{prefix}{num}"
+        if bed_num in existing_numbers:
+            continue
+        
+        bed = AccommodationBed(
+            billet_id=bulk_data.billet_id,
+            bed_number=bed_num,
+            status=bulk_data.status or "Vacant"
+        )
+        db.add(bed)
+        created_beds.append(bed)
+
+    db.commit()
+    for b in created_beds:
+        db.refresh(b)
+
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    from app.repositories.user import audit_repo
+    audit_repo.create_log(
+        db, current_user.id, "BULK_BEDS_CREATED", ip, ua,
+        f"Bulk created {len(created_beds)} beds in billet '{billet.name}'"
+    )
+
+    return created_beds
 
 @router.put("/beds/{id}", response_model=BedResponse)
 def update_bed(

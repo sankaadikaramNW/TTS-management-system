@@ -7,6 +7,9 @@ from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.routers import auth, student, parade, accommodation, academic, dashboard, system, public
 
+# Import ALL models before create_all so SQLAlchemy can resolve all cross-model relationships
+import app.models  # noqa: F401 — loads __init__.py which imports every model
+
 # Create database tables automatically if they don't exist
 Base.metadata.create_all(bind=engine)
 

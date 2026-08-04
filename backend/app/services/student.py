@@ -34,8 +34,8 @@ class StudentService:
             trade=student_in.trade,
             course_id=student_in.course_id,
             batch=student_in.batch,
-            squadron=student_in.squadron,
-            unit=student_in.unit,
+            squadron=student_in.squadron or "Training Squadron",
+            unit=student_in.unit or "SLAF TTS Ekala",
             posting=student_in.posting,
             joining_date=student_in.joining_date or date.today(),
             passing_out_date=student_in.passing_out_date,
@@ -54,6 +54,18 @@ class StudentService:
         )
 
         student = student_repo.create(db, obj_in=db_student)
+        
+        # Record initial parade state for registration date
+        from app.repositories.parade import parade_repo
+        parade_repo.create_or_update(
+            db,
+            student_id=student.id,
+            parade_date=student.joining_date,
+            status=student.status or "Present",
+            remarks="Initial registration record",
+            user_id=user_id
+        )
+
         audit_repo.create_log(
             db, user_id, "STUDENT_CREATED", ip, ua, 
             f"Created student record {student.service_number} ({student.full_name})"

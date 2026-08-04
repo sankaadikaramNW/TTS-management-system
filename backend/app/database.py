@@ -16,7 +16,7 @@ try:
 except Exception as e:
     # If connection fails (e.g. MySQL is down), fallback to sqlite so the application is still runnable
     print(f"Warning: Failed to connect to MySQL database at {settings.database_url}. Falling back to SQLite local database.")
-    sqlite_url = f"sqlite:///./database.db"
+    sqlite_url = f"sqlite:///F:/My projects/TTS management system/backend/database.db"
     engine = create_engine(
         sqlite_url,
         pool_pre_ping=True,

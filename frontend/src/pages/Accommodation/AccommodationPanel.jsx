@@ -60,12 +60,14 @@ export const AccommodationPanel = () => {
   const [showBldgFormModal, setShowBldgFormModal] = useState(false)
   const [showBilletFormModal, setShowBilletFormModal] = useState(false)
   const [showBedFormModal, setShowBedFormModal] = useState(false)
+  const [showBulkBedModal, setShowBulkBedModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
 
   // CRUD Form states
   const [bldgForm, setBldgForm] = useState({ name: '', type: 'Airmen', capacity: 30 })
   const [billetForm, setBilletForm] = useState({ building_id: '', name: '', capacity: 10 })
   const [bedForm, setBedForm] = useState({ billet_id: '', bed_number: '', status: 'Vacant' })
+  const [bulkBedForm, setBulkBedForm] = useState({ billet_id: '', prefix: 'Bed ', count: 10, start_number: 1, status: 'Vacant' })
 
   // Filters for CRUD dropdowns
   const [selectedBldgFilter, setSelectedBldgFilter] = useState('')
