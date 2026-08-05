@@ -144,8 +144,8 @@ h1, h2, h3, h4, h5, h6, .display-font {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 950;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1050;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
 }
 
@@ -171,12 +171,64 @@ h1, h2, h3, h4, h5, h6, .display-font {
   box-shadow: inset 3px 0 0 #3b82f6;
 }
 
-/* Page Layout Wrappers */
+/* Page & Header Layout Wrappers */
+.app-navbar {
+  height: 70px;
+  z-index: 1000;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
 .main-wrapper {
-  margin-left: 260px;
   min-height: 100vh;
   padding-top: 86px; /* full space for 70px glass-header + 16px breathing room */
   transition: margin-left 0.3s ease;
+}
+
+/* Desktop Responsive Layout (>= 992px) */
+@media (min-width: 992px) {
+  .slaf-sidebar {
+    transform: none !important;
+  }
+  .app-navbar {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+  }
+  .main-wrapper {
+    margin-left: 260px;
+  }
+}
+
+/* Mobile & Tablet Layout (< 992px) */
+@media (max-width: 991.98px) {
+  .slaf-sidebar {
+    transform: translateX(-100%);
+  }
+  .slaf-sidebar.show-mobile {
+    transform: translateX(0);
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 1040;
+  }
+  .app-navbar {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .main-wrapper {
+    margin-left: 0 !important;
+    padding-top: 80px;
+  }
+  .navbar-title {
+    font-size: 0.95rem !important;
+  }
 }
 
 /* Beautiful Form styling */

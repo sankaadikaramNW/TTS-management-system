@@ -7,20 +7,29 @@ connect_args = {}
 if settings.DB_ENGINE == "sqlite":
     connect_args = {"check_same_thread": False}
 
-try:
+if settings.DB_ENGINE == "mysql":
+    try:
+        engine = create_engine(
+            settings.database_url,
+            pool_pre_ping=True,
+            connect_args=connect_args
+        )
+        # Test connection immediately so fallback to SQLite triggers if MySQL is unreachable
+        with engine.connect() as conn:
+            pass
+    except Exception as e:
+        print(f"\n[WARNING] Could not connect to MySQL server ({e}). Falling back to SQLite local database.\n")
+        sqlite_url = f"sqlite:///{settings.DB_FILE}"
+        engine = create_engine(
+            sqlite_url,
+            pool_pre_ping=True,
+            connect_args={"check_same_thread": False}
+        )
+else:
     engine = create_engine(
         settings.database_url,
         pool_pre_ping=True,
         connect_args=connect_args
-    )
-except Exception as e:
-    # If connection fails (e.g. MySQL is down), fallback to sqlite so the application is still runnable
-    print(f"Warning: Failed to connect to MySQL database at {settings.database_url}. Falling back to SQLite local database.")
-    sqlite_url = f"sqlite:///F:/My projects/TTS management system/backend/database.db"
-    engine = create_engine(
-        sqlite_url,
-        pool_pre_ping=True,
-        connect_args={"check_same_thread": False}
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

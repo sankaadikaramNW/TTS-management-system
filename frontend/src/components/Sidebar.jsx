@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen, onClose }) => {
   const { hasPermission, hasRole } = useAuth()
   const location = useLocation()
   const path = location.pathname
@@ -234,29 +234,39 @@ export const Sidebar = () => {
   }
 
   return (
-    <aside className="slaf-sidebar d-flex flex-column justify-content-between py-4">
-      <div>
-        {/* Sidebar Header Logo */}
-        <div className="px-4 mb-4 text-center">
-          <div className="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2 mb-2" style={{ width: '50px', height: '50px' }}>
-            <i className="bi bi-airplane-engines" style={{ fontSize: '1.5rem' }}></i>
+    <>
+      {isOpen && (
+        <div className="sidebar-backdrop d-lg-none" onClick={onClose} />
+      )}
+      <aside className={`slaf-sidebar d-flex flex-column justify-content-between py-4 ${isOpen ? 'show-mobile' : ''}`}>
+        <div className="position-relative">
+          {/* Mobile Close Button */}
+          <button className="btn btn-link text-white-50 d-lg-none position-absolute top-0 end-0 me-3 mt-1 p-1" onClick={onClose} title="Close Menu">
+            <i className="bi bi-x-lg fs-5"></i>
+          </button>
+
+          {/* Sidebar Header Logo */}
+          <div className="px-4 mb-4 text-center">
+            <div className="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2 mb-2" style={{ width: '50px', height: '50px' }}>
+              <i className="bi bi-airplane-engines" style={{ fontSize: '1.5rem' }}></i>
+            </div>
+            <h5 className="mb-0 text-white display-font">SLAF TTS</h5>
+            <span className="text-muted" style={{ fontSize: '0.75rem' }}>Management Portal</span>
           </div>
-          <h5 className="mb-0 text-white display-font">SLAF TTS</h5>
-          <span className="text-muted" style={{ fontSize: '0.75rem' }}>Management Portal</span>
+
+          <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
+
+          {/* Dynamic Navigation list */}
+          <nav className="nav flex-column">
+            {renderSidebarContent()}
+          </nav>
         </div>
 
-        <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-
-        {/* Dynamic Navigation list */}
-        <nav className="nav flex-column">
-          {renderSidebarContent()}
-        </nav>
-      </div>
-
-      <div className="px-4 mt-auto text-center">
-        <span className="text-muted" style={{ fontSize: '0.7rem' }}>SLAF TTS v1.0.0 © 2026</span>
-      </div>
-    </aside>
+        <div className="px-4 mt-auto text-center">
+          <span className="text-muted" style={{ fontSize: '0.7rem' }}>SLAF TTS v1.0.0 © 2026</span>
+        </div>
+      </aside>
+    </>
   )
 }
 export default Sidebar

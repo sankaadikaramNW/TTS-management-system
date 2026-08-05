@@ -4,15 +4,15 @@ from pydantic import BaseModel, EmailStr
 
 class StudentBase(BaseModel):
     service_number: str
-    initials: str
     full_name: str
-    nic: str
-    dob: date
-    gender: str
-    rank: str
-    trade: str
+    initials: Optional[str] = ""
+    nic: Optional[str] = None
+    dob: Optional[date] = None
+    gender: Optional[str] = "Male"
+    rank: Optional[str] = "Aircraftman"
+    trade: Optional[str] = "Airframe"
     course_id: Optional[str] = None
-    batch: str
+    batch: Optional[str] = "Intake 171"
     squadron: Optional[str] = "Training Squadron"
     unit: Optional[str] = "SLAF TTS Ekala"
     posting: Optional[str] = None
@@ -20,14 +20,14 @@ class StudentBase(BaseModel):
     passing_out_date: Optional[date] = None
     status: Optional[str] = "Active"
     phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-    emergency_contact_name: str
-    emergency_contact_phone: str
-    blood_group: str
+    email: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    blood_group: Optional[str] = "O+"
     medical_category: Optional[str] = "A4G4"
-    religion: str
+    religion: Optional[str] = "Buddhist"
     nationality: Optional[str] = "Sri Lankan"
-    permanent_address: str
+    permanent_address: Optional[str] = None
     temporary_address: Optional[str] = None
 
 class StudentCreate(StudentBase):

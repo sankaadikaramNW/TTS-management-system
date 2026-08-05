@@ -98,8 +98,11 @@ export const StudentDetail = () => {
                 </div>
               )}
             </div>
-            <h4 className="mb-1 display-font">{student.rank} {student.initials}</h4>
-            <p className="text-muted mb-2">{student.full_name}</p>
+            <h4 className="mb-1 display-font text-dark fw-bold text-capitalize">{student.full_name || `${student.rank} ${student.initials}`}</h4>
+            <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+              <span className="badge bg-secondary-subtle text-dark border px-2.5 py-1 fw-semibold" style={{ fontSize: '0.8rem' }}>{student.rank}</span>
+              {student.initials && <span className="text-muted fw-medium small">({student.initials})</span>}
+            </div>
             <span className={`slaf-badge mb-4 ${student.status.toLowerCase().replace(' ', '-')}`}>
               {student.status}
             </span>

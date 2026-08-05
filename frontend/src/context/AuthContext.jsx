@@ -114,11 +114,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Permission helper: checks code e.g. 'student:read'
   const hasPermission = (code) => {
     if (!user) return false
-    if (user.role.name === 'Super Administrator') return true
-    return user.role.permissions.some(p => p.code === code)
+    if (
+      user.role?.name === 'Super Administrator' || 
+      user.role?.name === 'System Administrator' || 
+      user.role?.id === 'role-super-admin' || 
+      user.role?.id === 'role-sys-admin'
+    ) return true
+    return user.role?.permissions?.some(p => p.code === code) || false
   }
 
   const hasRole = (roleName) => user?.role?.name === roleName

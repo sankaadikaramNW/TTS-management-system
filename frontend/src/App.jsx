@@ -18,6 +18,7 @@ import AccommodationPanel from './pages/Accommodation/AccommodationPanel'
 import CourseList from './pages/Academic/CourseList'
 import ReportGenerator from './pages/Reports/ReportGenerator'
 import UserManagement from './pages/Admin/UserManagement'
+import UserProfile from './pages/Admin/UserProfile'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<UserProfile />} />
                 
                 {/* Student Management */}
                 <Route element={<ProtectedRoute permissionCode="student:read" />}>
@@ -65,8 +67,9 @@ function App() {
                   <Route path="/reports" element={<ReportGenerator />} />
                 </Route>
 
-                {/* System Administration (Check role in Component itself) */}
+                {/* System Administration */}
                 <Route path="/admin" element={<UserManagement />} />
+                <Route path="/admin/:subview" element={<UserManagement />} />
               </Route>
             </Route>
 

@@ -802,10 +802,21 @@ export const CourseList = () => {
                           students.map(s => (
                             <tr key={s.id}>
                               <td className="fw-semibold text-primary">{s.service_number}</td>
-                              <td>
-                                <span className="fw-semibold d-block">{s.rank} {s.initials}</span>
-                                <small className="text-muted">{s.full_name}</small>
-                              </td>
+                               <td>
+                                 <span className="fw-bold text-dark d-block text-capitalize" style={{ fontSize: '0.9rem', lineHeight: '1.25' }}>
+                                   {s.full_name || s.initials}
+                                 </span>
+                                 <div className="d-flex align-items-center gap-1.5 mt-1">
+                                   <span className="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-0.5 fw-semibold" style={{ fontSize: '0.725rem' }}>
+                                     {s.rank}
+                                   </span>
+                                   {s.initials && (
+                                     <span className="text-muted fw-medium" style={{ fontSize: '0.75rem' }}>
+                                       • {s.initials}
+                                     </span>
+                                   )}
+                                 </div>
+                               </td>
                               <td>{s.batch}</td>
                               <td>
                                 <span className={`slaf-badge ${s.status.toLowerCase().replace(' ', '-')}`}>

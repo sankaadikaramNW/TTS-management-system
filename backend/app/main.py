@@ -10,8 +10,106 @@ from app.routers import auth, student, parade, accommodation, academic, dashboar
 # Import ALL models before create_all so SQLAlchemy can resolve all cross-model relationships
 import app.models  # noqa: F401 — loads __init__.py which imports every model
 
-# Create database tables automatically if they don't exist
-Base.metadata.create_all(bind=engine)
+from sqlalchemy import text
+
+# Lightweight schema migration helper for SQLite & MySQL
+def run_lightweight_migrations():
+    with engine.connect() as conn:
+        migrations = [
+            ("roles", "is_active", "BOOLEAN DEFAULT 1"),
+            ("permissions", "module", "VARCHAR(50) DEFAULT 'General'"),
+            ("users", "service_number", "VARCHAR(50) NULL"),
+            ("users", "rank", "VARCHAR(50) NULL"),
+            ("users", "mobile_number", "VARCHAR(20) NULL"),
+            ("users", "department", "VARCHAR(100) NULL"),
+            ("users", "designation", "VARCHAR(100) NULL"),
+            ("users", "assigned_module", "VARCHAR(100) NULL"),
+            ("users", "profile_photo", "VARCHAR(255) NULL"),
+            ("users", "must_change_password", "BOOLEAN DEFAULT 0"),
+            ("users", "password_changed_at", "DATETIME NULL"),
+            ("users", "deleted_at", "DATETIME NULL"),
+            ("login_history", "username", "VARCHAR(50) NULL"),
+            ("login_history", "logout_time", "DATETIME NULL"),
+            ("audit_logs", "username", "VARCHAR(50) NULL"),
+            ("audit_logs", "module", "VARCHAR(50) DEFAULT 'User Management'"),
+            ("audit_logs", "action", "VARCHAR(100) NULL"),
+            ("audit_logs", "previous_value", "TEXT NULL"),
+            ("audit_logs", "new_value", "TEXT NULL"),
+            ("parade_states", "submission_id", "VARCHAR(36) NULL"),
+        ]
+        for table, col, col_def in migrations:
+            try:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}"))
+                conn.commit()
+            except Exception:
+                pass  # Column already exists
+
+        # Create parade_submissions table if not exists
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS parade_submissions (
+                    id VARCHAR(36) PRIMARY KEY,
+                    date DATE NOT NULL,
+                    trade VARCHAR(50) NOT NULL,
+                    submitted_by VARCHAR(36) NULL,
+                    approving_officer_id VARCHAR(36) NULL,
+                    status ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') NOT NULL DEFAULT 'DRAFT',
+                    submitter_remarks TEXT NULL,
+                    approver_remarks TEXT NULL,
+                    rejection_reason TEXT NULL,
+                    submitted_at DATETIME NULL,
+                    reviewed_at DATETIME NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_ps_date (date),
+                    INDEX idx_ps_trade (trade),
+                    INDEX idx_ps_officer (approving_officer_id)
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass
+
+        # Create officer_in_charge table if not exists
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS officer_in_charge (
+                    id VARCHAR(36) PRIMARY KEY,
+                    trade VARCHAR(50) NOT NULL,
+                    user_id VARCHAR(36) NOT NULL,
+                    appointed_by VARCHAR(36) NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    appointed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_oic_trade (trade),
+                    INDEX idx_oic_user (user_id)
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass
+
+        # Alter existing columns to allow NULL in MySQL if table already exists
+        modify_sqls = [
+            "ALTER TABLE students MODIFY COLUMN nic VARCHAR(20) NULL",
+            "ALTER TABLE students MODIFY COLUMN dob DATE NULL",
+            "ALTER TABLE students MODIFY COLUMN initials VARCHAR(30) NULL",
+            "ALTER TABLE students MODIFY COLUMN joining_date DATE NULL",
+            "ALTER TABLE students MODIFY COLUMN emergency_contact_name VARCHAR(100) NULL",
+            "ALTER TABLE students MODIFY COLUMN emergency_contact_phone VARCHAR(20) NULL",
+            "ALTER TABLE students MODIFY COLUMN permanent_address TEXT NULL",
+            "ALTER TABLE students MODIFY COLUMN religion VARCHAR(30) NULL",
+            "ALTER TABLE students MODIFY COLUMN blood_group VARCHAR(10) NULL"
+        ]
+        for m_sql in modify_sqls:
+            try:
+                conn.execute(text(m_sql))
+                conn.commit()
+            except Exception:
+                pass
+
+run_lightweight_migrations()
 
 # Auto seed check
 def auto_seed_database():
@@ -20,7 +118,7 @@ def auto_seed_database():
         from app.models.user import Role, Permission, User
         from app.models.academic import Course, Subject
         from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationBed
-        from app.models.student import ParadeStatusType, StudentStatusType, Rank, Trade
+        from app.models.student import ParadeStatusType, StudentStatusType, Rank, Trade, OfficerInCharge, ParadeSubmission
         
         # 1. Seed Roles
         if db.query(Role).count() == 0:
@@ -44,6 +142,8 @@ def auto_seed_database():
                 Permission(id='perm-student-write', name='Create/Edit Student Profile', code='student:write', description='Ability to add or edit trainee data'),
                 Permission(id='perm-parade-read', name='Read Parade State', code='parade:read', description='Ability to view daily parade state strength'),
                 Permission(id='perm-parade-write', name='Update Parade State', code='parade:write', description='Ability to record daily status boards'),
+                Permission(id='perm-parade-approve', name='Approve Parade State', code='parade:approve', description='Ability to approve or reject submitted parade states as Officer I/C'),
+                Permission(id='perm-parade-officers', name='Manage Officer I/C Assignments', code='parade:manage_officers', description='Ability to appoint and remove Officer I/C assignments by trade'),
                 Permission(id='perm-room-read', name='Read Accommodation Map', code='room:read', description='Ability to inspect vacancy charts'),
                 Permission(id='perm-room-write', name='Allocate Accommodation', code='room:write', description='Ability to edit room registers and transfers'),
                 Permission(id='perm-academic-read', name='Read Grades & Timetable', code='academic:read', description='Ability to view schedules and marks'),
@@ -53,20 +153,35 @@ def auto_seed_database():
             db.bulk_save_objects(permissions)
             db.commit()
             
-            # Map Super Admin permissions
+            # Map Super Admin & System Admin permissions
             super_admin = db.query(Role).filter(Role.id == 'role-super-admin').first()
             if super_admin:
                 all_perms = db.query(Permission).all()
                 super_admin.permissions.extend(all_perms)
                 db.commit()
 
-            # Map CO permissions
+            sys_admin = db.query(Role).filter(Role.id == 'role-sys-admin').first()
+            if sys_admin:
+                all_perms = db.query(Permission).all()
+                sys_admin.permissions.extend(all_perms)
+                db.commit()
+
+            # Map CO permissions (read + approve)
             co_role = db.query(Role).filter(Role.id == 'role-co').first()
             if co_role:
                 co_perms = db.query(Permission).filter(Permission.code.in_([
-                    'student:read', 'parade:read', 'room:read', 'academic:read'
+                    'student:read', 'parade:read', 'parade:approve', 'room:read', 'academic:read'
                 ])).all()
                 co_role.permissions.extend(co_perms)
+                db.commit()
+
+            # Map Discipline Section permissions
+            discipline_role = db.query(Role).filter(Role.id == 'role-discipline').first()
+            if discipline_role:
+                disc_perms = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'parade:read', 'parade:write', 'parade:manage_officers'
+                ])).all()
+                discipline_role.permissions.extend(disc_perms)
                 db.commit()
 
         # 3. Seed Default Admin User

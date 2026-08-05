@@ -115,17 +115,17 @@ export const StudentList = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
         <div>
-          <h2 className="mb-0 text-primary display-font">Student Registry</h2>
-          <p className="text-muted mb-0">Master database (Single Source of Truth) for all school trainees</p>
+          <h2 className="mb-0 text-primary display-font fs-3">Student Registry</h2>
+          <p className="text-muted mb-0 small">Master database (Single Source of Truth) for all school trainees</p>
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={exportToCSV}>
+        <div className="d-flex gap-2 flex-wrap">
+          <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" onClick={exportToCSV}>
             <i className="bi bi-file-earmark-spreadsheet"></i> Export CSV
           </button>
           {hasPermission('student:write') && (
-            <Link to="/students/new" className="btn btn-primary d-flex align-items-center gap-2">
+            <Link to="/students/new" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5">
               <i className="bi bi-plus-circle"></i> Add Trainee
             </Link>
           )}
@@ -209,13 +209,24 @@ export const StudentList = () => {
                     <tr key={s.id}>
                       <td className="fw-semibold text-primary">{s.service_number}</td>
                       <td>
-                        <div className="d-flex align-items-center gap-2">
-                          <div className="d-inline-flex bg-secondary-subtle text-secondary rounded-circle align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-                            <i className="bi bi-person-fill"></i>
+                        <div className="d-flex align-items-center gap-2.5">
+                          <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+                            <i className="bi bi-person-fill fs-6"></i>
                           </div>
                           <div>
-                            <span className="fw-semibold d-block">{s.rank} {s.initials}</span>
-                            <small className="text-muted">{s.full_name}</small>
+                            <span className="fw-bold text-dark d-block text-capitalize" style={{ fontSize: '0.925rem', lineHeight: '1.25' }}>
+                              {s.full_name || s.initials}
+                            </span>
+                            <div className="d-flex align-items-center gap-1.5 mt-1">
+                              <span className="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-0.5 fw-semibold" style={{ fontSize: '0.725rem' }}>
+                                {s.rank}
+                              </span>
+                              {s.initials && (
+                                <span className="text-muted fw-medium" style={{ fontSize: '0.775rem' }}>
+                                  • {s.initials}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>

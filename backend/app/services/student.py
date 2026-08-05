@@ -16,24 +16,25 @@ class StudentService:
         if student_repo.get_by_service_number(db, student_in.service_number):
             raise HTTPException(status_code=400, detail=f"Student with Service Number '{student_in.service_number}' already exists")
             
-        # Check duplicate NIC
-        if student_repo.get_by_nic(db, student_in.nic):
-            raise HTTPException(status_code=400, detail=f"Student with NIC '{student_in.nic}' already exists")
+        # Check duplicate NIC (only if NIC is provided and non-empty)
+        if student_in.nic and student_in.nic.strip():
+            if student_repo.get_by_nic(db, student_in.nic.strip()):
+                raise HTTPException(status_code=400, detail=f"Student with NIC '{student_in.nic}' already exists")
 
         # Generate QR code representation
         qr_base64 = self.generate_student_qr(student_in.service_number)
 
         db_student = Student(
             service_number=student_in.service_number,
-            initials=student_in.initials,
+            initials=student_in.initials or "",
             full_name=student_in.full_name,
-            nic=student_in.nic,
-            dob=student_in.dob,
-            gender=student_in.gender,
-            rank=student_in.rank,
-            trade=student_in.trade,
+            nic=student_in.nic.strip() if (student_in.nic and student_in.nic.strip()) else None,
+            dob=student_in.dob or date(2000, 1, 1),
+            gender=student_in.gender or "Male",
+            rank=student_in.rank or "Aircraftman",
+            trade=student_in.trade or "Airframe",
             course_id=student_in.course_id,
-            batch=student_in.batch,
+            batch=student_in.batch or "Intake 171",
             squadron=student_in.squadron or "Training Squadron",
             unit=student_in.unit or "SLAF TTS Ekala",
             posting=student_in.posting,
@@ -41,14 +42,14 @@ class StudentService:
             passing_out_date=student_in.passing_out_date,
             status=student_in.status or "Active",
             phone=student_in.phone,
-            email=student_in.email,
-            emergency_contact_name=student_in.emergency_contact_name,
-            emergency_contact_phone=student_in.emergency_contact_phone,
-            blood_group=student_in.blood_group,
+            email=student_in.email.strip() if (student_in.email and student_in.email.strip()) else None,
+            emergency_contact_name=student_in.emergency_contact_name or "N/A",
+            emergency_contact_phone=student_in.emergency_contact_phone or "N/A",
+            blood_group=student_in.blood_group or "O+",
             medical_category=student_in.medical_category or "A4G4",
-            religion=student_in.religion,
+            religion=student_in.religion or "Buddhist",
             nationality=student_in.nationality or "Sri Lankan",
-            permanent_address=student_in.permanent_address,
+            permanent_address=student_in.permanent_address or "N/A",
             temporary_address=student_in.temporary_address,
             qr_code_data=qr_base64
         )

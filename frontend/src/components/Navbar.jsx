@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { toast } from 'react-toastify'
 
-export const Navbar = () => {
+export const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
@@ -58,34 +58,37 @@ export const Navbar = () => {
   }
 
   return (
-    <header className="glass-header d-flex align-items-center justify-content-between px-4 py-2 fixed-top" style={{ marginLeft: '260px', height: '70px', zIndex: 900 }}>
+    <header className="glass-header app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 py-2 fixed-top">
       {/* Header Module Name and Current DateTime */}
-      <div className="d-flex align-items-center gap-3">
+      <div className="d-flex align-items-center gap-2">
+        <button className="btn btn-link text-primary p-0 d-lg-none me-1" onClick={onToggleSidebar} title="Open Navigation Menu">
+          <i className="bi bi-list fs-1"></i>
+        </button>
         <div>
-          <h4 className="mb-0 display-font text-primary fw-bold" style={{ fontSize: '1.2rem', letterSpacing: '0.3px' }}>
+          <h4 className="mb-0 display-font text-primary fw-bold navbar-title" style={{ letterSpacing: '0.3px' }}>
             {getModuleName()}
           </h4>
-          <small className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+          <small className="text-muted d-none d-md-block" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
             {currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | {currentDateTime.toLocaleTimeString()}
           </small>
         </div>
       </div>
 
       {/* Control Buttons */}
-      <div className="d-flex align-items-center gap-4">
+      <div className="d-flex align-items-center gap-2 gap-sm-3">
         {/* Toggle Theme */}
-        <button className="btn btn-link text-body p-0" onClick={toggleTheme} title="Toggle Light/Dark Theme">
+        <button className="btn btn-link text-body p-1" onClick={toggleTheme} title="Toggle Light/Dark Theme">
           {theme === 'light' ? (
-            <i className="bi bi-moon-stars-fill" style={{ fontSize: '1.25rem' }}></i>
+            <i className="bi bi-moon-stars-fill" style={{ fontSize: '1.15rem' }}></i>
           ) : (
-            <i className="bi bi-sun-fill" style={{ fontSize: '1.25rem' }}></i>
+            <i className="bi bi-sun-fill" style={{ fontSize: '1.15rem' }}></i>
           )}
         </button>
 
         {/* Notifications Icon dropdown */}
         <div className="position-relative">
-          <button className="btn btn-link text-body p-0 position-relative" onClick={() => setShowNotifications(!showNotifications)}>
-            <i className="bi bi-bell-fill" style={{ fontSize: '1.25rem' }}></i>
+          <button className="btn btn-link text-body p-1 position-relative" onClick={() => setShowNotifications(!showNotifications)}>
+            <i className="bi bi-bell-fill" style={{ fontSize: '1.15rem' }}></i>
             {notifications.length > 0 && (
               <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
                 {notifications.length}
@@ -94,7 +97,7 @@ export const Navbar = () => {
           </button>
 
           {showNotifications && (
-            <div className="card slaf-card position-absolute end-0 mt-3 p-0" style={{ width: '320px', zIndex: 1100, maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="card slaf-card position-absolute end-0 mt-3 p-0" style={{ width: '290px', zIndex: 1100, maxHeight: '400px', overflowY: 'auto' }}>
               <div className="card-header bg-app d-flex justify-content-between align-items-center py-2 px-3">
                 <span className="fw-semibold">Alert Center</span>
                 <span className="badge bg-secondary">{notifications.length} new</span>
@@ -123,13 +126,22 @@ export const Navbar = () => {
         </div>
 
         {/* Logged user section */}
-        <div className="d-flex align-items-center gap-3">
-          <div className="text-end">
-            <div className="fw-semibold text-dark" style={{ fontSize: '0.9rem' }}>{user?.full_name}</div>
-            <div className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{user?.role?.name}</div>
-          </div>
-          <button className="btn btn-outline-danger btn-sm px-3 py-1.5 rounded-pill" onClick={logout}>
-            <i className="bi bi-box-arrow-right me-1"></i> Logout
+        <div className="d-flex align-items-center gap-2">
+          <a href="/profile" className="text-decoration-none d-flex align-items-center gap-2">
+            {user?.profile_photo ? (
+              <img src={user.profile_photo} alt={user.full_name} className="rounded-circle object-fit-cover border border-2 border-primary" style={{ width: '32px', height: '32px' }} />
+            ) : (
+              <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle align-items-center justify-content-center border" style={{ width: '32px', height: '32px' }}>
+                <i className="bi bi-person-fill"></i>
+              </div>
+            )}
+            <div className="text-end d-none d-sm-block">
+              <div className="fw-semibold text-dark hover-primary" style={{ fontSize: '0.85rem' }}>{user?.full_name}</div>
+              <div className="text-muted" style={{ fontSize: '0.7rem', fontWeight: 500 }}>{user?.role?.name}</div>
+            </div>
+          </a>
+          <button className="btn btn-outline-danger btn-sm px-2.5 py-1 rounded-pill ms-1" onClick={logout} title="Logout">
+            <i className="bi bi-box-arrow-right me-1"></i> <span className="d-none d-sm-inline">Logout</span>
           </button>
         </div>
       </div>
