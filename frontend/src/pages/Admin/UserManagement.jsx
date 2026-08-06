@@ -64,6 +64,21 @@ export const UserManagement = () => {
   const [logStatusFilter, setLogStatusFilter] = useState('')
   const [auditModuleFilter, setAuditModuleFilter] = useState('')
 
+  // Dropdown states for interactive action menus
+  const [openUserDropdownId, setOpenUserDropdownId] = useState(null)
+  const [openRoleDropdownId, setOpenRoleDropdownId] = useState(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown')) {
+        setOpenUserDropdownId(null)
+        setOpenRoleDropdownId(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
+
   // ---------------------------------------------------------------------------
   // DATA LOADERS
   // ---------------------------------------------------------------------------
@@ -619,19 +634,26 @@ export const UserManagement = () => {
                           <small className="text-muted">{new Date(u.created_at).toLocaleDateString()}</small>
                         </td>
                         <td className="text-end">
-                          <div className="dropdown">
-                            <button className="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                          <div className="dropdown position-relative">
+                            <button 
+                              className="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenUserDropdownId(openUserDropdownId === u.id ? null : u.id)
+                              }}
+                            >
                               Manage
                             </button>
-                            <ul className="dropdown-menu dropdown-menu-end shadow-sm">
-                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => handleOpenEditUser(u)}><i className="bi bi-pencil me-2 text-primary"></i> Edit Account</button></li>
-                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setTargetResetUser(u); setResetPasswordVal(''); setShowResetModal(true); }}><i className="bi bi-key me-2 text-warning"></i> Reset Password</button></li>
+                            <ul className={`dropdown-menu dropdown-menu-end shadow-sm ${openUserDropdownId === u.id ? 'show' : ''}`} style={openUserDropdownId === u.id ? { position: 'absolute', right: 0, top: '100%', zIndex: 1050 } : {}}>
+                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); handleOpenEditUser(u); }}><i className="bi bi-pencil me-2 text-primary"></i> Edit Account</button></li>
+                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); setTargetResetUser(u); setResetPasswordVal(''); setShowResetModal(true); }}><i className="bi bi-key me-2 text-warning"></i> Reset Password</button></li>
                               {u.is_locked && (
-                                <li><button className="dropdown-menu-item dropdown-item" onClick={() => handleUnlockAccount(u.id, u.username)}><i className="bi bi-unlock me-2 text-success"></i> Unlock Account</button></li>
+                                <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); handleUnlockAccount(u.id, u.username); }}><i className="bi bi-unlock me-2 text-success"></i> Unlock Account</button></li>
                               )}
-                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => handleToggleStatus(u)}><i className={`bi bi-${u.is_active ? 'pause-circle' : 'play-circle'} me-2 text-info`}></i> {u.is_active ? 'Deactivate' : 'Activate'}</button></li>
+                              <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); handleToggleStatus(u); }}><i className={`bi bi-${u.is_active ? 'pause-circle' : 'play-circle'} me-2 text-info`}></i> {u.is_active ? 'Deactivate' : 'Activate'}</button></li>
                               <li><hr className="dropdown-divider" /></li>
-                              <li><button className="dropdown-menu-item dropdown-item text-danger" onClick={() => handleSoftDeleteUser(u)}><i className="bi bi-trash me-2"></i> Soft Delete</button></li>
+                              <li><button className="dropdown-menu-item dropdown-item text-danger" onClick={() => { setOpenUserDropdownId(null); handleSoftDeleteUser(u); }}><i className="bi bi-trash me-2"></i> Soft Delete</button></li>
                             </ul>
                           </div>
                         </td>
@@ -668,11 +690,20 @@ export const UserManagement = () => {
                         {r.users_count || 0} Assigned Users
                       </span>
                     </div>
-                    <div className="dropdown">
-                      <button className="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i className="bi bi-three-dots-vertical"></i></button>
-                      <ul className="dropdown-menu dropdown-menu-end">
-                        <li><button className="dropdown-item" onClick={() => handleOpenEditRole(r)}><i className="bi bi-pencil me-2"></i> Edit Role</button></li>
-                        <li><button className="dropdown-item" onClick={() => handleOpenCloneRole(r)}><i className="bi bi-copy me-2"></i> Clone Role</button></li>
+                    <div className="dropdown position-relative">
+                      <button 
+                        className="btn btn-link text-muted p-0" 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenRoleDropdownId(openRoleDropdownId === r.id ? null : r.id)
+                        }}
+                      >
+                        <i className="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul className={`dropdown-menu dropdown-menu-end shadow-sm ${openRoleDropdownId === r.id ? 'show' : ''}`} style={openRoleDropdownId === r.id ? { position: 'absolute', right: 0, top: '100%', zIndex: 1050 } : {}}>
+                        <li><button className="dropdown-item" onClick={() => { setOpenRoleDropdownId(null); handleOpenEditRole(r); }}><i className="bi bi-pencil me-2"></i> Edit Role</button></li>
+                        <li><button className="dropdown-item" onClick={() => { setOpenRoleDropdownId(null); handleOpenCloneRole(r); }}><i className="bi bi-copy me-2"></i> Clone Role</button></li>
                       </ul>
                     </div>
                   </div>
