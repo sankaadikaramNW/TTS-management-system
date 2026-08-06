@@ -1,8 +1,23 @@
 from datetime import datetime, date
-from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
+
+class Classroom(Base, TimeStampedModelMixin):
+    __tablename__ = 'classrooms'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    code = Column(String(50), unique=True, nullable=False) # e.g. E-01, H-05
+    name = Column(String(150), nullable=False) # e.g. Electronics Lab 01
+    block = Column(String(100), nullable=True) # e.g. Engineering Block
+    building = Column(String(100), nullable=True)
+    capacity = Column(Integer, default=30, nullable=False)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    # Relationships
+    batches = relationship("Batch", back_populates="classroom")
 
 class Course(Base, TimeStampedModelMixin):
     __tablename__ = 'courses'
@@ -10,14 +25,42 @@ class Course(Base, TimeStampedModelMixin):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     code = Column(String(30), unique=True, nullable=False)
     name = Column(String(150), nullable=False)
+    trade_id = Column(String(36), ForeignKey('trades.id', ondelete='SET NULL'), nullable=True)
+    course_type = Column(String(50), default='Basic') # Basic, Advance, Special
+    duration_weeks = Column(Integer, nullable=False, default=24)
+    intake_capacity = Column(Integer, default=30)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     description = Column(Text, nullable=True)
-    duration_weeks = Column(Integer, nullable=False)
+    is_active = Column(Boolean, default=True)
 
     # Relationships
+    trade = relationship("Trade")
+    batches = relationship("Batch", back_populates="course", cascade="all, delete-orphan")
     students = relationship("Student", back_populates="course")
     subjects = relationship("Subject", back_populates="course", cascade="all, delete-orphan")
     timetables = relationship("Timetable", back_populates="course", cascade="all, delete-orphan")
     exams = relationship("Exam", back_populates="course", cascade="all, delete-orphan")
+
+class Batch(Base, TimeStampedModelMixin):
+    __tablename__ = 'batches'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(100), nullable=False) # e.g. Batch 2026-A
+    course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
+    trade_id = Column(String(36), ForeignKey('trades.id', ondelete='SET NULL'), nullable=True)
+    intake_date = Column(Date, nullable=True)
+    passing_out_date = Column(Date, nullable=True)
+    capacity = Column(Integer, default=30)
+    classroom_id = Column(String(36), ForeignKey('classrooms.id', ondelete='SET NULL'), nullable=True)
+    instructor_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    status = Column(String(30), default='Active') # Active, Completed, Archived
+
+    # Relationships
+    course = relationship("Course", back_populates="batches")
+    trade = relationship("Trade")
+    classroom = relationship("Classroom", back_populates="batches")
+    instructor = relationship("User")
 
 class Subject(Base, TimeStampedModelMixin):
     __tablename__ = 'subjects'

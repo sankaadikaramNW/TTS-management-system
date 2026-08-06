@@ -1,18 +1,126 @@
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from app.models.academic import Course, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark
-from app.models.student import Student
-from app.models.user import User
+from sqlalchemy import func
+from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark
+from app.models.student import Student, Trade
+from app.models.user import User, Role, UserRole
 from app.repositories.base import BaseRepository
+
+class TradeRepository(BaseRepository[Trade]):
+    def get_all(self, db: Session, include_inactive: bool = False) -> List[Trade]:
+        query = db.query(Trade)
+        if not include_inactive:
+            query = query.filter(Trade.is_active == True)
+        results = query.all()
+        for t in results:
+            t.courses_count = db.query(Course).filter(Course.trade_id == t.id).count()
+        return results
+
+    def get_by_code(self, db: Session, code: str) -> Optional[Trade]:
+        return db.query(Trade).filter(Trade.code == code).first()
+
+class ClassroomRepository(BaseRepository[Classroom]):
+    def get_all(self, db: Session, include_inactive: bool = False) -> List[Classroom]:
+        query = db.query(Classroom)
+        if not include_inactive:
+            query = query.filter(Classroom.is_active == True)
+        results = query.all()
+        for c in results:
+            assigned_batch = db.query(Batch).filter(Batch.classroom_id == c.id, Batch.status == 'Active').first()
+            c.is_occupied = assigned_batch is not None
+            c.assigned_batch_name = assigned_batch.name if assigned_batch else None
+        return results
+
+    def get_by_code(self, db: Session, code: str) -> Optional[Classroom]:
+        return db.query(Classroom).filter(Classroom.code == code).first()
 
 class CourseRepository(BaseRepository[Course]):
     def get_all(self, db: Session) -> List[Course]:
-        return db.query(Course).filter(Course.deleted_at == None).all()
+        results = db.query(Course).filter(Course.deleted_at == None).all()
+        for c in results:
+            trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
+            c.trade_name = trade.label if trade else "General"
+            c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+        return results
+
+    def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
+        return db.query(Course).filter(Course.trade_id == trade_id, Course.deleted_at == None).all()
+
+class BatchRepository(BaseRepository[Batch]):
+    def get_all(self, db: Session) -> List[Batch]:
+        results = db.query(Batch).order_by(Batch.created_at.desc()).all()
+        for b in results:
+            course = db.query(Course).filter(Course.id == b.course_id).first()
+            trade = db.query(Trade).filter(Trade.id == b.trade_id).first() if b.trade_id else None
+            classroom = db.query(Classroom).filter(Classroom.id == b.classroom_id).first() if b.classroom_id else None
+            instructor = db.query(User).filter(User.id == b.instructor_id).first() if b.instructor_id else None
+            
+            b.course_name = course.name if course else "N/A"
+            b.trade_name = trade.label if trade else "N/A"
+            b.classroom_name = classroom.name if classroom else "Unassigned"
+            b.instructor_name = instructor.full_name if instructor else "Unassigned"
+            b.instructor_service_number = instructor.service_number if instructor else None
+            b.instructor_rank = instructor.rank if instructor else None
+            b.student_count = db.query(Student).filter(Student.course_id == b.course_id).count()
+        return results
+
+class InstructorRepository:
+    def get_instructors(self, db: Session) -> List[Dict[str, Any]]:
+        """
+        Retrieves active instructors from the User Management Module (SSOT).
+        Queries users with role 'Instructor' or designation containing Instructor.
+        """
+        query = db.query(User).join(UserRole, User.id == UserRole.user_id, isouter=True)\
+                  .join(Role, UserRole.role_id == Role.id, isouter=True)\
+                  .filter(User.deleted_at == None, User.is_active == True)
+        
+        users = query.all()
+        instructors = []
+        for u in users:
+            # Check if user has Instructor role or designation
+            is_inst = any(r.name == 'Instructor' for r in u.roles) or (u.designation and 'instructor' in u.designation.lower()) or (u.assigned_module and 'academic' in u.assigned_module.lower())
+            if is_inst:
+                assigned_count = db.query(Batch).filter(Batch.instructor_id == u.id, Batch.status == 'Active').count()
+                instructors.append({
+                    "id": u.id,
+                    "username": u.username,
+                    "full_name": u.full_name,
+                    "service_number": u.service_number,
+                    "rank": u.rank,
+                    "department": u.department,
+                    "designation": u.designation,
+                    "email": u.email,
+                    "mobile_number": u.mobile_number,
+                    "assigned_batches_count": assigned_count
+                })
+        
+        # Fallback if no specific role set: return all active staff/officers
+        if not instructors:
+            all_users = db.query(User).filter(User.deleted_at == None, User.is_active == True).limit(20).all()
+            for u in all_users:
+                assigned_count = db.query(Batch).filter(Batch.instructor_id == u.id, Batch.status == 'Active').count()
+                instructors.append({
+                    "id": u.id,
+                    "username": u.username,
+                    "full_name": u.full_name,
+                    "service_number": u.service_number,
+                    "rank": u.rank,
+                    "department": u.department,
+                    "designation": u.designation,
+                    "email": u.email,
+                    "mobile_number": u.mobile_number,
+                    "assigned_batches_count": assigned_count
+                })
+        return instructors
 
 class SubjectRepository(BaseRepository[Subject]):
     def get_by_course(self, db: Session, course_id: str) -> List[Subject]:
-        return db.query(Subject).filter(Subject.course_id == course_id, Subject.deleted_at == None).all()
+        results = db.query(Subject).filter(Subject.course_id == course_id, Subject.deleted_at == None).all()
+        for s in results:
+            c = db.query(Course).filter(Course.id == s.course_id).first()
+            s.course_name = c.name if c else None
+        return results
 
 class LessonRepository(BaseRepository[Lesson]):
     def get_by_subject(self, db: Session, subject_id: str) -> List[Lesson]:
@@ -78,7 +186,11 @@ class ExamMarkRepository(BaseRepository[ExamMark]):
                 em.student_service_number = student.service_number
         return results
 
+trade_repo = TradeRepository(Trade)
+classroom_repo = ClassroomRepository(Classroom)
 course_repo = CourseRepository(Course)
+batch_repo = BatchRepository(Batch)
+instructor_repo = InstructorRepository()
 subject_repo = SubjectRepository(Subject)
 lesson_repo = LessonRepository(Lesson)
 lesson_plan_repo = LessonPlanRepository(LessonPlan)

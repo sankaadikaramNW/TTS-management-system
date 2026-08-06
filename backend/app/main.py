@@ -36,6 +36,13 @@ def run_lightweight_migrations():
             ("audit_logs", "previous_value", "TEXT NULL"),
             ("audit_logs", "new_value", "TEXT NULL"),
             ("parade_states", "submission_id", "VARCHAR(36) NULL"),
+            ("trades", "description", "TEXT NULL"),
+            ("courses", "trade_id", "VARCHAR(36) NULL"),
+            ("courses", "course_type", "VARCHAR(50) DEFAULT 'Basic'"),
+            ("courses", "intake_capacity", "INT DEFAULT 30"),
+            ("courses", "start_date", "DATE NULL"),
+            ("courses", "end_date", "DATE NULL"),
+            ("courses", "is_active", "BOOLEAN DEFAULT 1"),
         ]
         for table, col, col_def in migrations:
             try:
