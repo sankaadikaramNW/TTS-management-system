@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark
 from app.models.student import Student, Trade
-from app.models.user import User, Role, UserRole
+from app.models.user import User, Role
 from app.repositories.base import BaseRepository
 
 class TradeRepository(BaseRepository[Trade]):
@@ -71,15 +71,15 @@ class InstructorRepository:
         Retrieves active instructors from the User Management Module (SSOT).
         Queries users with role 'Instructor' or designation containing Instructor.
         """
-        query = db.query(User).join(UserRole, User.id == UserRole.user_id, isouter=True)\
-                  .join(Role, UserRole.role_id == Role.id, isouter=True)\
+        query = db.query(User).join(Role, User.role_id == Role.id, isouter=True)\
                   .filter(User.deleted_at == None, User.is_active == True)
         
         users = query.all()
         instructors = []
         for u in users:
-            # Check if user has Instructor role or designation
-            is_inst = any(r.name == 'Instructor' for r in u.roles) or (u.designation and 'instructor' in u.designation.lower()) or (u.assigned_module and 'academic' in u.assigned_module.lower())
+            is_inst = (u.role and u.role.name == 'Instructor') or \
+                      (u.designation and 'instructor' in u.designation.lower()) or \
+                      (u.assigned_module and 'academic' in u.assigned_module.lower())
             if is_inst:
                 assigned_count = db.query(Batch).filter(Batch.instructor_id == u.id, Batch.status == 'Active').count()
                 instructors.append({
