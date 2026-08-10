@@ -63,13 +63,15 @@ function App() {
                 </Route>
 
                 {/* Reports */}
-                <Route element={<ProtectedRoute permissionCode="student:read" />}>
+                <Route element={<ProtectedRoute permissionCode="reports:read" />}>
                   <Route path="/reports" element={<ReportGenerator />} />
                 </Route>
 
                 {/* System Administration */}
-                <Route path="/admin" element={<UserManagement />} />
-                <Route path="/admin/:subview" element={<UserManagement />} />
+                <Route element={<ProtectedRoute permissionCode="system:audit" />}>
+                  <Route path="/admin" element={<UserManagement />} />
+                  <Route path="/admin/:subview" element={<UserManagement />} />
+                </Route>
               </Route>
             </Route>
 

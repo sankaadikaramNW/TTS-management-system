@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import { useAuth } from '../context/AuthContext'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -16,6 +17,7 @@ import { Pie, Bar } from 'react-chartjs-2'
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title)
 
 export const Dashboard = () => {
+  const { hasPermission, hasRole } = useAuth()
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -154,41 +156,43 @@ export const Dashboard = () => {
 
       {/* Dashboard Sub-layouts */}
       <div className="row g-4">
-        {/* Recent Activities */}
-        <div className="col-lg-7 col-md-12">
-          <div className="card slaf-card p-4 h-100">
-            <h5 className="card-title mb-3">Recent Security & Audit Logs</h5>
-            <div className="table-responsive">
-              <table className="table slaf-table mb-0">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent_activities.length === 0 ? (
+        {/* Recent Audit Logs (Only visible to System Administrators & Security Officers) */}
+        {(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator')) && (
+          <div className="col-lg-7 col-md-12">
+            <div className="card slaf-card p-4 h-100">
+              <h5 className="card-title mb-3">Recent Security & Audit Logs</h5>
+              <div className="table-responsive">
+                <table className="table slaf-table mb-0">
+                  <thead>
                     <tr>
-                      <td colSpan="3" className="text-center text-muted">No audit trails recorded</td>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Date</th>
                     </tr>
-                  ) : (
-                    recent_activities.map((log) => (
-                      <tr key={log.id}>
-                        <td><span className="fw-semibold">{log.username}</span></td>
-                        <td>{log.action}</td>
-                        <td><small className="text-muted">{new Date(log.created_at).toLocaleString()}</small></td>
+                  </thead>
+                  <tbody>
+                    {recent_activities.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="text-center text-muted">No audit trails recorded</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      recent_activities.map((log) => (
+                        <tr key={log.id}>
+                          <td><span className="fw-semibold">{log.username}</span></td>
+                          <td>{log.action}</td>
+                          <td><small className="text-muted">{new Date(log.created_at).toLocaleString()}</small></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Accommodation Occupancy Card */}
-        <div className="col-lg-5 col-md-12">
+        <div className={(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator')) ? 'col-lg-5 col-md-12' : 'col-12'}>
           <div className="card slaf-card p-4 h-100">
             <h5 className="card-title mb-3">Accommodation Summary</h5>
             <div className="d-flex flex-column gap-3">

@@ -45,7 +45,12 @@ class CourseRepository(BaseRepository[Course]):
         return results
 
     def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
-        return db.query(Course).filter(Course.trade_id == trade_id, Course.deleted_at == None).all()
+        results = db.query(Course).filter(Course.trade_id == trade_id, Course.deleted_at == None).all()
+        for c in results:
+            trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
+            c.trade_name = trade.label if trade else "General"
+            c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+        return results
 
 class BatchRepository(BaseRepository[Batch]):
     def get_all(self, db: Session) -> List[Batch]:

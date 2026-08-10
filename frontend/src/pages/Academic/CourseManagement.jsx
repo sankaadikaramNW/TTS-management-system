@@ -38,7 +38,9 @@ export const CourseManagement = () => {
     setLoading(true)
     try {
       const params = {}
-      if (selectedTradeFilter) params.trade_id = selectedTradeFilter
+      if (selectedTradeFilter && selectedTradeFilter.trim()) {
+        params.trade_id = selectedTradeFilter.trim()
+      }
       const res = await axios.get('/api/v1/academic/courses', { params })
       setCourses(res.data)
     } catch (err) {
@@ -97,12 +99,20 @@ export const CourseManagement = () => {
       return
     }
 
+    const payload = {
+      ...form,
+      trade_id: form.trade_id ? form.trade_id : null,
+      start_date: form.start_date ? form.start_date : null,
+      end_date: form.end_date ? form.end_date : null,
+      description: form.description ? form.description : null,
+    }
+
     try {
       if (editingCourse) {
-        await axios.put(`/api/v1/academic/courses/${editingCourse.id}`, form)
+        await axios.put(`/api/v1/academic/courses/${editingCourse.id}`, payload)
         toast.success(`Course '${form.name}' updated successfully`)
       } else {
-        await axios.post('/api/v1/academic/courses', form)
+        await axios.post('/api/v1/academic/courses', payload)
         toast.success(`Course '${form.name}' created successfully`)
       }
       setShowModal(false)

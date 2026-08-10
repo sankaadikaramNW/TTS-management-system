@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 # --- Trade Schemas ---
 class TradeBase(BaseModel):
@@ -39,6 +39,13 @@ class CourseBase(BaseModel):
     description: Optional[str] = None
     is_active: bool = True
 
+    @field_validator('start_date', 'end_date', 'trade_id', 'description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 class CourseCreate(CourseBase):
     pass
 
@@ -53,6 +60,13 @@ class CourseUpdate(BaseModel):
     end_date: Optional[date] = None
     description: Optional[str] = None
     is_active: Optional[bool] = None
+
+    @field_validator('start_date', 'end_date', 'trade_id', 'description', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 class CourseResponse(CourseBase):
     id: str
@@ -106,6 +120,13 @@ class BatchBase(BaseModel):
     instructor_id: Optional[str] = None
     status: str = "Active"  # Active, Passed Out, Archived
 
+    @field_validator('intake_date', 'passing_out_date', 'trade_id', 'classroom_id', 'instructor_id', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 class BatchCreate(BatchBase):
     pass
 
@@ -119,6 +140,13 @@ class BatchUpdate(BaseModel):
     classroom_id: Optional[str] = None
     instructor_id: Optional[str] = None
     status: Optional[str] = None
+
+    @field_validator('intake_date', 'passing_out_date', 'trade_id', 'classroom_id', 'instructor_id', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 class BatchResponse(BatchBase):
     id: str

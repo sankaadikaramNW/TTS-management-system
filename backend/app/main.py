@@ -10,6 +10,12 @@ from app.routers import auth, student, parade, accommodation, academic, dashboar
 # Import ALL models before create_all so SQLAlchemy can resolve all cross-model relationships
 import app.models  # noqa: F401 — loads __init__.py which imports every model
 
+# Create tables if they do not exist
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Error creating database tables: {e}")
+
 from sqlalchemy import text
 
 # Lightweight schema migration helper for SQLite & MySQL
@@ -93,6 +99,20 @@ def run_lightweight_migrations():
                     INDEX idx_oic_user (user_id)
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS role_permissions (
+                    role_id VARCHAR(36) NOT NULL,
+                    permission_id VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (role_id, permission_id)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS user_permissions (
+                    user_id VARCHAR(36) NOT NULL,
+                    permission_id VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (user_id, permission_id)
+                )
+            """))
             conn.commit()
         except Exception:
             pass
@@ -155,41 +175,62 @@ def auto_seed_database():
                 Permission(id='perm-room-write', name='Allocate Accommodation', code='room:write', description='Ability to edit room registers and transfers'),
                 Permission(id='perm-academic-read', name='Read Grades & Timetable', code='academic:read', description='Ability to view schedules and marks'),
                 Permission(id='perm-academic-write', name='Manage Academics', code='academic:write', description='Ability to record marks and edit timetables'),
+                Permission(id='perm-reports-read', name='Read Reports & Analytics', code='reports:read', description='Ability to generate reports and analytics'),
                 Permission(id='perm-audit-read', name='Read Audit Logs', code='system:audit', description='Ability to review security logs')
             ]
             db.bulk_save_objects(permissions)
             db.commit()
             
             # Map Super Admin & System Admin permissions
-            super_admin = db.query(Role).filter(Role.id == 'role-super-admin').first()
-            if super_admin:
-                all_perms = db.query(Permission).all()
-                super_admin.permissions.extend(all_perms)
-                db.commit()
-
-            sys_admin = db.query(Role).filter(Role.id == 'role-sys-admin').first()
-            if sys_admin:
-                all_perms = db.query(Permission).all()
-                sys_admin.permissions.extend(all_perms)
-                db.commit()
-
-            # Map CO permissions (read + approve)
+            all_perms = db.query(Permission).all()
+            for r_id in ['role-super-admin', 'role-sys-admin']:
+                r = db.query(Role).filter(Role.id == r_id).first()
+                if r:
+                    r.permissions = list(all_perms)
+            
+            # Map CO permissions (Executive overview, trainees, parade state, reports)
             co_role = db.query(Role).filter(Role.id == 'role-co').first()
             if co_role:
-                co_perms = db.query(Permission).filter(Permission.code.in_([
-                    'student:read', 'parade:read', 'parade:approve', 'room:read', 'academic:read'
+                co_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'parade:read', 'parade:approve', 'reports:read'
                 ])).all()
-                co_role.permissions.extend(co_perms)
-                db.commit()
 
             # Map Discipline Section permissions
             discipline_role = db.query(Role).filter(Role.id == 'role-discipline').first()
             if discipline_role:
-                disc_perms = db.query(Permission).filter(Permission.code.in_([
-                    'student:read', 'parade:read', 'parade:write', 'parade:manage_officers'
+                discipline_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'parade:read', 'parade:write', 'parade:approve', 'parade:manage_officers', 'reports:read'
                 ])).all()
-                discipline_role.permissions.extend(disc_perms)
-                db.commit()
+
+            # Map Academic Section permissions
+            academic_role = db.query(Role).filter(Role.id == 'role-academic').first()
+            if academic_role:
+                academic_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'academic:read', 'academic:write', 'reports:read'
+                ])).all()
+
+            # Map Accommodation Officer permissions
+            accommodation_role = db.query(Role).filter(Role.id == 'role-accommodation').first()
+            if accommodation_role:
+                accommodation_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'room:read', 'room:write', 'reports:read'
+                ])).all()
+
+            # Map Instructor permissions
+            instructor_role = db.query(Role).filter(Role.id == 'role-instructor').first()
+            if instructor_role:
+                instructor_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'academic:read', 'academic:write'
+                ])).all()
+
+            # Map Viewer permissions
+            viewer_role = db.query(Role).filter(Role.id == 'role-viewer').first()
+            if viewer_role:
+                viewer_role.permissions = db.query(Permission).filter(Permission.code.in_([
+                    'student:read', 'parade:read'
+                ])).all()
+
+            db.commit()
 
         # 3. Seed Default Admin User
         if db.query(User).count() == 0:

@@ -165,12 +165,12 @@ def update_trade(
 # --- 3. Course Management ---
 @router.get("/courses", response_model=List[CourseResponse])
 def get_courses(
-    trade_id: Optional[str] = None,
+    trade_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
-    if trade_id:
-        return course_repo.get_by_trade(db, trade_id)
+    if trade_id and trade_id.strip():
+        return course_repo.get_by_trade(db, trade_id.strip())
     return course_repo.get_all(db)
 
 @router.post("/courses", response_model=CourseResponse)

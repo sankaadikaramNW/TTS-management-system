@@ -122,7 +122,9 @@ export const AuthProvider = ({ children }) => {
       user.role?.id === 'role-super-admin' || 
       user.role?.id === 'role-sys-admin'
     ) return true
-    return user.role?.permissions?.some(p => p.code === code) || false
+    
+    const perms = user.effective_permissions || user.role?.permissions || []
+    return perms.some(p => p.code === code)
   }
 
   const hasRole = (roleName) => user?.role?.name === roleName

@@ -216,14 +216,14 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {hasPermission('student:read') && (
+        {hasPermission('reports:read') && (
           <NavLink to="/reports" className="nav-link">
             <i className="bi bi-file-earmark-bar-graph"></i>
             <span>Reports & Analytics</span>
           </NavLink>
         )}
 
-        {(hasRole('Super Administrator') || hasRole('System Administrator')) && (
+        {(hasRole('Super Administrator') || hasRole('System Administrator') || hasPermission('system:audit')) && (
           <NavLink to="/admin" className="nav-link">
             <i className="bi bi-gear-fill"></i>
             <span>System Admin</span>

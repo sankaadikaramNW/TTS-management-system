@@ -37,6 +37,16 @@ CREATE TABLE role_permissions (
     FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- 3b. USER PERMISSIONS LINK TABLE
+DROP TABLE IF EXISTS user_permissions;
+CREATE TABLE user_permissions (
+    user_id VARCHAR(36) NOT NULL,
+    permission_id VARCHAR(36) NOT NULL,
+    PRIMARY KEY (user_id, permission_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- 4. USERS TABLE
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
