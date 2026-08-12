@@ -5,6 +5,7 @@ import Navbar from './Navbar'
 
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true) // Default compressed on landing time
   const location = useLocation()
 
   // Close mobile sidebar automatically whenever location changes
@@ -14,10 +15,18 @@ export const Layout = () => {
 
   return (
     <div className="d-flex bg-app min-vh-100 position-relative overflow-x-hidden">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(prev => !prev)}
+      />
       <div className="w-100 min-vh-100 d-flex flex-column">
-        <Navbar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
-        <main className="main-wrapper px-3 px-md-4 pb-4 flex-grow-1">
+        <Navbar 
+          onToggleSidebar={() => setSidebarOpen(prev => !prev)} 
+          isCollapsed={isCollapsed}
+        />
+        <main className={`main-wrapper px-3 px-md-4 pb-4 flex-grow-1 ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
           <Outlet />
         </main>
       </div>

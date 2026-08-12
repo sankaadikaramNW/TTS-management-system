@@ -34,6 +34,14 @@ class Settings:
     # UPLOAD paths
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
 
+    # Cloudinary Configuration (Lesson Plan Document Storage)
+    CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
+
+    # Lesson Plan Document Settings
+    MAX_LESSON_PLAN_FILE_SIZE_MB: int = int(os.getenv("MAX_LESSON_PLAN_FILE_SIZE_MB", "20"))
+
     @property
     def database_url(self) -> str:
         if self.DB_ENGINE == "mysql":

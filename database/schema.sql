@@ -730,3 +730,35 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- LESSON PLAN DOCUMENTS TABLE (Cloudinary-backed PDF storage)
+DROP TABLE IF EXISTS lesson_plan_documents;
+CREATE TABLE lesson_plan_documents (
+    id VARCHAR(36) PRIMARY KEY,
+    course_id VARCHAR(36) NOT NULL,
+    lesson_id VARCHAR(36) NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    subject_name VARCHAR(150) NULL,
+    version VARCHAR(20) NULL,
+    academic_year VARCHAR(20) NULL,
+    remarks TEXT NULL,
+    original_file_name VARCHAR(255) NOT NULL,
+    cloudinary_public_id VARCHAR(255) NOT NULL,
+    cloudinary_url VARCHAR(500) NOT NULL,
+    resource_type VARCHAR(30) DEFAULT 'raw',
+    file_size INT NOT NULL,
+    mime_type VARCHAR(50) DEFAULT 'application/pdf',
+    uploaded_by VARCHAR(36) NULL,
+    status VARCHAR(20) DEFAULT 'Active',
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_lpd_course (course_id),
+    INDEX idx_lpd_uploaded_by (uploaded_by),
+    INDEX idx_lpd_status (status),
+    INDEX idx_lpd_uploaded_at (uploaded_at)
+) ENGINE=InnoDB;
+

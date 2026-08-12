@@ -1,15 +1,18 @@
 from datetime import date
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
+from app.models.student import Student, Trade
 from app.repositories.academic import (
     trade_repo, classroom_repo, course_repo, batch_repo, instructor_repo,
-    subject_repo, lesson_repo, timetable_repo, attendance_repo, exam_repo, exam_mark_repo
+    subject_repo, lesson_repo, timetable_repo, attendance_repo, exam_repo, exam_mark_repo,
+    lesson_plan_doc_repo
 )
 from app.services.academic import academic_service
+from app.services.lesson_plan_service import lesson_plan_service
 from app.schemas.academic import (
     TradeResponse, TradeCreate, TradeUpdate,
     CourseResponse, CourseCreate, CourseUpdate,
@@ -18,7 +21,8 @@ from app.schemas.academic import (
     InstructorResponse, AcademicDashboardSummary,
     SubjectResponse, SubjectCreate, LessonResponse, LessonCreate,
     TimetableResponse, TimetableCreate, TimetableAttendanceUpdateRequest, AttendanceResponse,
-    ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse
+    ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse,
+    LessonPlanDocumentResponse, LessonPlanDocumentUpdate
 )
 
 router = APIRouter(prefix="/academic", tags=["Academic Activities Management Module"])
@@ -464,3 +468,138 @@ def get_academic_report(
 
     else:
         raise HTTPException(status_code=400, detail="Invalid report type specified")
+
+
+# --- 11. Lesson Plan Document Management ---
+@router.get("/lesson-plans", response_model=List[LessonPlanDocumentResponse])
+def list_lesson_plans(
+    course_id: Optional[str] = Query(None),
+    trade_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """List lesson plan documents with optional filters."""
+    return lesson_plan_doc_repo.search(
+        db, search=search, course_id=course_id,
+        trade_id=trade_id, status=status, skip=skip, limit=limit
+    )
+
+@router.get("/lesson-plans/{doc_id}", response_model=LessonPlanDocumentResponse)
+def get_lesson_plan(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Get a single lesson plan document by ID."""
+    doc = lesson_plan_doc_repo.get_by_id(db, doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Lesson plan document not found.")
+    return doc
+
+@router.post("/lesson-plans", response_model=LessonPlanDocumentResponse)
+def upload_lesson_plan(
+    request: Request,
+    file: UploadFile = File(...),
+    course_id: str = Form(...),
+    title: str = Form(...),
+    lesson_id: Optional[str] = Form(None),
+    subject_name: Optional[str] = Form(None),
+    version: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    academic_year: Optional[str] = Form(None),
+    remarks: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Upload a new lesson plan PDF document."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+
+    created_doc = lesson_plan_service.create_document(
+        db=db,
+        file=file,
+        course_id=course_id,
+        title=title,
+        user_id=current_user.id,
+        lesson_id=lesson_id if lesson_id and lesson_id.strip() else None,
+        subject_name=subject_name if subject_name and subject_name.strip() else None,
+        version=version if version and version.strip() else None,
+        description=description if description and description.strip() else None,
+        academic_year=academic_year if academic_year and academic_year.strip() else None,
+        remarks=remarks if remarks and remarks.strip() else None,
+        ip=ip,
+        ua=ua
+    )
+    # Re-fetch with enriched fields
+    return lesson_plan_doc_repo.get_by_id(db, created_doc.id)
+
+@router.put("/lesson-plans/{doc_id}", response_model=LessonPlanDocumentResponse)
+def update_lesson_plan_metadata(
+    doc_id: str,
+    update_in: LessonPlanDocumentUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Update lesson plan metadata (no file re-upload)."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    update_data = update_in.model_dump(exclude_unset=True)
+    return lesson_plan_service.update_metadata(db, doc_id, update_data, current_user.id, ip, ua)
+
+@router.post("/lesson-plans/{doc_id}/replace", response_model=LessonPlanDocumentResponse)
+def replace_lesson_plan_file(
+    doc_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Replace the PDF file for an existing lesson plan document."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return lesson_plan_service.replace_document(db, doc_id, file, current_user.id, ip, ua)
+
+@router.patch("/lesson-plans/{doc_id}/archive", response_model=LessonPlanDocumentResponse)
+def archive_lesson_plan(
+    doc_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Archive (soft-delete) a lesson plan document."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return lesson_plan_service.archive_document(db, doc_id, current_user.id, ip, ua)
+
+@router.delete("/lesson-plans/{doc_id}")
+def delete_lesson_plan(
+    doc_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Permanently delete a lesson plan document (admin-level)."""
+    # Extra authorization check: only Super Admin / System Admin can permanently delete
+    if current_user.role.name not in ["Super Administrator", "System Administrator"] and \
+       current_user.role_id not in ["role-super-admin", "role-sys-admin"]:
+        raise HTTPException(status_code=403, detail="Only administrators can permanently delete lesson plan documents.")
+
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return lesson_plan_service.delete_document(db, doc_id, current_user.id, ip, ua)
+
+@router.get("/courses/{course_id}/lesson-plans", response_model=List[LessonPlanDocumentResponse])
+def get_course_lesson_plans(
+    course_id: str,
+    status: Optional[str] = Query('Active'),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Get all lesson plan documents for a specific course."""
+    return lesson_plan_doc_repo.get_by_course(db, course_id, status=status or 'Active')
+

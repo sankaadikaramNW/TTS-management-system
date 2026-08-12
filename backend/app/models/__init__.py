@@ -3,7 +3,7 @@
 
 from app.models.user import Role, Permission, User
 from app.models.student import Student, ParadeState, ParadeStatusType, StudentStatusType, Rank, Trade, ParadeSubmission, OfficerInCharge
-from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark
+from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument
 from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationBed, AccommodationAllocation
 from app.models.notification import Notification
 
@@ -11,7 +11,7 @@ __all__ = [
     "Role", "Permission", "User",
     "Student", "ParadeState", "ParadeStatusType", "StudentStatusType", "Rank", "Trade",
     "ParadeSubmission", "OfficerInCharge",
-    "Classroom", "Course", "Batch", "Subject", "Lesson", "LessonPlan", "Timetable", "AcademicAttendance", "Exam", "ExamMark",
+    "Classroom", "Course", "Batch", "Subject", "Lesson", "LessonPlan", "Timetable", "AcademicAttendance", "Exam", "ExamMark", "LessonPlanDocument",
     "AccommodationBuilding", "AccommodationBillet", "AccommodationBed", "AccommodationAllocation",
     "Notification",
 ]

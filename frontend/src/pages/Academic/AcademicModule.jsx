@@ -9,6 +9,7 @@ import { InstructorAssignment } from './InstructorAssignment'
 import { SubjectLessonManagement } from './SubjectLessonManagement'
 import { AssessmentManagement } from './AssessmentManagement'
 import { AcademicReports } from './AcademicReports'
+import { LessonPlanDocuments } from './LessonPlanDocuments'
 
 export const AcademicModule = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -53,6 +54,7 @@ export const AcademicModule = () => {
       case 'instructors': return { category: 'Training Management', title: 'Instructor Assignment (SSOT)' }
       case 'subjects': return { category: 'Training Management', title: 'Subject Management' }
       case 'lessons': return { category: 'Training Management', title: 'Lesson Management' }
+      case 'lesson-plan-docs': return { category: 'Training Management', title: 'Lesson Plan Documents' }
       case 'attendance': return { category: 'Assessment', title: 'Class Attendance Registry' }
       case 'phase-tests': return { category: 'Assessment', title: 'Phase Tests' }
       case 'final-exams': return { category: 'Assessment', title: 'Final Examinations' }
@@ -209,6 +211,15 @@ export const AcademicModule = () => {
                       {!sidebarCollapsed && <span>Lesson Plans</span>}
                     </button>
                   </li>
+                  <li>
+                    <button 
+                      className={`nav-link w-100 text-start d-flex align-items-center gap-2 py-1.5 px-2.5 rounded small ${activeView === 'lesson-plan-docs' ? 'active bg-primary text-white fw-semibold' : 'text-secondary hover-bg-light'}`}
+                      onClick={() => handleNavigate('lesson-plan-docs')}
+                    >
+                      <i className="bi bi-file-earmark-pdf-fill me-1"></i>
+                      {!sidebarCollapsed && <span>Lesson Plan Documents</span>}
+                    </button>
+                  </li>
                 </ul>
               )}
             </li>
@@ -347,6 +358,7 @@ export const AcademicModule = () => {
         {activeView === 'instructors' && <InstructorAssignment />}
         {activeView === 'subjects' && <SubjectLessonManagement />}
         {activeView === 'lessons' && <SubjectLessonManagement />}
+        {activeView === 'lesson-plan-docs' && <LessonPlanDocuments />}
         {activeView === 'attendance' && <AssessmentManagement initialTab="attendance" />}
         {activeView === 'phase-tests' && <AssessmentManagement initialTab="phase-tests" />}
         {activeView === 'final-exams' && <AssessmentManagement initialTab="final-exams" />}

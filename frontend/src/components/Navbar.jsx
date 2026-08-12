@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { toast } from 'react-toastify'
 
-export const Navbar = ({ onToggleSidebar }) => {
+export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
@@ -58,7 +58,7 @@ export const Navbar = ({ onToggleSidebar }) => {
   }
 
   return (
-    <header className="glass-header app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 py-2 fixed-top">
+    <header className={`glass-header app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 py-2 fixed-top ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Header Module Name and Current DateTime */}
       <div className="d-flex align-items-center gap-2">
         <button className="btn btn-link text-primary p-0 d-lg-none me-1" onClick={onToggleSidebar} title="Open Navigation Menu">

@@ -2,7 +2,7 @@ from datetime import date
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark
+from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument
 from app.models.student import Student, Trade
 from app.models.user import User, Role
 from app.repositories.base import BaseRepository
@@ -191,6 +191,83 @@ class ExamMarkRepository(BaseRepository[ExamMark]):
                 em.student_service_number = student.service_number
         return results
 
+class LessonPlanDocumentRepository(BaseRepository[LessonPlanDocument]):
+    def _enrich(self, db: Session, doc: LessonPlanDocument) -> LessonPlanDocument:
+        """Attach joined fields to a LessonPlanDocument instance."""
+        course = db.query(Course).filter(Course.id == doc.course_id).first() if doc.course_id else None
+        trade = None
+        if course and course.trade_id:
+            trade = db.query(Trade).filter(Trade.id == course.trade_id).first()
+        uploader = db.query(User).filter(User.id == doc.uploaded_by).first() if doc.uploaded_by else None
+        lesson = db.query(Lesson).filter(Lesson.id == doc.lesson_id).first() if doc.lesson_id else None
+
+        doc.course_name = course.name if course else None
+        doc.course_code = course.code if course else None
+        doc.trade_name = trade.label if trade else None
+        doc.trade_id = trade.id if trade else None
+        doc.uploader_name = uploader.full_name if uploader else None
+        doc.uploader_service_number = uploader.service_number if uploader else None
+        doc.lesson_name = lesson.name if lesson else None
+        return doc
+
+    def get_by_id(self, db: Session, doc_id: str) -> Optional[LessonPlanDocument]:
+        doc = db.query(LessonPlanDocument).filter(LessonPlanDocument.id == doc_id).first()
+        if doc:
+            self._enrich(db, doc)
+        return doc
+
+    def get_by_course(self, db: Session, course_id: str, status: str = 'Active') -> List[LessonPlanDocument]:
+        query = db.query(LessonPlanDocument).filter(LessonPlanDocument.course_id == course_id)
+        if status and status != 'All':
+            query = query.filter(LessonPlanDocument.status == status)
+        results = query.order_by(LessonPlanDocument.uploaded_at.desc()).all()
+        for doc in results:
+            self._enrich(db, doc)
+        return results
+
+    def search(
+        self,
+        db: Session,
+        search: Optional[str] = None,
+        course_id: Optional[str] = None,
+        trade_id: Optional[str] = None,
+        status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> List[LessonPlanDocument]:
+        query = db.query(LessonPlanDocument)
+
+        if status and status != 'All':
+            query = query.filter(LessonPlanDocument.status == status)
+        else:
+            # Default: show Active only
+            query = query.filter(LessonPlanDocument.status == 'Active')
+
+        if course_id:
+            query = query.filter(LessonPlanDocument.course_id == course_id)
+
+        if trade_id:
+            # Join through courses to filter by trade
+            course_ids = [c.id for c in db.query(Course).filter(Course.trade_id == trade_id).all()]
+            query = query.filter(LessonPlanDocument.course_id.in_(course_ids))
+
+        if search:
+            search_term = f"%{search}%"
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    LessonPlanDocument.title.ilike(search_term),
+                    LessonPlanDocument.original_file_name.ilike(search_term),
+                    LessonPlanDocument.subject_name.ilike(search_term),
+                    LessonPlanDocument.description.ilike(search_term)
+                )
+            )
+
+        results = query.order_by(LessonPlanDocument.uploaded_at.desc()).offset(skip).limit(limit).all()
+        for doc in results:
+            self._enrich(db, doc)
+        return results
+
 trade_repo = TradeRepository(Trade)
 classroom_repo = ClassroomRepository(Classroom)
 course_repo = CourseRepository(Course)
@@ -199,7 +276,9 @@ instructor_repo = InstructorRepository()
 subject_repo = SubjectRepository(Subject)
 lesson_repo = LessonRepository(Lesson)
 lesson_plan_repo = LessonPlanRepository(LessonPlan)
+lesson_plan_doc_repo = LessonPlanDocumentRepository(LessonPlanDocument)
 timetable_repo = TimetableRepository(Timetable)
 attendance_repo = AttendanceRepository(AcademicAttendance)
 exam_repo = ExamRepository(Exam)
 exam_mark_repo = ExamMarkRepository(ExamMark)
+

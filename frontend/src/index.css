@@ -145,7 +145,7 @@ h1, h2, h3, h4, h5, h6, .display-font {
   top: 0;
   left: 0;
   z-index: 1050;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
 }
 
@@ -159,6 +159,7 @@ h1, h2, h3, h4, h5, h6, .display-font {
   align-items: center;
   gap: 12px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .slaf-sidebar .nav-link:hover, 
@@ -171,17 +172,79 @@ h1, h2, h3, h4, h5, h6, .display-font {
   box-shadow: inset 3px 0 0 #3b82f6;
 }
 
+/* Sidebar Toggle Button (Matching attached image 2) */
+.sidebar-toggle-btn {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 32px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  z-index: 1060;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #ffffff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: scale(1.05);
+}
+
+/* Collapsed Sidebar State (Desktop) */
+@media (min-width: 992px) {
+  .slaf-sidebar.collapsed {
+    width: 72px;
+  }
+  
+  .slaf-sidebar.collapsed .sidebar-header-text,
+  .slaf-sidebar.collapsed .sidebar-footer-text,
+  .slaf-sidebar.collapsed .module-header-text,
+  .slaf-sidebar.collapsed .nav-link span {
+    display: none !important;
+  }
+
+  .slaf-sidebar.collapsed .nav-link {
+    margin: 4px 10px;
+    padding: 10px 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .slaf-sidebar.collapsed .nav-link i {
+    font-size: 1.25rem;
+    margin: 0 !important;
+  }
+
+  .slaf-sidebar.collapsed .sidebar-module-header {
+    justify-content: center;
+    padding: 8px 0 !important;
+    text-align: center;
+  }
+
+  .slaf-sidebar.collapsed .sidebar-module-header i {
+    margin-right: 0 !important;
+    font-size: 1.1rem;
+  }
+}
+
 /* Page & Header Layout Wrappers */
 .app-navbar {
   height: 70px;
   z-index: 1000;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .main-wrapper {
   min-height: 100vh;
   padding-top: 86px; /* full space for 70px glass-header + 16px breathing room */
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Desktop Responsive Layout (>= 992px) */
@@ -193,8 +256,15 @@ h1, h2, h3, h4, h5, h6, .display-font {
     margin-left: 260px;
     width: calc(100% - 260px);
   }
+  .app-navbar.sidebar-collapsed {
+    margin-left: 72px;
+    width: calc(100% - 72px);
+  }
   .main-wrapper {
     margin-left: 260px;
+  }
+  .main-wrapper.sidebar-collapsed {
+    margin-left: 72px;
   }
 }
 

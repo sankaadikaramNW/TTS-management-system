@@ -41,6 +41,7 @@ class Course(Base, TimeStampedModelMixin):
     subjects = relationship("Subject", back_populates="course", cascade="all, delete-orphan")
     timetables = relationship("Timetable", back_populates="course", cascade="all, delete-orphan")
     exams = relationship("Exam", back_populates="course", cascade="all, delete-orphan")
+    lesson_plan_documents = relationship("LessonPlanDocument", back_populates="course", cascade="all, delete-orphan")
 
 class Batch(Base, TimeStampedModelMixin):
     __tablename__ = 'batches'
@@ -180,3 +181,31 @@ class ExamMark(Base):
     exam = relationship("Exam", back_populates="marks")
     student = relationship("Student", back_populates="exam_marks")
     recorder = relationship("User")
+
+class LessonPlanDocument(Base):
+    __tablename__ = 'lesson_plan_documents'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    lesson_id = Column(String(36), ForeignKey('lessons.id', ondelete='SET NULL'), nullable=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    subject_name = Column(String(150), nullable=True)
+    version = Column(String(20), nullable=True)
+    academic_year = Column(String(20), nullable=True)
+    remarks = Column(Text, nullable=True)
+    original_file_name = Column(String(255), nullable=False)
+    cloudinary_public_id = Column(String(255), nullable=False)
+    cloudinary_url = Column(String(500), nullable=False)
+    resource_type = Column(String(30), default='raw')
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String(50), default='application/pdf')
+    uploaded_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    status = Column(String(20), default='Active', index=True)  # Active, Archived
+    uploaded_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    course = relationship("Course", back_populates="lesson_plan_documents")
+    lesson = relationship("Lesson")
+    uploader = relationship("User")

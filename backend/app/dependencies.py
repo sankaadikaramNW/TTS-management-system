@@ -40,7 +40,7 @@ class PermissionChecker:
 
     def __call__(self, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
         # Super admin & System admin have all permissions
-        if current_user.role.name in ["Super Administrator", "System Administrator"] or current_user.role_id in ["role-super-admin", "role-sys-admin"]:
+        if (current_user.role and current_user.role.name in ["Super Administrator", "System Administrator"]) or current_user.role_id in ["role-super-admin", "role-sys-admin"]:
             return current_user
             
         # Check permissions associated with user role

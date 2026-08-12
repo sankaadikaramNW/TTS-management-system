@@ -340,3 +340,71 @@ class AcademicDashboardSummary(BaseModel):
     batch_distribution_by_trade: List[Dict[str, Any]]
     recent_batches: List[Dict[str, Any]]
     upcoming_academic_activities: List[Dict[str, Any]]
+
+# --- Lesson Plan Document Schemas ---
+class LessonPlanDocumentCreate(BaseModel):
+    """Fields received from the multipart upload form (metadata portion)."""
+    course_id: str
+    title: str
+    lesson_id: Optional[str] = None
+    subject_name: Optional[str] = None
+    version: Optional[str] = None
+    description: Optional[str] = None
+    academic_year: Optional[str] = None
+    remarks: Optional[str] = None
+
+    @field_validator('lesson_id', 'subject_name', 'version', 'description', 'academic_year', 'remarks', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+class LessonPlanDocumentUpdate(BaseModel):
+    """Partial metadata update (no file re-upload)."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    subject_name: Optional[str] = None
+    version: Optional[str] = None
+    academic_year: Optional[str] = None
+    remarks: Optional[str] = None
+    lesson_id: Optional[str] = None
+
+    @field_validator('lesson_id', 'subject_name', 'version', 'description', 'academic_year', 'remarks', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+class LessonPlanDocumentResponse(BaseModel):
+    id: str
+    course_id: str
+    lesson_id: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    subject_name: Optional[str] = None
+    version: Optional[str] = None
+    academic_year: Optional[str] = None
+    remarks: Optional[str] = None
+    original_file_name: str
+    cloudinary_url: str
+    resource_type: Optional[str] = 'raw'
+    file_size: int
+    mime_type: Optional[str] = 'application/pdf'
+    uploaded_by: Optional[str] = None
+    status: str = 'Active'
+    uploaded_at: datetime
+    updated_at: Optional[datetime] = None
+
+    # Joined fields
+    course_name: Optional[str] = None
+    course_code: Optional[str] = None
+    trade_name: Optional[str] = None
+    trade_id: Optional[str] = None
+    uploader_name: Optional[str] = None
+    uploader_service_number: Optional[str] = None
+    lesson_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
