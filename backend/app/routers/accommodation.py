@@ -328,7 +328,7 @@ def get_bunk_beds(
     if billet_id:
         bunks = bunk_bed_repo.get_by_billet(db, billet_id)
     else:
-        bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.deleted_at == None).all()
+        bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.deleted_at == None).order_by(AccommodationBunkBed.bunk_no.asc()).all()
 
     results = []
     for bunk in bunks:
@@ -427,6 +427,11 @@ def get_bunk_positions(
 ):
     positions = bed_position_repo.get_by_bunk(db, bunk_id)
     results = []
+    bunk = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.id == bunk_id).first()
+    bunk_no = bunk.bunk_no if bunk else None
+    billet_id = bunk.billet_id if bunk else None
+    billet_name = bunk.billet.name if (bunk and bunk.billet) else None
+
     for p in positions:
         active_alloc = allocation_repo.get_active_by_position(db, p.id)
         student_id = active_alloc.student_id if active_alloc else None
@@ -446,6 +451,9 @@ def get_bunk_positions(
         results.append(BedPositionResponse(
             id=p.id,
             bunk_bed_id=p.bunk_bed_id,
+            bunk_no=bunk_no,
+            billet_id=billet_id,
+            billet_name=billet_name,
             position_type=p.position_type,
             position_code=p.position_code,
             status=p.status,
@@ -469,7 +477,24 @@ def get_available_positions(
     else:
         positions = db.query(BedPosition).filter(BedPosition.status == "Available", BedPosition.deleted_at == None).all()
 
-    return [BedPositionResponse.model_validate(p) for p in positions]
+    results = []
+    for p in positions:
+        bunk = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.id == p.bunk_bed_id).first()
+        b_no = bunk.bunk_no if bunk else None
+        b_id = bunk.billet_id if bunk else None
+        b_name = bunk.billet.name if (bunk and bunk.billet) else None
+
+        results.append(BedPositionResponse(
+            id=p.id,
+            bunk_bed_id=p.bunk_bed_id,
+            bunk_no=b_no,
+            billet_id=b_id,
+            billet_name=b_name,
+            position_type=p.position_type,
+            position_code=p.position_code,
+            status=p.status
+        ))
+    return results
 
 # ==========================================
 # ALLOCATION, TRANSFER & VACATE ENDPOINTS

@@ -28,14 +28,14 @@ class BunkBedRepository(BaseRepository[AccommodationBunkBed]):
         return db.query(AccommodationBunkBed).filter(
             AccommodationBunkBed.billet_id == billet_id, 
             AccommodationBunkBed.deleted_at == None
-        ).all()
+        ).order_by(AccommodationBunkBed.bunk_no.asc()).all()
 
 class BedPositionRepository(BaseRepository[BedPosition]):
     def get_by_bunk(self, db: Session, bunk_bed_id: str) -> List[BedPosition]:
         return db.query(BedPosition).filter(
             BedPosition.bunk_bed_id == bunk_bed_id,
             BedPosition.deleted_at == None
-        ).all()
+        ).order_by(BedPosition.position_type.desc()).all()
 
     def get_available_in_billet(self, db: Session, billet_id: str) -> List[BedPosition]:
         return db.query(BedPosition).join(AccommodationBunkBed).filter(
@@ -43,7 +43,7 @@ class BedPositionRepository(BaseRepository[BedPosition]):
             AccommodationBunkBed.deleted_at == None,
             BedPosition.status == "Available",
             BedPosition.deleted_at == None
-        ).all()
+        ).order_by(BedPosition.position_code.asc()).all()
 
 class BedRepository(BaseRepository[AccommodationBed]):
     def get_by_billet(self, db: Session, billet_id: str) -> List[AccommodationBed]:

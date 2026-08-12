@@ -11,6 +11,9 @@ class BedPositionBase(BaseModel):
 class BedPositionResponse(BedPositionBase):
     id: str
     bunk_bed_id: str
+    bunk_no: Optional[str] = None
+    billet_id: Optional[str] = None
+    billet_name: Optional[str] = None
     student_id: Optional[str] = None
     student_name: Optional[str] = None
     student_service_number: Optional[str] = None

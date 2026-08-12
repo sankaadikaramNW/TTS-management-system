@@ -178,6 +178,7 @@ def run_lightweight_migrations():
 
         # Alter existing columns to allow NULL in MySQL if table already exists
         modify_sqls = [
+            "ALTER TABLE accommodation_allocations MODIFY COLUMN bed_id VARCHAR(36) NULL",
             "ALTER TABLE students MODIFY COLUMN nic VARCHAR(20) NULL",
             "ALTER TABLE students MODIFY COLUMN dob DATE NULL",
             "ALTER TABLE students MODIFY COLUMN initials VARCHAR(30) NULL",

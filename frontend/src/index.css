@@ -140,13 +140,32 @@ h1, h2, h3, h4, h5, h6, .display-font {
   background-color: var(--bg-sidebar);
   color: #f3f4f6;
   width: 260px;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1050;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.slaf-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.slaf-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.slaf-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.slaf-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .slaf-sidebar .nav-link {

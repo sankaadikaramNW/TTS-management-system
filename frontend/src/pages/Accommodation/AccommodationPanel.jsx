@@ -228,20 +228,22 @@ export const AccommodationPanel = () => {
   }
 
   // Filtered lists
-  const filteredBunks = bunkBeds.filter(b => {
-    if (selectedBilletId && b.billet_id !== selectedBilletId) return false
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      const matchBunk = b.bunk_no.toLowerCase().includes(q)
-      const matchPos = (b.positions || []).some(p => 
-        p.position_code.toLowerCase().includes(q) || 
-        (p.student_name && p.student_name.toLowerCase().includes(q)) ||
-        (p.student_service_number && p.student_service_number.toLowerCase().includes(q))
-      )
-      return matchBunk || matchPos
-    }
-    return true
-  })
+  const filteredBunks = bunkBeds
+    .filter(b => {
+      if (selectedBilletId && b.billet_id !== selectedBilletId) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        const matchBunk = b.bunk_no.toLowerCase().includes(q)
+        const matchPos = (b.positions || []).some(p => 
+          p.position_code.toLowerCase().includes(q) || 
+          (p.student_name && p.student_name.toLowerCase().includes(q)) ||
+          (p.student_service_number && p.student_service_number.toLowerCase().includes(q))
+        )
+        return matchBunk || matchPos
+      }
+      return true
+    })
+    .sort((a, b) => (a.bunk_no || '').localeCompare(b.bunk_no || '', undefined, { numeric: true, sensitivity: 'base' }))
 
   const filteredAllocations = activeAllocations.filter(a => {
     if (tradeFilter !== 'All' && a.student_trade !== tradeFilter) return false
@@ -323,6 +325,38 @@ export const AccommodationPanel = () => {
           ))}
         </div>
 
+        {/* Quick Action Navigation Grid */}
+        <div className="card slaf-card p-4 mb-4">
+          <h5 className="fw-bold text-primary mb-3">
+            <i className="bi bi-grid me-2" />
+            Accommodation Quick Actions
+          </h5>
+          <div className="row g-3">
+            {[
+              { title: 'Billet Management', desc: 'Create & view billets', icon: 'bi-building', path: '/accommodation/billets', color: '#2563eb' },
+              { title: 'Bunk Bed Register', desc: 'Manage 2-tier bunk units', icon: 'bi-layout-three-columns', path: '/accommodation/bunks', color: '#7c3aed' },
+              { title: 'Allocate Bed', desc: 'Assign trainee to TOP/BOTTOM', icon: 'bi-door-closed', path: '/accommodation/allocate', color: '#059669' },
+              { title: 'Trainees Directory', desc: 'View accommodated trainees', icon: 'bi-people', path: '/accommodation/trainees', color: '#d97706' },
+              { title: 'Transfer / Release', desc: 'Transfer or vacate positions', icon: 'bi-arrow-left-right', path: '/accommodation/transfers', color: '#0284c7' },
+              { title: 'Visual Bunk Map', desc: 'Physical 2-tier bunk cards', icon: 'bi-geo-alt', path: '/accommodation/map', color: '#c026d3' },
+            ].map(act => (
+              <div key={act.title} className="col-md-4 col-lg-2">
+                <div 
+                  className="card slaf-card p-3 text-center h-100 cursor-pointer hover-shadow"
+                  style={{ borderTop: `4px solid ${act.color}` }}
+                  onClick={() => navigate(act.path)}
+                >
+                  <div className="mb-2">
+                    <i className={`bi ${act.icon}`} style={{ fontSize: '1.8rem', color: act.color }} />
+                  </div>
+                  <div className="fw-bold text-dark" style={{ fontSize: '0.88rem' }}>{act.title}</div>
+                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>{act.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Charts & Overview */}
         <div className="row g-4 mb-4">
           <div className="col-lg-8">
@@ -355,38 +389,6 @@ export const AccommodationPanel = () => {
                 <span className="text-success fw-semibold">• Available: {stats.available_positions}</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Quick Action Navigation Grid */}
-        <div className="card slaf-card p-4">
-          <h5 className="fw-bold text-primary mb-3">
-            <i className="bi bi-grid me-2" />
-            Accommodation Quick Actions
-          </h5>
-          <div className="row g-3">
-            {[
-              { title: 'Billet Management', desc: 'Create & view billets', icon: 'bi-building', path: '/accommodation/billets', color: '#2563eb' },
-              { title: 'Bunk Bed Register', desc: 'Manage 2-tier bunk units', icon: 'bi-layout-three-columns', path: '/accommodation/bunks', color: '#7c3aed' },
-              { title: 'Allocate Bed', desc: 'Assign trainee to TOP/BOTTOM', icon: 'bi-door-closed', path: '/accommodation/allocate', color: '#059669' },
-              { title: 'Trainees Directory', desc: 'View accommodated trainees', icon: 'bi-people', path: '/accommodation/trainees', color: '#d97706' },
-              { title: 'Transfer / Release', desc: 'Transfer or vacate positions', icon: 'bi-arrow-left-right', path: '/accommodation/transfers', color: '#0284c7' },
-              { title: 'Visual Bunk Map', desc: 'Physical 2-tier bunk cards', icon: 'bi-geo-alt', path: '/accommodation/map', color: '#c026d3' },
-            ].map(act => (
-              <div key={act.title} className="col-md-4 col-lg-2">
-                <div 
-                  className="card slaf-card p-3 text-center h-100 cursor-pointer hover-shadow"
-                  style={{ borderTop: `4px solid ${act.color}` }}
-                  onClick={() => navigate(act.path)}
-                >
-                  <div className="mb-2">
-                    <i className={`bi ${act.icon}`} style={{ fontSize: '1.8rem', color: act.color }} />
-                  </div>
-                  <div className="fw-bold text-dark" style={{ fontSize: '0.88rem' }}>{act.title}</div>
-                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>{act.desc}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -678,17 +680,16 @@ export const AccommodationPanel = () => {
           <form onSubmit={handleAllocateSubmit} className="row g-3">
             {/* Step 1: Select Billet */}
             <div className="col-md-6">
-              <label className="form-label fw-semibold">1. Select Billet *</label>
+              <label className="form-label fw-semibold">1. Filter by Billet (Optional)</label>
               <select 
                 className="form-select" 
                 value={selectedBilletId} 
                 onChange={e => { setSelectedBilletId(e.target.value); setAllocateForm(prev => ({ ...prev, bed_position_id: '' })) }}
-                required
               >
-                <option value="">— Select Target Billet —</option>
+                <option value="">— All Billets —</option>
                 {billets.map(b => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.building_name})
+                    {b.name} ({b.building_name || 'Building'})
                   </option>
                 ))}
               </select>
@@ -700,19 +701,32 @@ export const AccommodationPanel = () => {
               <select 
                 className="form-select"
                 value={allocateForm.bed_position_id}
-                onChange={e => setAllocateForm(prev => ({ ...prev, bed_position_id: e.target.value }))}
+                onChange={e => {
+                  const posId = e.target.value;
+                  setAllocateForm(prev => ({ ...prev, bed_position_id: posId }));
+                  const targetPos = availablePositions.find(p => p.id === posId);
+                  if (targetPos && targetPos.billet_id && !selectedBilletId) {
+                    setSelectedBilletId(targetPos.billet_id);
+                  }
+                }}
                 required
               >
                 <option value="">— Select TOP/BOTTOM Position —</option>
                 {availablePositions
-                  .filter(p => !selectedBilletId || p.position_code.startsWith(billets.find(b => b.id === selectedBilletId)?.name || ''))
+                  .filter(p => !selectedBilletId || p.billet_id === selectedBilletId)
                   .map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.position_code} ({p.position_type} Position)
+                      {p.position_code} ({p.position_type} Position){p.billet_name ? ` — Billet: ${p.billet_name}` : ''}
                     </option>
                   ))
                 }
               </select>
+              {availablePositions.filter(p => !selectedBilletId || p.billet_id === selectedBilletId).length === 0 && (
+                <small className="text-danger mt-1 d-block" style={{ fontSize: '0.78rem' }}>
+                  <i className="bi bi-exclamation-circle me-1" />
+                  No available bed positions in selected filter. Create bunk beds in Bunk Management first.
+                </small>
+              )}
             </div>
 
             {/* Step 3: Select Trainee */}
@@ -957,7 +971,7 @@ export const AccommodationPanel = () => {
                     <option value="">— Select Available Target Position —</option>
                     {availablePositions.map(p => (
                       <option key={p.id} value={p.id}>
-                        {p.position_code} ({p.position_type} Position)
+                        {p.position_code} ({p.position_type} Position){p.billet_name ? ` — Billet: ${p.billet_name}` : ''}
                       </option>
                     ))}
                   </select>
