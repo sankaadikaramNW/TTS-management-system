@@ -54,6 +54,7 @@ export const DailyParade = () => {
   const [selectedOfficerId, setSelectedOfficerId] = useState('')
   const [submitterRemarks, setSubmitterRemarks] = useState('')
   const [tradeSubmissions, setTradeSubmissions] = useState({})  // trade -> submission info
+  const [showSubmitPreviewModal, setShowSubmitPreviewModal] = useState(false)
 
   // ── Tab 2: Pending Approvals ─────────────────────────────
   const [pendingApprovals, setPendingApprovals] = useState([])
@@ -238,7 +239,7 @@ export const DailyParade = () => {
     }
   }
 
-  const handleSubmitForApproval = async () => {
+  const handleOpenSubmitPreview = () => {
     if (selectedTrade === 'All') {
       toast.warning('Please select a specific trade to submit')
       return
@@ -247,6 +248,10 @@ export const DailyParade = () => {
       toast.warning('Please select an Approving Officer I/C before submitting')
       return
     }
+    setShowSubmitPreviewModal(true)
+  }
+
+  const handleConfirmSubmitForApproval = async () => {
     setSubmitting(true)
     try {
       await axios.post('/api/v1/parade/submit', {
@@ -259,6 +264,7 @@ export const DailyParade = () => {
       toast.success(`Parade state submitted for approval — ${selectedTrade}`)
       toast.info('The assigned Officer I/C has been notified for review.')
       setSubmitterRemarks('')
+      setShowSubmitPreviewModal(false)
       await loadParadeData()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to submit parade state')
@@ -658,10 +664,10 @@ export const DailyParade = () => {
                       </button>
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={handleSubmitForApproval}
+                        onClick={handleOpenSubmitPreview}
                         disabled={submitting || !selectedOfficerId}
                       >
-                        {submitting ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-send me-1" />}
+                        {submitting ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-eye me-1" />}
                         Submit
                       </button>
                     </div>
@@ -669,6 +675,189 @@ export const DailyParade = () => {
                 </div>
               )}
             </>
+          )}
+
+          {/* ── Parade State Submission Preview Modal ── */}
+          {showSubmitPreviewModal && (
+            <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1055 }}>
+              <div className="modal-dialog modal-lg modal-dialog-scrollable">
+                <div className="modal-content border-0 shadow-lg">
+                  {/* Modal Header */}
+                  <div className="modal-header bg-primary text-white">
+                    <div>
+                      <h5 className="modal-title fw-bold text-white mb-0">
+                        <i className="bi bi-clipboard-check me-2" />
+                        Parade State Submission Preview
+                      </h5>
+                      <div className="text-white-50" style={{ fontSize: '0.82rem' }}>
+                        Verify daily strength before routing to Officer I/C
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="btn-close btn-close-white" 
+                      onClick={() => setShowSubmitPreviewModal(false)}
+                    />
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="modal-body p-4">
+                    {/* Header Metadata Grid */}
+                    <div className="card slaf-card bg-body-tertiary p-3 mb-3" style={{ borderLeft: '4px solid var(--bs-primary)' }}>
+                      <div className="row g-2 text-center text-sm-start" style={{ fontSize: '0.88rem' }}>
+                        <div className="col-sm-4">
+                          <span className="text-muted d-block small">TARGET DATE</span>
+                          <strong className="text-dark"><i className="bi bi-calendar-event me-1" />{selectedDate}</strong>
+                        </div>
+                        <div className="col-sm-4">
+                          <span className="text-muted d-block small">TRADE</span>
+                          <strong className="text-primary"><i className="bi bi-airplane me-1" />{selectedTrade}</strong>
+                        </div>
+                        <div className="col-sm-4">
+                          <span className="text-muted d-block small">APPROVING OFFICER I/C</span>
+                          <strong className="text-dark">
+                            <i className="bi bi-person-badge me-1 text-primary" />
+                            {officerOptions.find(o => String(o.user_id) === String(selectedOfficerId))?.officer_name || 'Assigned Officer I/C'}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Submitter Remarks Alert if present */}
+                    {submitterRemarks && (
+                      <div className="alert alert-warning py-2 mb-3" style={{ fontSize: '0.85rem' }}>
+                        <i className="bi bi-chat-left-quote me-2 text-warning" />
+                        <strong>Submission Remarks:</strong> {submitterRemarks}
+                      </div>
+                    )}
+
+                    {/* KPI Summary Cards */}
+                    {(() => {
+                      const previewStudents = displayStudents
+                      const previewRecords = getRecordsForTrade(selectedTrade)
+                      const totalCount = previewStudents.length
+                      const presentCount = previewRecords.filter(r => r.status === 'Present').length
+                      const nonPresentRecords = previewRecords.filter(r => r.status !== 'Present')
+
+                      // Group non-present statuses
+                      const statusCounts = nonPresentRecords.reduce((acc, r) => {
+                        acc[r.status] = (acc[r.status] || 0) + 1
+                        return acc
+                      }, {})
+
+                      return (
+                        <>
+                          <div className="row g-2 mb-3">
+                            <div className="col-4">
+                              <div className="p-2 rounded text-center" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                                <div className="fw-bold text-primary" style={{ fontSize: '1.2rem' }}>{totalCount}</div>
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Total Strength</div>
+                              </div>
+                            </div>
+                            <div className="col-4">
+                              <div className="p-2 rounded text-center" style={{ background: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+                                <div className="fw-bold text-success" style={{ fontSize: '1.2rem' }}>{presentCount}</div>
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Present</div>
+                              </div>
+                            </div>
+                            <div className="col-4">
+                              <div className="p-2 rounded text-center" style={{ background: nonPresentRecords.length > 0 ? '#fef2f2' : '#f8fafc', border: `1px solid ${nonPresentRecords.length > 0 ? '#fca5a5' : '#e2e8f0'}` }}>
+                                <div className="fw-bold" style={{ fontSize: '1.2rem', color: nonPresentRecords.length > 0 ? '#dc2626' : '#64748b' }}>
+                                  {nonPresentRecords.length}
+                                </div>
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Non-Present</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Non-Present Status Breakdown Chips */}
+                          {Object.keys(statusCounts).length > 0 && (
+                            <div className="d-flex align-items-center gap-2 mb-3 flex-wrap p-2 rounded" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                              <span className="fw-semibold text-muted" style={{ fontSize: '0.78rem' }}>Absence Breakdown:</span>
+                              {Object.entries(statusCounts).map(([stLabel, count]) => (
+                                <span key={stLabel} className="badge" style={{ background: `${getStatusColor(stLabel)}18`, color: getStatusColor(stLabel), border: `1px solid ${getStatusColor(stLabel)}40`, fontSize: '0.75rem' }}>
+                                  {stLabel}: <strong>{count}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Trainees List Table */}
+                          <div className="table-responsive" style={{ maxHeight: '35vh', overflowY: 'auto' }}>
+                            <table className="table table-sm table-hover align-middle mb-0">
+                              <thead className="table-light sticky-top">
+                                <tr>
+                                  <th style={{ width: '120px' }}>Service No.</th>
+                                  <th>Rank & Name</th>
+                                  <th style={{ width: '160px' }}>Status</th>
+                                  <th>Remarks</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {previewStudents.map(student => {
+                                  const rec = paradeRecords[student.id] || { status: 'Present', remarks: '' }
+                                  const isPresent = rec.status === 'Present'
+                                  return (
+                                    <tr key={student.id} className={!isPresent ? 'table-warning' : ''}>
+                                      <td className="fw-semibold text-primary">{student.service_number}</td>
+                                      <td>
+                                        <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>{student.full_name}</div>
+                                        <span className="badge bg-secondary-subtle text-dark" style={{ fontSize: '0.68rem' }}>{student.rank}</span>
+                                      </td>
+                                      <td>
+                                        <span 
+                                          className="fw-bold px-2 py-0.5 rounded" 
+                                          style={{ 
+                                            color: getStatusColor(rec.status), 
+                                            background: `${getStatusColor(rec.status)}15`,
+                                            fontSize: '0.8rem',
+                                            border: `1px solid ${getStatusColor(rec.status)}30`
+                                          }}
+                                        >
+                                          {rec.status}
+                                        </span>
+                                      </td>
+                                      <td style={{ fontSize: '0.82rem', color: rec.remarks ? '#1e293b' : '#94a3b8' }}>
+                                        {rec.remarks || '—'}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="modal-footer border-top bg-light">
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-secondary" 
+                      onClick={() => setShowSubmitPreviewModal(false)}
+                    >
+                      <i className="bi bi-arrow-left me-1" />
+                      Back to Edit
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-success px-4" 
+                      onClick={handleConfirmSubmitForApproval}
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <span className="spinner-border spinner-border-sm me-2" />
+                      ) : (
+                        <i className="bi bi-check-circle-fill me-2" />
+                      )}
+                      Okay & Submit to Officer I/C
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
