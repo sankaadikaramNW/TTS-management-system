@@ -172,6 +172,31 @@ def run_lightweight_migrations():
                     INDEX idx_pos_status (status)
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS course_calendar (
+                    id VARCHAR(36) PRIMARY KEY,
+                    course_id VARCHAR(36) NOT NULL,
+                    serial_number INT NOT NULL,
+                    phase_name VARCHAR(255) NOT NULL,
+                    theory_periods INT DEFAULT 0,
+                    practical_periods INT DEFAULT 0,
+                    total_periods INT DEFAULT 0,
+                    working_days INT DEFAULT 0,
+                    commencement_date DATE NOT NULL,
+                    completion_date DATE NOT NULL,
+                    instructor_id VARCHAR(36) NULL,
+                    remarks TEXT NULL,
+                    status VARCHAR(30) DEFAULT 'Active',
+                    created_by VARCHAR(36) NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_course_calendar_course_id (course_id),
+                    INDEX idx_course_calendar_instructor_id (instructor_id),
+                    INDEX idx_course_calendar_commencement (commencement_date),
+                    INDEX idx_course_calendar_completion (completion_date),
+                    INDEX idx_course_calendar_status (status)
+                )
+            """))
             conn.commit()
         except Exception:
             pass

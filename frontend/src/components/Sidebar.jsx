@@ -120,6 +120,7 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
     if (isAcademic) {
       const queryParams = new URLSearchParams(location.search)
       const isTrades = queryParams.get('view') === 'trades'
+      const isCalendar = queryParams.get('view') === 'calendar'
       return (
         <>
           <div className="sidebar-module-header px-4 py-2 text-white-50 small fw-bold text-uppercase border-bottom border-secondary mb-3 d-flex align-items-center">
@@ -129,11 +130,19 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           <NavLink 
             to="/academic" 
             end 
-            className={`nav-link ${(!isTrades && path === '/academic') ? 'active' : ''}`}
+            className={`nav-link ${(!isTrades && !isCalendar && path === '/academic') ? 'active' : ''}`}
             title="Course Syllabus"
           >
             <i className="bi bi-journal-bookmark-fill"></i>
             <span>Course Syllabus</span>
+          </NavLink>
+          <NavLink 
+            to="/academic?view=calendar" 
+            className={`nav-link ${isCalendar ? 'active' : ''}`}
+            title="Course Calendar"
+          >
+            <i className="bi bi-calendar-range-fill"></i>
+            <span>Course Calendar</span>
           </NavLink>
           {hasPermission('academic:write') && (
             <NavLink 

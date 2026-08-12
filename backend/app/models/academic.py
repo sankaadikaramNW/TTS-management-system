@@ -42,6 +42,7 @@ class Course(Base, TimeStampedModelMixin):
     timetables = relationship("Timetable", back_populates="course", cascade="all, delete-orphan")
     exams = relationship("Exam", back_populates="course", cascade="all, delete-orphan")
     lesson_plan_documents = relationship("LessonPlanDocument", back_populates="course", cascade="all, delete-orphan")
+    calendar_entries = relationship("CourseCalendar", back_populates="course", cascade="all, delete-orphan")
 
 class Batch(Base, TimeStampedModelMixin):
     __tablename__ = 'batches'
@@ -209,3 +210,28 @@ class LessonPlanDocument(Base):
     course = relationship("Course", back_populates="lesson_plan_documents")
     lesson = relationship("Lesson")
     uploader = relationship("User")
+
+class CourseCalendar(Base):
+    __tablename__ = 'course_calendar'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    serial_number = Column(Integer, nullable=False)
+    phase_name = Column(String(255), nullable=False)
+    theory_periods = Column(Integer, default=0, nullable=False)
+    practical_periods = Column(Integer, default=0, nullable=False)
+    total_periods = Column(Integer, default=0, nullable=False)
+    working_days = Column(Integer, default=0, nullable=False)
+    commencement_date = Column(Date, nullable=False, index=True)
+    completion_date = Column(Date, nullable=False, index=True)
+    instructor_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(30), default='Active', index=True)
+    created_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    course = relationship("Course", back_populates="calendar_entries")
+    instructor = relationship("User", foreign_keys=[instructor_id])
+    creator = relationship("User", foreign_keys=[created_by])

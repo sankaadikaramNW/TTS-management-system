@@ -2,7 +2,7 @@ from datetime import date
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument
+from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument, CourseCalendar
 from app.models.student import Student, Trade
 from app.models.user import User, Role
 from app.repositories.base import BaseRepository
@@ -43,6 +43,14 @@ class CourseRepository(BaseRepository[Course]):
             c.trade_name = trade.label if trade else "General"
             c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
         return results
+
+    def get_by_id(self, db: Session, id: str) -> Optional[Course]:
+        c = db.query(Course).filter(Course.id == id, Course.deleted_at == None).first()
+        if c:
+            trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
+            c.trade_name = trade.label if trade else "General"
+            c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+        return c
 
     def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
         results = db.query(Course).filter(Course.trade_id == trade_id, Course.deleted_at == None).all()
@@ -281,4 +289,58 @@ timetable_repo = TimetableRepository(Timetable)
 attendance_repo = AttendanceRepository(AcademicAttendance)
 exam_repo = ExamRepository(Exam)
 exam_mark_repo = ExamMarkRepository(ExamMark)
+
+class CourseCalendarRepository(BaseRepository[CourseCalendar]):
+    def _enrich(self, db: Session, entry: CourseCalendar) -> CourseCalendar:
+        """Attach joined fields for course, trade, and instructor."""
+        if entry.course_id:
+            c = db.query(Course).filter(Course.id == entry.course_id).first()
+            if c:
+                entry.course_name = c.name
+                entry.course_code = c.code
+                if c.trade_id:
+                    t = db.query(Trade).filter(Trade.id == c.trade_id).first()
+                    if t:
+                        entry.trade_name = t.label
+
+        if entry.instructor_id:
+            u = db.query(User).filter(User.id == entry.instructor_id).first()
+            if u:
+                rank = u.rank or ""
+                name = u.full_name or u.username or ""
+                entry.instructor_name = f"{rank} {name}".strip()
+                entry.instructor_service_number = u.service_number
+        return entry
+
+    def get_by_course(self, db: Session, course_id: str, status: str = 'Active') -> List[CourseCalendar]:
+        query = db.query(CourseCalendar).filter(CourseCalendar.course_id == course_id)
+        if status and status != 'All':
+            query = query.filter(CourseCalendar.status == status)
+        entries = query.order_by(CourseCalendar.serial_number.asc()).all()
+        for e in entries:
+            self._enrich(db, e)
+        return entries
+
+    def get_by_id(self, db: Session, calendar_id: str) -> Optional[CourseCalendar]:
+        entry = db.query(CourseCalendar).filter(CourseCalendar.id == calendar_id).first()
+        if entry:
+            self._enrich(db, entry)
+        return entry
+
+    def get_next_serial_number(self, db: Session, course_id: str) -> int:
+        max_sn = db.query(func.max(CourseCalendar.serial_number)).filter(
+            CourseCalendar.course_id == course_id
+        ).scalar()
+        return (max_sn or 0) + 1
+
+    def reorder_entries(self, db: Session, course_id: str, ordered_ids: List[str]) -> List[CourseCalendar]:
+        for idx, cid in enumerate(ordered_ids, start=1):
+            db.query(CourseCalendar).filter(
+                CourseCalendar.id == cid,
+                CourseCalendar.course_id == course_id
+            ).update({"serial_number": idx}, synchronize_session=False)
+        db.commit()
+        return self.get_by_course(db, course_id)
+
+course_calendar_repo = CourseCalendarRepository(CourseCalendar)
 

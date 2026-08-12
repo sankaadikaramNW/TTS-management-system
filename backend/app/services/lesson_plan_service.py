@@ -107,7 +107,7 @@ class LessonPlanService:
         try:
             result = cloudinary.uploader.upload(
                 file_bytes,
-                resource_type="auto",
+                resource_type="raw",
                 folder="tts-lesson-plans",
                 public_id=f"{os.path.splitext(filename)[0]}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
                 overwrite=False,
@@ -127,12 +127,64 @@ class LessonPlanService:
                 detail=f"Failed to upload file to cloud storage: {err_msg}"
             )
 
+    def download_document_bytes(self, db: Session, doc_id: str) -> Tuple[bytes, str, str]:
+        """
+        Download PDF file bytes for a document from Cloudinary or local storage.
+        Returns: (file_bytes, filename, mime_type)
+        """
+        doc = lesson_plan_doc_repo.get_by_id(db, doc_id)
+        if not doc:
+            raise HTTPException(status_code=404, detail="Lesson plan document not found.")
+
+        if doc.cloudinary_url:
+            import urllib.request
+            # 1. Try fetching via direct HTTP request
+            try:
+                req = urllib.request.Request(
+                    doc.cloudinary_url,
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req) as response:
+                    file_bytes = response.read()
+                return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
+            except Exception:
+                # 2. If direct HTTP returns 401/403, try constructing signed/raw Cloudinary URL
+                try:
+                    _init_cloudinary()
+                    res_type = doc.resource_type or "raw"
+                    # Try raw if image returned 401
+                    if "/image/upload/" in doc.cloudinary_url:
+                        raw_alt_url = doc.cloudinary_url.replace("/image/upload/", "/raw/upload/")
+                        try:
+                            req_alt = urllib.request.Request(raw_alt_url, headers={'User-Agent': 'Mozilla/5.0'})
+                            with urllib.request.urlopen(req_alt) as response_alt:
+                                file_bytes = response_alt.read()
+                            return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
+                        except Exception:
+                            pass
+
+                    resource_info = cloudinary.api.resource(doc.cloudinary_public_id, resource_type=res_type)
+                    download_url = resource_info.get("secure_url") or doc.cloudinary_url
+                    req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req) as response:
+                        file_bytes = response.read()
+                    return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
+                except Exception as inner_e:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to retrieve document bytes from cloud storage: {str(inner_e)}"
+                    )
+
+        raise HTTPException(status_code=404, detail="Document file source not available.")
+
     def delete_from_cloudinary(self, public_id: str) -> bool:
         """Remove a resource from Cloudinary by public_id."""
         _init_cloudinary()
         try:
             result = cloudinary.uploader.destroy(public_id, resource_type="raw")
             return result.get("result") == "ok"
+        except Exception:
+            return False  # Non-fatal: log but don't block the operation
         except Exception:
             return False  # Non-fatal: log but don't block the operation
 

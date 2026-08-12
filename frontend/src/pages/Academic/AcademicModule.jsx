@@ -10,6 +10,7 @@ import { SubjectLessonManagement } from './SubjectLessonManagement'
 import { AssessmentManagement } from './AssessmentManagement'
 import { AcademicReports } from './AcademicReports'
 import { LessonPlanDocuments } from './LessonPlanDocuments'
+import { CourseCalendarManagement } from './CourseCalendarManagement'
 
 export const AcademicModule = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -54,6 +55,7 @@ export const AcademicModule = () => {
       case 'instructors': return { category: 'Training Management', title: 'Instructor Assignment (SSOT)' }
       case 'subjects': return { category: 'Training Management', title: 'Subject Management' }
       case 'lessons': return { category: 'Training Management', title: 'Lesson Management' }
+      case 'calendar': return { category: 'Training Management', title: 'Course Calendar Management' }
       case 'lesson-plan-docs': return { category: 'Training Management', title: 'Lesson Plan Documents' }
       case 'attendance': return { category: 'Assessment', title: 'Class Attendance Registry' }
       case 'phase-tests': return { category: 'Assessment', title: 'Phase Tests' }
@@ -213,6 +215,15 @@ export const AcademicModule = () => {
                   </li>
                   <li>
                     <button 
+                      className={`nav-link w-100 text-start d-flex align-items-center gap-2 py-1.5 px-2.5 rounded small ${activeView === 'calendar' ? 'active bg-primary text-white fw-semibold' : 'text-secondary hover-bg-light'}`}
+                      onClick={() => handleNavigate('calendar')}
+                    >
+                      <i className="bi bi-calendar-range me-1"></i>
+                      {!sidebarCollapsed && <span>Course Calendar</span>}
+                    </button>
+                  </li>
+                  <li>
+                    <button 
                       className={`nav-link w-100 text-start d-flex align-items-center gap-2 py-1.5 px-2.5 rounded small ${activeView === 'lesson-plan-docs' ? 'active bg-primary text-white fw-semibold' : 'text-secondary hover-bg-light'}`}
                       onClick={() => handleNavigate('lesson-plan-docs')}
                     >
@@ -358,6 +369,7 @@ export const AcademicModule = () => {
         {activeView === 'instructors' && <InstructorAssignment />}
         {activeView === 'subjects' && <SubjectLessonManagement />}
         {activeView === 'lessons' && <SubjectLessonManagement />}
+        {activeView === 'calendar' && <CourseCalendarManagement />}
         {activeView === 'lesson-plan-docs' && <LessonPlanDocuments />}
         {activeView === 'attendance' && <AssessmentManagement initialTab="attendance" />}
         {activeView === 'phase-tests' && <AssessmentManagement initialTab="phase-tests" />}

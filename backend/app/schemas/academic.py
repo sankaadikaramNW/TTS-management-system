@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 # --- Trade Schemas ---
 class TradeBase(BaseModel):
@@ -408,3 +408,74 @@ class LessonPlanDocumentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Course Calendar Schemas ---
+class CourseCalendarCreate(BaseModel):
+    serial_number: Optional[int] = Field(None, description="Order / Serial Number. Auto-assigned if omitted.")
+    phase_name: str = Field(..., min_length=1, max_length=255, description="Name of the course phase/activity")
+    theory_periods: int = Field(0, ge=0, description="Number of theory periods")
+    practical_periods: int = Field(0, ge=0, description="Number of practical periods")
+    working_days: int = Field(0, ge=0, description="Number of working days")
+    commencement_date: date = Field(..., description="Commencement date")
+    completion_date: date = Field(..., description="Completion date")
+    instructor_id: Optional[str] = Field(None, description="Assigned instructor user ID")
+    remarks: Optional[str] = Field(None, description="Optional remarks")
+
+class CourseCalendarUpdate(BaseModel):
+    serial_number: Optional[int] = Field(None, ge=1)
+    phase_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    theory_periods: Optional[int] = Field(None, ge=0)
+    practical_periods: Optional[int] = Field(None, ge=0)
+    working_days: Optional[int] = Field(None, ge=0)
+    commencement_date: Optional[date] = None
+    completion_date: Optional[date] = None
+    instructor_id: Optional[str] = None
+    remarks: Optional[str] = None
+    status: Optional[str] = Field(None, description="Active, Archived")
+
+class CourseCalendarResponse(BaseModel):
+    id: str
+    course_id: str
+    serial_number: int
+    phase_name: str
+    theory_periods: int
+    practical_periods: int
+    total_periods: int
+    working_days: int
+    commencement_date: date
+    completion_date: date
+    instructor_id: Optional[str] = None
+    remarks: Optional[str] = None
+    status: str
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    # Joined fields
+    course_name: Optional[str] = None
+    course_code: Optional[str] = None
+    trade_name: Optional[str] = None
+    instructor_name: Optional[str] = None
+    instructor_service_number: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class CourseCalendarSummaryResponse(BaseModel):
+    course_id: str
+    course_name: str
+    course_code: str
+    trade_id: Optional[str] = None
+    trade_name: Optional[str] = None
+    total_phases: int
+    total_theory_periods: int
+    total_practical_periods: int
+    total_periods: int
+    total_working_days: int
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    lead_instructor_name: Optional[str] = None
+
+class ReorderCalendarEntriesRequest(BaseModel):
+    ordered_ids: List[str] = Field(..., description="List of CourseCalendar IDs in desired display order")

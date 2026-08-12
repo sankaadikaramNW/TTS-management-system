@@ -75,6 +75,16 @@ export const SubjectLessonManagement = () => {
     }
   }, [selectedSubjectId])
 
+  const handleOpenAddSubjectModal = () => {
+    setSubForm({ code: '', name: '', periods: 40, description: '' })
+    setShowSubModal(true)
+  }
+
+  const handleOpenAddLessonModal = () => {
+    setLesForm({ name: '', description: '' })
+    setShowLesModal(true)
+  }
+
   const handleCreateSubject = async (e) => {
     e.preventDefault()
     if (!subForm.code || !subForm.name || !selectedCourseId) return
@@ -85,6 +95,7 @@ export const SubjectLessonManagement = () => {
       })
       toast.success(`Subject '${subForm.name}' created`)
       setShowSubModal(false)
+      setSubForm({ code: '', name: '', periods: 40, description: '' })
       fetchSubjects(selectedCourseId)
     } catch (err) {
       toast.error('Failed to create subject')
@@ -101,6 +112,7 @@ export const SubjectLessonManagement = () => {
       })
       toast.success(`Lesson '${lesForm.name}' created`)
       setShowLesModal(false)
+      setLesForm({ name: '', description: '' })
       fetchLessons(selectedSubjectId)
     } catch (err) {
       toast.error('Failed to create lesson')
@@ -134,7 +146,7 @@ export const SubjectLessonManagement = () => {
             </select>
           </div>
           <div className="col-md-3 text-end">
-            <button className="btn btn-primary btn-sm fw-semibold" onClick={() => setShowSubModal(true)}>
+            <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenAddSubjectModal}>
               <i className="bi bi-plus-lg me-1"></i> Add Subject
             </button>
           </div>
@@ -178,7 +190,7 @@ export const SubjectLessonManagement = () => {
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h6 className="fw-bold text-dark mb-0"><i className="bi bi-list-task me-2 text-info"></i>Lessons for Selected Subject</h6>
               {selectedSubjectId && (
-                <button className="btn btn-outline-primary btn-sm fw-semibold" onClick={() => setShowLesModal(true)}>
+                <button className="btn btn-outline-primary btn-sm fw-semibold" onClick={handleOpenAddLessonModal}>
                   <i className="bi bi-plus-lg me-1"></i> Add Lesson
                 </button>
               )}

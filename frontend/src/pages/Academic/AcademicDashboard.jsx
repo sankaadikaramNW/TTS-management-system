@@ -186,6 +186,20 @@ export const AcademicDashboard = ({ onNavigate }) => {
             <small className="text-muted"><i className="bi bi-calendar-event me-1"></i>Passing Out Exams</small>
           </div>
         </div>
+
+        {/* Course Calendars */}
+        <div className="col-6 col-md-4 col-xl-3">
+          <div className="card slaf-card h-100 p-3 border-start border-4 shadow-sm hover-elevate cursor-pointer" onClick={() => onNavigate('calendar')} style={{ borderLeftColor: '#6366f1' }}>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="text-muted small fw-bold text-uppercase">Course Calendars</span>
+              <div className="rounded-circle p-2" style={{ backgroundColor: '#e0e7ff', color: '#4338ca' }}>
+                <i className="bi bi-calendar-range-fill fs-5"></i>
+              </div>
+            </div>
+            <h2 className="fw-extrabold display-font mb-0 text-dark">{stats.total_courses || 0}</h2>
+            <small className="text-primary fw-semibold"><i className="bi bi-arrow-right-circle me-1"></i>View Master Calendars</small>
+          </div>
+        </div>
       </div>
 
       {/* Row 2: Analytics & Recent Activity Grid */}

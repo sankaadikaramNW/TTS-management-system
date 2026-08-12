@@ -209,9 +209,29 @@ export const AccommodationPanel = () => {
   }
 
   // ── Helper Utilities ─────────────────────────────────────
+  const handleOpenBuildingModal = () => {
+    setBuildingForm({ name: '', type: 'Airmen', capacity: 40 })
+    setShowBuildingModal(true)
+  }
+
+  const handleOpenBilletModal = () => {
+    setBilletForm({ building_id: '', name: '', block: '', location: '', description: '', bunk_bed_count: 10 })
+    setShowBilletModal(true)
+  }
+
+  const handleOpenBunkModal = () => {
+    setBunkForm({ billet_id: selectedBilletId || '', bunk_no: '', status: 'Active' })
+    setShowBunkModal(true)
+  }
+
+  const handleOpenBulkBunkModal = () => {
+    setBulkBunkForm({ billet_id: selectedBilletId || '', prefix: 'Bunk-', count: 10, start_number: 1 })
+    setShowBulkBunkModal(true)
+  }
+
   const openAllocateModalForPosition = (pos) => {
     setSelectedPositionForAllocation(pos)
-    setAllocateForm(prev => ({ ...prev, bed_position_id: pos.id }))
+    setAllocateForm({ student_id: '', bed_position_id: pos.id, remarks: '' })
     setShowAllocateModal(true)
   }
 
@@ -407,10 +427,10 @@ export const AccommodationPanel = () => {
         </div>
         {hasPermission('room:write') && (
           <div className="d-flex gap-2">
-            <button className="btn btn-outline-primary btn-sm" onClick={() => setShowBuildingModal(true)}>
+            <button className="btn btn-outline-primary btn-sm" onClick={handleOpenBuildingModal}>
               <i className="bi bi-building-add me-1" />New Building
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowBilletModal(true)}>
+            <button className="btn btn-primary btn-sm" onClick={handleOpenBilletModal}>
               <i className="bi bi-plus-lg me-1" />Create New Billet
             </button>
           </div>
@@ -486,10 +506,10 @@ export const AccommodationPanel = () => {
         </div>
         {hasPermission('room:write') && (
           <div className="d-flex gap-2">
-            <button className="btn btn-outline-primary btn-sm" onClick={() => setShowBulkBunkModal(true)}>
+            <button className="btn btn-outline-primary btn-sm" onClick={handleOpenBulkBunkModal}>
               <i className="bi bi-layers me-1" />Bulk Create Bunk Beds
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowBunkModal(true)}>
+            <button className="btn btn-primary btn-sm" onClick={handleOpenBunkModal}>
               <i className="bi bi-plus-lg me-1" />Add Single Bunk Bed
             </button>
           </div>

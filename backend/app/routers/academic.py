@@ -9,10 +9,11 @@ from app.models.student import Student, Trade
 from app.repositories.academic import (
     trade_repo, classroom_repo, course_repo, batch_repo, instructor_repo,
     subject_repo, lesson_repo, timetable_repo, attendance_repo, exam_repo, exam_mark_repo,
-    lesson_plan_doc_repo
+    lesson_plan_doc_repo, course_calendar_repo
 )
 from app.services.academic import academic_service
 from app.services.lesson_plan_service import lesson_plan_service
+from app.services.course_calendar_service import course_calendar_service
 from app.schemas.academic import (
     TradeResponse, TradeCreate, TradeUpdate,
     CourseResponse, CourseCreate, CourseUpdate,
@@ -22,7 +23,9 @@ from app.schemas.academic import (
     SubjectResponse, SubjectCreate, LessonResponse, LessonCreate,
     TimetableResponse, TimetableCreate, TimetableAttendanceUpdateRequest, AttendanceResponse,
     ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse,
-    LessonPlanDocumentResponse, LessonPlanDocumentUpdate
+    LessonPlanDocumentResponse, LessonPlanDocumentUpdate,
+    CourseCalendarCreate, CourseCalendarUpdate, CourseCalendarResponse,
+    CourseCalendarSummaryResponse, ReorderCalendarEntriesRequest
 )
 
 router = APIRouter(prefix="/academic", tags=["Academic Activities Management Module"])
@@ -500,6 +503,24 @@ def get_lesson_plan(
         raise HTTPException(status_code=404, detail="Lesson plan document not found.")
     return doc
 
+@router.get("/lesson-plans/{doc_id}/file")
+def stream_lesson_plan_file(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Stream raw PDF file bytes for inline preview or download."""
+    file_bytes, filename, mime_type = lesson_plan_service.download_document_bytes(db, doc_id)
+    return Response(
+        content=file_bytes,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Content-Type": mime_type,
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
 @router.post("/lesson-plans", response_model=LessonPlanDocumentResponse)
 def upload_lesson_plan(
     request: Request,
@@ -602,4 +623,159 @@ def get_course_lesson_plans(
 ):
     """Get all lesson plan documents for a specific course."""
     return lesson_plan_doc_repo.get_by_course(db, course_id, status=status or 'Active')
+
+
+# --- 12. Course Calendar Management ---
+@router.get("/instructors/active")
+def get_active_instructors(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Fetch active instructors available for course calendar phase assignment."""
+    return course_calendar_service.get_active_instructors(db)
+
+@router.get("/course-calendars", response_model=List[CourseCalendarSummaryResponse])
+def list_course_calendars(
+    trade_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """List summary of active course calendars."""
+    courses = course_repo.get_all(db)
+    if trade_id:
+        courses = [c for c in courses if c.trade_id == trade_id]
+
+    summaries = []
+    for c in courses:
+        entries = course_calendar_repo.get_by_course(db, c.id)
+        if entries:
+            total_theory = sum(e.theory_periods for e in entries)
+            total_prac = sum(e.practical_periods for e in entries)
+            total_periods = sum(e.total_periods for e in entries)
+            total_days = sum(e.working_days for e in entries)
+            first_comm = min((e.commencement_date for e in entries), default=c.start_date)
+            last_comp = max((e.completion_date for e in entries), default=c.end_date)
+            lead_inst = next((e.instructor_name for e in entries if e.instructor_name), None)
+
+            summaries.append(CourseCalendarSummaryResponse(
+                course_id=c.id,
+                course_name=c.name,
+                course_code=c.code,
+                trade_id=c.trade_id,
+                trade_name=c.trade.label if c.trade else None,
+                total_phases=len(entries),
+                total_theory_periods=total_theory,
+                total_practical_periods=total_prac,
+                total_periods=total_periods,
+                total_working_days=total_days,
+                start_date=first_comm,
+                end_date=last_comp,
+                lead_instructor_name=lead_inst
+            ))
+    return summaries
+
+@router.get("/courses/{course_id}/calendar", response_model=List[CourseCalendarResponse])
+def get_course_calendar(
+    course_id: str,
+    status: Optional[str] = Query('Active'),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Get complete ordered course calendar phases for a specific course."""
+    course = course_repo.get_by_id(db, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found.")
+    return course_calendar_repo.get_by_course(db, course_id, status=status or 'Active')
+
+@router.post("/courses/{course_id}/calendar", response_model=CourseCalendarResponse)
+def create_course_calendar_entry(
+    course_id: str,
+    payload: CourseCalendarCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Add a new calendar phase entry to a course calendar."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return course_calendar_service.create_entry(
+        db=db,
+        course_id=course_id,
+        phase_name=payload.phase_name,
+        commencement_date=payload.commencement_date,
+        completion_date=payload.completion_date,
+        theory_periods=payload.theory_periods,
+        practical_periods=payload.practical_periods,
+        working_days=payload.working_days,
+        serial_number=payload.serial_number,
+        instructor_id=payload.instructor_id,
+        remarks=payload.remarks,
+        user_id=current_user.id,
+        ip=ip,
+        ua=ua
+    )
+
+@router.get("/course-calendar/{calendar_id}", response_model=CourseCalendarResponse)
+def get_course_calendar_entry(
+    calendar_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Get single course calendar phase entry by ID."""
+    entry = course_calendar_repo.get_by_id(db, calendar_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Course calendar entry not found.")
+    return entry
+
+@router.put("/course-calendar/{calendar_id}", response_model=CourseCalendarResponse)
+def update_course_calendar_entry(
+    calendar_id: str,
+    payload: CourseCalendarUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Update a course calendar phase entry."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return course_calendar_service.update_entry(
+        db=db,
+        calendar_id=calendar_id,
+        phase_name=payload.phase_name,
+        commencement_date=payload.commencement_date,
+        completion_date=payload.completion_date,
+        theory_periods=payload.theory_periods,
+        practical_periods=payload.practical_periods,
+        working_days=payload.working_days,
+        serial_number=payload.serial_number,
+        instructor_id=payload.instructor_id,
+        remarks=payload.remarks,
+        status=payload.status,
+        user_id=current_user.id,
+        ip=ip,
+        ua=ua
+    )
+
+@router.delete("/course-calendar/{calendar_id}")
+def delete_course_calendar_entry(
+    calendar_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Delete a course calendar phase entry."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    course_calendar_service.delete_entry(db, calendar_id, current_user.id, ip, ua)
+    return {"message": "Course calendar entry deleted successfully."}
+
+@router.post("/courses/{course_id}/calendar/reorder", response_model=List[CourseCalendarResponse])
+def reorder_course_calendar_entries(
+    course_id: str,
+    payload: ReorderCalendarEntriesRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Reorder phase entries for a course calendar."""
+    return course_calendar_repo.reorder_entries(db, course_id, payload.ordered_ids)
 
