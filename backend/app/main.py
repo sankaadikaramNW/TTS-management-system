@@ -49,6 +49,12 @@ def run_lightweight_migrations():
             ("courses", "start_date", "DATE NULL"),
             ("courses", "end_date", "DATE NULL"),
             ("courses", "is_active", "BOOLEAN DEFAULT 1"),
+            ("accommodation_billets", "block", "VARCHAR(50) NULL"),
+            ("accommodation_billets", "location", "VARCHAR(100) NULL"),
+            ("accommodation_billets", "description", "TEXT NULL"),
+            ("accommodation_billets", "bunk_bed_count", "INT DEFAULT 0"),
+            ("accommodation_billets", "status", "VARCHAR(30) DEFAULT 'Active'"),
+            ("accommodation_allocations", "bed_position_id", "VARCHAR(36) NULL"),
         ]
         for table, col, col_def in migrations:
             try:
@@ -138,6 +144,32 @@ def run_lightweight_migrations():
                     INDEX idx_lpd_uploaded_by (uploaded_by),
                     INDEX idx_lpd_status (status),
                     INDEX idx_lpd_uploaded_at (uploaded_at)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS accommodation_bunk_beds (
+                    id VARCHAR(36) PRIMARY KEY,
+                    billet_id VARCHAR(36) NOT NULL,
+                    bunk_no VARCHAR(50) NOT NULL,
+                    status VARCHAR(30) DEFAULT 'Active',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    deleted_at DATETIME NULL,
+                    INDEX idx_bunk_billet (billet_id)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS accommodation_bed_positions (
+                    id VARCHAR(36) PRIMARY KEY,
+                    bunk_bed_id VARCHAR(36) NOT NULL,
+                    position_type VARCHAR(20) NOT NULL,
+                    position_code VARCHAR(60) NOT NULL,
+                    status VARCHAR(30) DEFAULT 'Available',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    deleted_at DATETIME NULL,
+                    INDEX idx_pos_bunk (bunk_bed_id),
+                    INDEX idx_pos_status (status)
                 )
             """))
             conn.commit()

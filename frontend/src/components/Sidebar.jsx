@@ -27,25 +27,37 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <i className="bi bi-speedometer2"></i>
             <span>Dashboard</span>
           </NavLink>
-          <NavLink to="/accommodation/map" className="nav-link" title="Placement Map">
-            <i className="bi bi-geo-alt"></i>
-            <span>Placement Map</span>
-          </NavLink>
-          <NavLink to="/accommodation/buildings" className="nav-link" title="Building Management">
-            <i className="bi bi-building"></i>
-            <span>Building Management</span>
-          </NavLink>
           <NavLink to="/accommodation/billets" className="nav-link" title="Billet Management">
-            <i className="bi bi-layout-three-columns"></i>
+            <i className="bi bi-building"></i>
             <span>Billet Management</span>
           </NavLink>
-          <NavLink to="/accommodation/beds" className="nav-link" title="Bed Management">
-            <i className="bi bi-door-closed"></i>
-            <span>Bed Management</span>
+          <NavLink to="/accommodation/bunks" className="nav-link" title="Bunk Bed Management">
+            <i className="bi bi-layout-three-columns"></i>
+            <span>Bunk Bed Management</span>
           </NavLink>
-          <NavLink to="/accommodation/reports" className="nav-link" title="Reports & History">
+          <NavLink to="/accommodation/allocate" className="nav-link" title="Bed Allocation">
+            <i className="bi bi-door-closed"></i>
+            <span>Bed Allocation</span>
+          </NavLink>
+          <NavLink to="/accommodation/trainees" className="nav-link" title="Trainee Accommodation">
+            <i className="bi bi-people-fill"></i>
+            <span>Trainee Accommodation</span>
+          </NavLink>
+          <NavLink to="/accommodation/transfers" className="nav-link" title="Transfer & Release">
+            <i className="bi bi-arrow-left-right"></i>
+            <span>Transfer / Release</span>
+          </NavLink>
+          <NavLink to="/accommodation/history" className="nav-link" title="Accommodation History">
+            <i className="bi bi-clock-history"></i>
+            <span>Accommodation History</span>
+          </NavLink>
+          <NavLink to="/accommodation/reports" className="nav-link" title="Reports & Analytics">
             <i className="bi bi-file-earmark-bar-graph"></i>
-            <span>Reports & History</span>
+            <span>Reports & Analytics</span>
+          </NavLink>
+          <NavLink to="/accommodation/map" className="nav-link" title="Visual Bunk Map">
+            <i className="bi bi-geo-alt"></i>
+            <span>Visual Bunk Map</span>
           </NavLink>
           
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />

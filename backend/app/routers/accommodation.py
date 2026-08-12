@@ -1,16 +1,22 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
-from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationBed, AccommodationAllocation
-from app.repositories.accommodation import building_repo, billet_repo, bed_repo, allocation_repo
+from app.models.student import Student
+from app.models.accommodation import (
+    AccommodationBuilding, AccommodationBillet, AccommodationBunkBed, 
+    BedPosition, AccommodationBed, AccommodationAllocation
+)
+from app.repositories.accommodation import (
+    building_repo, billet_repo, bunk_bed_repo, bed_position_repo, bed_repo, allocation_repo
+)
 from app.services.accommodation import accommodation_service
 from app.schemas.accommodation import (
     BuildingCreate, BuildingUpdate, BuildingResponse,
     BilletCreate, BilletUpdate, BilletResponse,
-    BedCreate, BulkBedCreate, BedUpdate, BedResponse,
+    BunkBedCreate, BulkBunkBedCreate, BunkBedResponse, BedPositionResponse,
     AllocationRequest, AllocationResponse,
     TransferRequest, VacateRequest,
     AccommodationDashboardResponse
@@ -29,31 +35,40 @@ def get_dashboard_stats(
 ):
     total_buildings = db.query(AccommodationBuilding).filter(AccommodationBuilding.deleted_at == None).count()
     total_billets = db.query(AccommodationBillet).filter(AccommodationBillet.deleted_at == None).count()
-    total_beds = db.query(AccommodationBed).filter(AccommodationBed.deleted_at == None).count()
+    total_bunk_beds = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.deleted_at == None).count()
     
-    occupied_beds = db.query(AccommodationBed).filter(AccommodationBed.status == "Occupied", AccommodationBed.deleted_at == None).count()
-    vacant_beds = db.query(AccommodationBed).filter(AccommodationBed.status == "Vacant", AccommodationBed.deleted_at == None).count()
-    reserved_beds = db.query(AccommodationBed).filter(AccommodationBed.status == "Reserved", AccommodationBed.deleted_at == None).count()
-    maintenance_beds = db.query(AccommodationBed).filter(AccommodationBed.status == "Maintenance", AccommodationBed.deleted_at == None).count()
+    # Sleeping capacity derived as count of total bed positions or bunk_beds * 2
+    total_sleeping_positions = db.query(BedPosition).filter(BedPosition.deleted_at == None).count()
+    if total_sleeping_positions == 0 and total_bunk_beds > 0:
+        total_sleeping_positions = total_bunk_beds * 2
+
+    occupied_positions = db.query(BedPosition).filter(BedPosition.status == "Occupied", BedPosition.deleted_at == None).count()
+    available_positions = db.query(BedPosition).filter(BedPosition.status == "Available", BedPosition.deleted_at == None).count()
+    reserved_positions = db.query(BedPosition).filter(BedPosition.status == "Reserved", BedPosition.deleted_at == None).count()
+    maintenance_positions = db.query(BedPosition).filter(BedPosition.status == "Maintenance", BedPosition.deleted_at == None).count()
     
-    occupancy_pct = (occupied_beds / total_beds * 100) if total_beds > 0 else 0.0
-    vacancy_pct = (vacant_beds / total_beds * 100) if total_beds > 0 else 0.0
+    active_trainees_count = db.query(AccommodationAllocation).filter(AccommodationAllocation.status == "Active").count()
+
+    occupancy_pct = (occupied_positions / total_sleeping_positions * 100) if total_sleeping_positions > 0 else 0.0
+    vacancy_pct = (available_positions / total_sleeping_positions * 100) if total_sleeping_positions > 0 else 0.0
     
     return {
         "total_buildings": total_buildings,
         "total_billets": total_billets,
-        "total_beds": total_beds,
-        "occupied_beds": occupied_beds,
-        "vacant_beds": vacant_beds,
-        "reserved_beds": reserved_beds,
-        "maintenance_beds": maintenance_beds,
+        "total_bunk_beds": total_bunk_beds,
+        "total_sleeping_positions": total_sleeping_positions,
+        "occupied_positions": occupied_positions,
+        "available_positions": available_positions,
+        "reserved_positions": reserved_positions,
+        "maintenance_positions": maintenance_positions,
         "occupancy_percentage": round(occupancy_pct, 1),
-        "vacancy_percentage": round(vacancy_pct, 1)
+        "vacancy_percentage": round(vacancy_pct, 1),
+        "active_trainees_count": active_trainees_count
     }
 
 @router.get("/reports")
 def get_reports(
-    report_type: str = "active",  # active, history, billet_occupancy
+    report_type: str = "active",  # active, history, billet_occupancy, trade_wise, course_wise, batch_wise
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:read"))
 ):
@@ -62,24 +77,56 @@ def get_reports(
     elif report_type == "history":
         return allocation_repo.get_history(db)
     elif report_type == "billet_occupancy":
-        billets = db.query(AccommodationBillet).filter(AccommodationBillet.deleted_at == None).all()
+        billets = billet_repo.get_all(db)
         results = []
         for b in billets:
-            total_beds = db.query(AccommodationBed).filter(AccommodationBed.billet_id == b.id, AccommodationBed.deleted_at == None).count()
-            occupied = db.query(AccommodationBed).filter(AccommodationBed.billet_id == b.id, AccommodationBed.status == "Occupied", AccommodationBed.deleted_at == None).count()
-            vacant = db.query(AccommodationBed).filter(AccommodationBed.billet_id == b.id, AccommodationBed.status == "Vacant", AccommodationBed.deleted_at == None).count()
+            total_bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == b.id, AccommodationBunkBed.deleted_at == None).count()
+            total_positions = db.query(BedPosition).join(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == b.id, BedPosition.deleted_at == None).count()
+            if total_positions == 0:
+                total_positions = total_bunks * 2
+            occupied = db.query(BedPosition).join(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == b.id, BedPosition.status == "Occupied", BedPosition.deleted_at == None).count()
+            available = total_positions - occupied
             results.append({
                 "id": b.id,
-                "building_name": b.building.name,
+                "building_name": b.building.name if b.building else "—",
                 "billet_name": b.name,
-                "capacity": b.capacity,
+                "bunk_bed_count": total_bunks,
+                "total_positions": total_positions,
                 "occupied": occupied,
-                "vacant": vacant,
-                "occupancy_rate": round((occupied / b.capacity * 100), 1) if b.capacity > 0 else 0
+                "available": max(0, available),
+                "occupancy_rate": round((occupied / total_positions * 100), 1) if total_positions > 0 else 0.0
             })
         return results
+    elif report_type == "trade_wise":
+        active_allocs = allocation_repo.get_all_active(db)
+        trade_map = {}
+        for a in active_allocs:
+            trade = a.student_trade or "Unassigned"
+            trade_map[trade] = trade_map.get(trade, 0) + 1
+        return [{"trade": k, "count": v} for k, v in trade_map.items()]
+    elif report_type == "course_wise":
+        active_allocs = allocation_repo.get_all_active(db)
+        course_map = {}
+        for a in active_allocs:
+            course = a.student_course or "General"
+            course_map[course] = course_map.get(course, 0) + 1
+        return [{"course": k, "count": v} for k, v in course_map.items()]
+    elif report_type == "batch_wise":
+        active_allocs = allocation_repo.get_all_active(db)
+        batch_map = {}
+        for a in active_allocs:
+            batch = a.student_batch or "Standard"
+            batch_map[batch] = batch_map.get(batch, 0) + 1
+        return [{"batch": k, "count": v} for k, v in batch_map.items()]
     else:
         raise HTTPException(status_code=400, detail="Invalid report type")
+
+@router.get("/history")
+def get_accommodation_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    return allocation_repo.get_history(db)
 
 # ==========================================
 # MASTER BUILDING MANAGEMENT ENDPOINTS
@@ -94,9 +141,13 @@ def get_buildings(
     for bldg in buildings:
         vacant_total = 0
         for billet in bldg.billets:
-            vacant_beds = sum(1 for bed in billet.beds if bed.status == "Vacant")
-            billet.vacant_count = vacant_beds
-            vacant_total += vacant_beds
+            vacant_positions = db.query(BedPosition).join(AccommodationBunkBed).filter(
+                AccommodationBunkBed.billet_id == billet.id,
+                BedPosition.status == "Available",
+                BedPosition.deleted_at == None
+            ).count()
+            billet.vacant_count = vacant_positions
+            vacant_total += vacant_positions
         bldg.vacant_count = vacant_total
     return buildings
 
@@ -106,7 +157,6 @@ def create_building(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    # Check uniqueness
     existing = db.query(AccommodationBuilding).filter(AccommodationBuilding.name == bldg_data.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Building name already exists")
@@ -141,8 +191,7 @@ def delete_building(
     if not bldg:
         raise HTTPException(status_code=404, detail="Building not found")
         
-    # Check if there are active beds allocated in this building
-    active_allocs = db.query(AccommodationAllocation).join(AccommodationBed).join(AccommodationBillet).filter(
+    active_allocs = db.query(AccommodationAllocation).join(BedPosition).join(AccommodationBunkBed).join(AccommodationBillet).filter(
         AccommodationBillet.building_id == id,
         AccommodationAllocation.status == "Active"
     ).count()
@@ -156,16 +205,52 @@ def delete_building(
 # MASTER BILLET MANAGEMENT ENDPOINTS
 # ==========================================
 
-@router.get("/billets/{building_id}", response_model=List[BilletResponse])
-def get_billets(
-    building_id: str,
+@router.get("/billets", response_model=List[BilletResponse])
+def get_all_billets(
+    building_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:read"))
 ):
-    billets = billet_repo.get_by_building(db, building_id)
+    if building_id:
+        billets = billet_repo.get_by_building(db, building_id)
+    else:
+        billets = billet_repo.get_all(db)
+
     for b in billets:
-        b.vacant_count = sum(1 for bed in b.beds if bed.status == "Vacant")
+        total_bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == b.id, AccommodationBunkBed.deleted_at == None).count()
+        b.bunk_bed_count = total_bunks
+        b.capacity = total_bunks * 2
+        
+        b.vacant_count = db.query(BedPosition).join(AccommodationBunkBed).filter(
+            AccommodationBunkBed.billet_id == b.id,
+            BedPosition.status == "Available",
+            BedPosition.deleted_at == None
+        ).count()
+        b.building_name = b.building.name if b.building else "—"
+        b.occupancy_rate = round((b.current_occupancy / b.capacity * 100), 1) if b.capacity > 0 else 0.0
     return billets
+
+@router.get("/billets/{id}", response_model=BilletResponse)
+def get_billet_by_id(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    billet = billet_repo.get(db, id)
+    if not billet:
+        raise HTTPException(status_code=404, detail="Billet not found")
+    
+    total_bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == billet.id, AccommodationBunkBed.deleted_at == None).count()
+    billet.bunk_bed_count = total_bunks
+    billet.capacity = total_bunks * 2
+    billet.vacant_count = db.query(BedPosition).join(AccommodationBunkBed).filter(
+        AccommodationBunkBed.billet_id == billet.id,
+        BedPosition.status == "Available",
+        BedPosition.deleted_at == None
+    ).count()
+    billet.building_name = billet.building.name if billet.building else "—"
+    billet.occupancy_rate = round((billet.current_occupancy / billet.capacity * 100), 1) if billet.capacity > 0 else 0.0
+    return billet
 
 @router.post("/billets", response_model=BilletResponse)
 def create_billet(
@@ -177,12 +262,6 @@ def create_billet(
     if not bldg:
         raise HTTPException(status_code=404, detail="Building not found")
 
-    # Validate building total capacity
-    current_bldg_capacity = sum(b.capacity for b in bldg.billets)
-    if current_bldg_capacity + billet_data.capacity > bldg.capacity:
-        raise HTTPException(status_code=400, detail="Billet capacity exceeds remaining building capacity")
-
-    # Check unique name in building
     existing = db.query(AccommodationBillet).filter(
         AccommodationBillet.building_id == billet_data.building_id,
         AccommodationBillet.name == billet_data.name
@@ -193,9 +272,30 @@ def create_billet(
     billet = AccommodationBillet(
         building_id=billet_data.building_id,
         name=billet_data.name,
-        capacity=billet_data.capacity
+        block=billet_data.block,
+        location=billet_data.location,
+        description=billet_data.description,
+        status=billet_data.status or "Active",
+        bunk_bed_count=0,
+        capacity=0
     )
-    return billet_repo.create(db, obj_in=billet)
+    created = billet_repo.create(db, obj_in=billet)
+
+    # Optional: Pre-create bunk beds if count specified
+    if billet_data.bunk_bed_count and billet_data.bunk_bed_count > 0:
+        bulk_req = BulkBunkBedCreate(
+            billet_id=created.id,
+            prefix=f"{created.name}-Bunk-",
+            count=billet_data.bunk_bed_count
+        )
+        accommodation_service.bulk_create_bunk_beds(db, bulk_req, current_user.id, "127.0.0.1", "API")
+
+    db.refresh(created)
+    total_bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == created.id).count()
+    created.bunk_bed_count = total_bunks
+    created.capacity = total_bunks * 2
+    created.building_name = bldg.name
+    return created
 
 @router.put("/billets/{id}", response_model=BilletResponse)
 def update_billet(
@@ -208,145 +308,168 @@ def update_billet(
     if not billet:
         raise HTTPException(status_code=404, detail="Billet not found")
 
-    # If capacity is being changed, check that new capacity covers current occupancy
-    if billet_data.capacity is not None:
-        if billet_data.capacity < billet.current_occupancy:
-            raise HTTPException(status_code=400, detail="New capacity is less than current occupancy")
-
-    return billet_repo.update(db, db_obj=billet, obj_in=billet_data)
+    updated = billet_repo.update(db, db_obj=billet, obj_in=billet_data)
+    total_bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.billet_id == id).count()
+    updated.bunk_bed_count = total_bunks
+    updated.capacity = total_bunks * 2
+    updated.building_name = updated.building.name if updated.building else "—"
+    return updated
 
 # ==========================================
-# MASTER BED MANAGEMENT ENDPOINTS
+# BUNK BED MANAGEMENT ENDPOINTS
 # ==========================================
 
-@router.get("/beds/billet/{billet_id}", response_model=List[BedResponse])
-def get_beds_by_billet(
+@router.get("/bunks", response_model=List[BunkBedResponse])
+def get_bunk_beds(
+    billet_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    if billet_id:
+        bunks = bunk_bed_repo.get_by_billet(db, billet_id)
+    else:
+        bunks = db.query(AccommodationBunkBed).filter(AccommodationBunkBed.deleted_at == None).all()
+
+    results = []
+    for bunk in bunks:
+        positions = bed_position_repo.get_by_bunk(db, bunk.id)
+        pos_responses = []
+        for p in positions:
+            active_alloc = allocation_repo.get_active_by_position(db, p.id)
+            student_id = active_alloc.student_id if active_alloc else None
+            student_name = None
+            student_service_number = None
+            student_rank = None
+            student_trade = None
+            parade_status = None
+            if active_alloc:
+                allocation_repo._map_relations(db, active_alloc)
+                student_name = active_alloc.student_name
+                student_service_number = active_alloc.student_service_number
+                student_rank = active_alloc.student_rank
+                student_trade = active_alloc.student_trade
+                parade_status = active_alloc.parade_status
+
+            pos_responses.append(BedPositionResponse(
+                id=p.id,
+                bunk_bed_id=p.bunk_bed_id,
+                position_type=p.position_type,
+                position_code=p.position_code,
+                status=p.status,
+                student_id=student_id,
+                student_name=student_name,
+                student_service_number=student_service_number,
+                student_rank=student_rank,
+                student_trade=student_trade,
+                parade_status=parade_status
+            ))
+        occupied_cnt = sum(1 for p in pos_responses if p.status == "Occupied")
+        available_cnt = sum(1 for p in pos_responses if p.status == "Available")
+        results.append(BunkBedResponse(
+            id=bunk.id,
+            billet_id=bunk.billet_id,
+            bunk_no=bunk.bunk_no,
+            status=bunk.status,
+            positions=pos_responses,
+            occupied_count=occupied_cnt,
+            available_count=available_cnt
+        ))
+    return results
+
+@router.get("/billets/{billet_id}/bunks", response_model=List[BunkBedResponse])
+def get_bunks_by_billet(
     billet_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:read"))
 ):
-    return bed_repo.get_by_billet(db, billet_id)
+    return get_bunk_beds(billet_id=billet_id, db=db, current_user=current_user)
 
-@router.post("/beds", response_model=BedResponse)
-def create_bed(
-    bed_data: BedCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(PermissionChecker("room:write"))
-):
-    billet = billet_repo.get(db, bed_data.billet_id)
-    if not billet:
-        raise HTTPException(status_code=404, detail="Billet not found")
-
-    # Check capacity limits
-    current_beds_count = db.query(AccommodationBed).filter(
-        AccommodationBed.billet_id == bed_data.billet_id,
-        AccommodationBed.deleted_at == None
-    ).count()
-    if current_beds_count >= billet.capacity:
-        raise HTTPException(status_code=400, detail="Cannot exceed billet capacity")
-
-    # Check uniqueness within billet
-    existing = db.query(AccommodationBed).filter(
-        AccommodationBed.billet_id == bed_data.billet_id,
-        AccommodationBed.bed_number == bed_data.bed_number,
-        AccommodationBed.deleted_at == None
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Bed number already exists in this billet")
-
-    bed = AccommodationBed(
-        billet_id=bed_data.billet_id,
-        bed_number=bed_data.bed_number,
-        status=bed_data.status
-    )
-    return bed_repo.create(db, obj_in=bed)
-
-@router.post("/beds/bulk", response_model=List[BedResponse])
-def bulk_create_beds(
-    bulk_data: BulkBedCreate,
+@router.post("/bunks", response_model=BunkBedResponse)
+def create_bunk_bed(
+    bunk_data: BunkBedCreate,
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    billet = billet_repo.get(db, bulk_data.billet_id)
-    if not billet:
-        raise HTTPException(status_code=404, detail="Billet not found")
-
-    if bulk_data.count <= 0:
-        raise HTTPException(status_code=400, detail="Bed count must be greater than 0")
-
-    if bulk_data.count > 100:
-        raise HTTPException(status_code=400, detail="Cannot generate more than 100 beds at a time")
-
-    existing_beds = db.query(AccommodationBed).filter(
-        AccommodationBed.billet_id == bulk_data.billet_id,
-        AccommodationBed.deleted_at == None
-    ).all()
-
-    if len(existing_beds) + bulk_data.count > billet.capacity:
-        remaining = max(0, billet.capacity - len(existing_beds))
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Bulk creation of {bulk_data.count} beds exceeds billet capacity limit. Remaining bed capacity: {remaining} beds."
-        )
-
-    existing_numbers = {b.bed_number for b in existing_beds}
-    prefix = bulk_data.prefix if bulk_data.prefix is not None else "Bed "
-    start_num = bulk_data.start_number if bulk_data.start_number is not None else 1
-
-    created_beds = []
-    for i in range(bulk_data.count):
-        num = start_num + i
-        bed_num = f"{prefix}{num}"
-        if bed_num in existing_numbers:
-            continue
-        
-        bed = AccommodationBed(
-            billet_id=bulk_data.billet_id,
-            bed_number=bed_num,
-            status=bulk_data.status or "Vacant"
-        )
-        db.add(bed)
-        created_beds.append(bed)
-
-    db.commit()
-    for b in created_beds:
-        db.refresh(b)
-
-    ip = request.client.host if request.client else "unknown"
-    ua = request.headers.get("user-agent", "unknown")
-    from app.repositories.user import audit_repo
-    audit_repo.create_log(
-        db, current_user.id, "BULK_BEDS_CREATED", ip, ua,
-        f"Bulk created {len(created_beds)} beds in billet '{billet.name}'"
+    ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "API")
+    bunk = accommodation_service.create_bunk_bed(db, bunk_data, current_user.id, ip, ua)
+    
+    positions = bed_position_repo.get_by_bunk(db, bunk.id)
+    pos_responses = [BedPositionResponse.model_validate(p) for p in positions]
+    return BunkBedResponse(
+        id=bunk.id,
+        billet_id=bunk.billet_id,
+        bunk_no=bunk.bunk_no,
+        status=bunk.status,
+        positions=pos_responses,
+        occupied_count=0,
+        available_count=2
     )
 
-    return created_beds
-
-@router.put("/beds/{id}", response_model=BedResponse)
-def update_bed(
-    id: str,
-    bed_data: BedUpdate,
+@router.post("/bunks/bulk", response_model=List[BunkBedResponse])
+def bulk_create_bunk_beds(
+    bulk_data: BulkBunkBedCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    bed = bed_repo.get(db, id)
-    if not bed:
-        raise HTTPException(status_code=404, detail="Bed not found")
+    ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "API")
+    bunks = accommodation_service.bulk_create_bunk_beds(db, bulk_data, current_user.id, ip, ua)
+    return get_bunk_beds(billet_id=bulk_data.billet_id, db=db, current_user=current_user)
 
-    # If updating status, ensure we don't mark an active occupied bed as vacant directly (must go through vacate)
-    if bed_data.status is not None and bed.status == "Occupied" and bed_data.status != "Occupied":
-        active_alloc = db.query(AccommodationAllocation).filter(
-            AccommodationAllocation.bed_id == id,
-            AccommodationAllocation.status == "Active"
-        ).first()
+@router.get("/bunks/{bunk_id}/positions", response_model=List[BedPositionResponse])
+def get_bunk_positions(
+    bunk_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    positions = bed_position_repo.get_by_bunk(db, bunk_id)
+    results = []
+    for p in positions:
+        active_alloc = allocation_repo.get_active_by_position(db, p.id)
+        student_id = active_alloc.student_id if active_alloc else None
+        student_name = None
+        student_service_number = None
+        student_rank = None
+        student_trade = None
+        parade_status = None
         if active_alloc:
-            raise HTTPException(
-                status_code=400, 
-                detail="Bed has an active allocation. Please vacate the bed using the vacate endpoint."
-            )
+            allocation_repo._map_relations(db, active_alloc)
+            student_name = active_alloc.student_name
+            student_service_number = active_alloc.student_service_number
+            student_rank = active_alloc.student_rank
+            student_trade = active_alloc.student_trade
+            parade_status = active_alloc.parade_status
 
-    return bed_repo.update(db, db_obj=bed, obj_in=bed_data)
+        results.append(BedPositionResponse(
+            id=p.id,
+            bunk_bed_id=p.bunk_bed_id,
+            position_type=p.position_type,
+            position_code=p.position_code,
+            status=p.status,
+            student_id=student_id,
+            student_name=student_name,
+            student_service_number=student_service_number,
+            student_rank=student_rank,
+            student_trade=student_trade,
+            parade_status=parade_status
+        ))
+    return results
+
+@router.get("/positions/available", response_model=List[BedPositionResponse])
+def get_available_positions(
+    billet_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    if billet_id:
+        positions = bed_position_repo.get_available_in_billet(db, billet_id)
+    else:
+        positions = db.query(BedPosition).filter(BedPosition.status == "Available", BedPosition.deleted_at == None).all()
+
+    return [BedPositionResponse.model_validate(p) for p in positions]
 
 # ==========================================
 # ALLOCATION, TRANSFER & VACATE ENDPOINTS
@@ -359,6 +482,18 @@ def list_allocations(
 ):
     return allocation_repo.get_all_active(db)
 
+@router.get("/trainees/{trainee_id}", response_model=Optional[AllocationResponse])
+def get_trainee_accommodation(
+    trainee_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("room:read"))
+):
+    alloc = allocation_repo.get_active_by_student(db, trainee_id)
+    if not alloc:
+        return None
+    allocation_repo._map_relations(db, alloc)
+    return alloc
+
 @router.post("/allocate", response_model=AllocationResponse)
 def allocate_trainee_bed(
     request: Request,
@@ -366,8 +501,8 @@ def allocate_trainee_bed(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    ip = request.client.host if request.client else "unknown"
-    ua = request.headers.get("user-agent", "unknown")
+    ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "API")
     alloc = accommodation_service.allocate_bed(db, alloc_data, current_user.id, ip, ua)
     return allocation_repo.get_details(db, alloc.id)
 
@@ -378,8 +513,8 @@ def transfer_trainee_bed(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    ip = request.client.host if request.client else "unknown"
-    ua = request.headers.get("user-agent", "unknown")
+    ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "API")
     alloc = accommodation_service.transfer_bed(db, transfer_data, current_user.id, ip, ua)
     return allocation_repo.get_details(db, alloc.id)
 
@@ -391,7 +526,7 @@ def vacate_trainee_bed(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("room:write"))
 ):
-    ip = request.client.host if request.client else "unknown"
-    ua = request.headers.get("user-agent", "unknown")
+    ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "API")
     alloc = accommodation_service.vacate_bed(db, allocation_id, vacate_data, current_user.id, ip, ua)
     return allocation_repo.get_details(db, alloc.id)

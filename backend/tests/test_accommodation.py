@@ -5,14 +5,14 @@ def get_auth_headers(client):
     token = res.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
-def test_accommodation_full_workflow(client):
+def test_bunk_bed_accommodation_full_workflow(client):
     headers = get_auth_headers(client)
 
     # 1. Create a Building
     b_res = client.post("/api/v1/accommodation/buildings", json={
-        "name": "Test Block Beta (T2)",
+        "name": "Test Block Gamma (T3)",
         "type": "Airmen",
-        "capacity": 20
+        "capacity": 40
     }, headers=headers)
     assert b_res.status_code == 200
     bldg_id = b_res.json()["id"]
@@ -20,35 +20,35 @@ def test_accommodation_full_workflow(client):
     # 2. Create a Billet inside the Building
     bil_res = client.post("/api/v1/accommodation/billets", json={
         "building_id": bldg_id,
-        "name": "Test Billet B-1",
-        "capacity": 10
+        "name": "Test Billet Gamma-1",
+        "bunk_bed_count": 5
     }, headers=headers)
     assert bil_res.status_code == 200
     billet_id = bil_res.json()["id"]
 
-    # 3. Create two Beds inside the Billet
-    bed1_res = client.post("/api/v1/accommodation/beds", json={
+    # 3. Create a Bunk Bed inside the Billet (verifying automatic TOP and BOTTOM position creation)
+    bunk_res = client.post("/api/v1/accommodation/bunks", json={
         "billet_id": billet_id,
-        "bed_number": "01",
-        "status": "Vacant"
+        "bunk_no": "B-01-05",
+        "status": "Active"
     }, headers=headers)
-    assert bed1_res.status_code == 200
-    bed1_id = bed1_res.json()["id"]
+    assert bunk_res.status_code == 200
+    bunk_data = bunk_res.json()
+    assert bunk_data["bunk_no"] == "B-01-05"
+    assert len(bunk_data["positions"]) == 2
+    
+    pos_types = {p["position_type"] for p in bunk_data["positions"]}
+    assert "TOP" in pos_types and "BOTTOM" in pos_types
 
-    bed2_res = client.post("/api/v1/accommodation/beds", json={
-        "billet_id": billet_id,
-        "bed_number": "02",
-        "status": "Vacant"
-    }, headers=headers)
-    assert bed2_res.status_code == 200
-    bed2_id = bed2_res.json()["id"]
+    top_pos = next(p for p in bunk_data["positions"] if p["position_type"] == "TOP")
+    bottom_pos = next(p for p in bunk_data["positions"] if p["position_type"] == "BOTTOM")
 
-    # 4. Create a student to assign to the bed
-    student_payload = {
-        "service_number": "SLAF/99999",
-        "initials": "X.Y.Z.",
-        "full_name": "Trainee Tester",
-        "nic": "200099999999",
+    # 4. Create two students for allocation testing
+    student_payload_1 = {
+        "service_number": "SLAF/88881",
+        "initials": "A.B.",
+        "full_name": "Trainee Alpha",
+        "nic": "200088888881",
         "dob": "2000-01-01",
         "gender": "Male",
         "rank": "Aircraftman",
@@ -56,57 +56,104 @@ def test_accommodation_full_workflow(client):
         "course_id": None,
         "batch": "120th Intake",
         "joining_date": "2026-01-01",
-        "emergency_contact_name": "Contact Parent",
-        "emergency_contact_phone": "0770000000",
+        "emergency_contact_name": "Parent Alpha",
+        "emergency_contact_phone": "0770000001",
         "blood_group": "A+",
         "religion": "Buddhist",
-        "permanent_address": "Test Base, Katunayake"
+        "permanent_address": "Katunayake Base"
     }
-    s_res = client.post("/api/v1/students", json=student_payload, headers=headers)
-    assert s_res.status_code == 200
-    student_id = s_res.json()["id"]
+    s1_res = client.post("/api/v1/students", json=student_payload_1, headers=headers)
+    assert s1_res.status_code == 200
+    student1_id = s1_res.json()["id"]
 
-    # 5. Allocate Bed 01 to the Trainee
-    alloc_res = client.post("/api/v1/accommodation/allocate", json={
-        "student_id": student_id,
-        "bed_id": bed1_id,
-        "remarks": "Initial placement"
+    student_payload_2 = {
+        "service_number": "SLAF/88882",
+        "initials": "C.D.",
+        "full_name": "Trainee Beta",
+        "nic": "200088888882",
+        "dob": "2000-02-02",
+        "gender": "Male",
+        "rank": "Leading Aircraftman",
+        "trade": "Avionics",
+        "course_id": None,
+        "batch": "120th Intake",
+        "joining_date": "2026-01-01",
+        "emergency_contact_name": "Parent Beta",
+        "emergency_contact_phone": "0770000002",
+        "blood_group": "B+",
+        "religion": "Christian",
+        "permanent_address": "Ekala Base"
+    }
+    s2_res = client.post("/api/v1/students", json=student_payload_2, headers=headers)
+    assert s2_res.status_code == 200
+    student2_id = s2_res.json()["id"]
+
+    # 5. Allocate TOP Position to Trainee Alpha
+    alloc1_res = client.post("/api/v1/accommodation/allocate", json={
+        "student_id": student1_id,
+        "bed_position_id": top_pos["id"],
+        "remarks": "Assigned to TOP bed position"
     }, headers=headers)
-    assert alloc_res.status_code == 200
-    alloc_id = alloc_res.json()["id"]
+    assert alloc1_res.status_code == 200
+    alloc1_data = alloc1_res.json()
+    assert alloc1_data["position_code"] == top_pos["position_code"]
 
-    # Verify bed status is now Occupied
-    bed_check = client.get(f"/api/v1/accommodation/beds/billet/{billet_id}", headers=headers)
-    assert bed_check.status_code == 200
-    assert any(b["id"] == bed1_id and b["status"] == "Occupied" for b in bed_check.json())
-
-    # 6. Attempt allocating the same occupied Bed 01 to another (should fail)
-    fail_alloc = client.post("/api/v1/accommodation/allocate", json={
-        "student_id": student_id,
-        "bed_id": bed1_id
+    # 6. Attempt assigning Trainee Alpha to another position (should fail: Duplicate Trainee Accommodation)
+    dup_trainee_res = client.post("/api/v1/accommodation/allocate", json={
+        "student_id": student1_id,
+        "bed_position_id": bottom_pos["id"]
     }, headers=headers)
-    assert fail_alloc.status_code == 400
+    assert dup_trainee_res.status_code == 400
+    assert "already assigned" in dup_trainee_res.json()["detail"].lower()
 
-    # 7. Transfer Trainee to Bed 02
+    # 7. Attempt assigning Trainee Beta to the already occupied TOP position (should fail: Double Allocation)
+    dup_pos_res = client.post("/api/v1/accommodation/allocate", json={
+        "student_id": student2_id,
+        "bed_position_id": top_pos["id"]
+    }, headers=headers)
+    assert dup_pos_res.status_code == 400
+    assert "not available" in dup_pos_res.json()["detail"].lower()
+
+    # 8. Allocate BOTTOM Position to Trainee Beta (Same Bunk, 2 positions)
+    alloc2_res = client.post("/api/v1/accommodation/allocate", json={
+        "student_id": student2_id,
+        "bed_position_id": bottom_pos["id"],
+        "remarks": "Assigned to BOTTOM bed position of same bunk"
+    }, headers=headers)
+    assert alloc2_res.status_code == 200
+
+    # 9. Verify Bunk Positions Status
+    bunk_positions_res = client.get(f"/api/v1/accommodation/bunks/{bunk_data['id']}/positions", headers=headers)
+    assert bunk_positions_res.status_code == 200
+    positions_list = bunk_positions_res.json()
+    assert all(p["status"] == "Occupied" for p in positions_list)
+
+    # 10. Transfer Trainee Alpha to a new Bunk position
+    new_bunk_res = client.post("/api/v1/accommodation/bunks", json={
+        "billet_id": billet_id,
+        "bunk_no": "B-01-06",
+        "status": "Active"
+    }, headers=headers)
+    assert new_bunk_res.status_code == 200
+    new_top_pos = next(p for p in new_bunk_res.json()["positions"] if p["position_type"] == "TOP")
+
     trans_res = client.post("/api/v1/accommodation/transfer", json={
-        "student_id": student_id,
-        "new_bed_id": bed2_id,
-        "remarks": "Moved due to maintenance check"
+        "student_id": student1_id,
+        "new_bed_position_id": new_top_pos["id"],
+        "remarks": "Transferred to B-01-06-TOP"
     }, headers=headers)
     assert trans_res.status_code == 200
 
-    # Verify old bed is Vacant, and new bed is Occupied
-    bed_check2 = client.get(f"/api/v1/accommodation/beds/billet/{billet_id}", headers=headers)
-    assert any(b["id"] == bed1_id and b["status"] == "Vacant" for b in bed_check2.json())
-    assert any(b["id"] == bed2_id and b["status"] == "Occupied" for b in bed_check2.json())
-
-    # 8. Vacate Bed 02
-    vac_res = client.post(f"/api/v1/accommodation/vacate/{trans_res.json()['id']}", json={
+    # 11. Vacate Trainee Beta from BOTTOM Position
+    vac_res = client.post(f"/api/v1/accommodation/vacate/{alloc2_res.json()['id']}", json={
         "vacate_reason": "Course Completed",
-        "remarks": "End of training term"
+        "remarks": "Passed out successfully"
     }, headers=headers)
     assert vac_res.status_code == 200
 
-    # Verify both beds are now Vacant
-    bed_check3 = client.get(f"/api/v1/accommodation/beds/billet/{billet_id}", headers=headers)
-    assert all(b["status"] == "Vacant" for b in bed_check3.json())
+    # 12. Check Dashboard Statistics API
+    dash_res = client.get("/api/v1/accommodation/dashboard", headers=headers)
+    assert dash_res.status_code == 200
+    dash = dash_res.json()
+    assert dash["total_bunk_beds"] >= 2
+    assert dash["total_sleeping_positions"] >= 4

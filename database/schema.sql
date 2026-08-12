@@ -236,8 +236,13 @@ CREATE TABLE accommodation_billets (
     id VARCHAR(36) PRIMARY KEY,
     building_id VARCHAR(36) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    capacity INT NOT NULL,
+    block VARCHAR(50) NULL,
+    location VARCHAR(100) NULL,
+    description TEXT NULL,
+    capacity INT NOT NULL, -- Total sleeping capacity (bunk_bed_count * 2)
+    bunk_bed_count INT DEFAULT 0,
     current_occupancy INT DEFAULT 0,
+    status VARCHAR(30) DEFAULT 'Active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -245,13 +250,43 @@ CREATE TABLE accommodation_billets (
     UNIQUE KEY uq_building_billet (building_id, name)
 ) ENGINE=InnoDB;
 
--- 10. ACCOMMODATION BEDS
+-- 10. ACCOMMODATION BUNK BEDS (Physical Bunk Bed Units)
+DROP TABLE IF EXISTS accommodation_bunk_beds;
+CREATE TABLE accommodation_bunk_beds (
+    id VARCHAR(36) PRIMARY KEY,
+    billet_id VARCHAR(36) NOT NULL,
+    bunk_no VARCHAR(50) NOT NULL,
+    status VARCHAR(30) DEFAULT 'Active', -- Active, Inactive, Maintenance
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (billet_id) REFERENCES accommodation_billets(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_billet_bunk (billet_id, bunk_no)
+) ENGINE=InnoDB;
+
+-- 10b. ACCOMMODATION BED POSITIONS (Top & Bottom Sleeping Positions)
+DROP TABLE IF EXISTS accommodation_bed_positions;
+CREATE TABLE accommodation_bed_positions (
+    id VARCHAR(36) PRIMARY KEY,
+    bunk_bed_id VARCHAR(36) NOT NULL,
+    position_type VARCHAR(20) NOT NULL, -- TOP, BOTTOM
+    position_code VARCHAR(60) NOT NULL, -- e.g. B-01-05-TOP
+    status VARCHAR(30) DEFAULT 'Available', -- Available, Occupied, Reserved, Maintenance
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (bunk_bed_id) REFERENCES accommodation_bunk_beds(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_bunk_position_type (bunk_bed_id, position_type),
+    UNIQUE KEY uq_position_code (position_code)
+) ENGINE=InnoDB;
+
+-- Legacy beds table for backwards compatibility
 DROP TABLE IF EXISTS accommodation_beds;
 CREATE TABLE accommodation_beds (
     id VARCHAR(36) PRIMARY KEY,
     billet_id VARCHAR(36) NOT NULL,
     bed_number VARCHAR(30) NOT NULL,
-    status VARCHAR(30) DEFAULT 'Vacant', -- Vacant, Occupied, Maintenance, Reserved
+    status VARCHAR(30) DEFAULT 'Vacant',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
@@ -259,12 +294,13 @@ CREATE TABLE accommodation_beds (
     UNIQUE KEY uq_billet_bed (billet_id, bed_number)
 ) ENGINE=InnoDB;
 
--- 11. ACCOMMODATION ALLOCATIONS
+-- 11. ACCOMMODATION ALLOCATIONS / ASSIGNMENTS
 DROP TABLE IF EXISTS accommodation_allocations;
 CREATE TABLE accommodation_allocations (
     id VARCHAR(36) PRIMARY KEY,
     student_id VARCHAR(36) NOT NULL,
-    bed_id VARCHAR(36) NOT NULL,
+    bed_position_id VARCHAR(36) NULL,
+    bed_id VARCHAR(36) NULL, -- legacy alias
     allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     allocated_by VARCHAR(36),
     vacated_at TIMESTAMP NULL,
@@ -275,11 +311,12 @@ CREATE TABLE accommodation_allocations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (bed_position_id) REFERENCES accommodation_bed_positions(id) ON DELETE CASCADE,
     FOREIGN KEY (bed_id) REFERENCES accommodation_beds(id) ON DELETE CASCADE,
     FOREIGN KEY (allocated_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (vacated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_alloc_student (student_id),
-    INDEX idx_alloc_bed (bed_id),
+    INDEX idx_alloc_position (bed_position_id),
     INDEX idx_alloc_status (status)
 ) ENGINE=InnoDB;
 
