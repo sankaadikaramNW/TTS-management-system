@@ -103,6 +103,7 @@ export const CourseCalendarPrintView = ({ course, entries, onClose }) => {
                     <th style={{ width: '105px' }}>Dates of Commencement</th>
                     <th style={{ width: '105px' }}>Dates of Completion</th>
                     <th className="text-start" style={{ minWidth: '150px' }}>Instructor</th>
+                    <th className="text-start" style={{ minWidth: '160px' }}>Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -117,12 +118,21 @@ export const CourseCalendarPrintView = ({ course, entries, onClose }) => {
                         <td>{item.working_days > 0 ? item.working_days : '-'}</td>
                         <td className="fw-semibold">{formatDateDisplay(item.commencement_date)}</td>
                         <td className="fw-semibold">{formatDateDisplay(item.completion_date)}</td>
-                        <td className="text-start small">{item.instructor_name || item.instructor_id || 'Staff Instructor'}</td>
+                        <td className="text-start small">
+                          {item.instructor_status === 'ASSIGNED' && item.instructor_name ? (
+                            <span className="fw-semibold text-dark">{item.instructor_name}</span>
+                          ) : (
+                            <span className="fw-bold text-danger">INSTRUCTOR NOT ASSIGNED</span>
+                          )}
+                        </td>
+                        <td className="text-start small">
+                          {item.remarks ? item.remarks : '-'}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="9" className="py-4 text-muted">
+                      <td colSpan="10" className="py-4 text-muted">
                         No phase entries defined for this course calendar.
                       </td>
                     </tr>
@@ -136,7 +146,7 @@ export const CourseCalendarPrintView = ({ course, entries, onClose }) => {
                       <td className="text-primary">{totalPractical}</td>
                       <td className="bg-primary text-white">{totalPeriods}</td>
                       <td className="text-dark">{totalWorkingDays}</td>
-                      <td colSpan="3" className="text-start small text-muted ps-3">
+                      <td colSpan="4" className="text-start small text-muted ps-3">
                         Total Course Phases: {entries.length}
                       </td>
                     </tr>

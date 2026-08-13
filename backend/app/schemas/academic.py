@@ -334,6 +334,7 @@ class AcademicDashboardSummary(BaseModel):
     active_instructors: int
     active_students: int
     available_classrooms: int
+    pending_instructor_assignments: int = 0
     upcoming_phase_tests: int
     upcoming_final_exams: int
     classroom_utilization_rate: float
@@ -420,7 +421,15 @@ class CourseCalendarCreate(BaseModel):
     commencement_date: date = Field(..., description="Commencement date")
     completion_date: date = Field(..., description="Completion date")
     instructor_id: Optional[str] = Field(None, description="Assigned instructor user ID")
+    instructor_status: Optional[str] = Field("NOT_ASSIGNED", description="ASSIGNED or NOT_ASSIGNED")
     remarks: Optional[str] = Field(None, description="Optional remarks")
+
+    @field_validator('instructor_id', 'remarks', 'instructor_status', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 class CourseCalendarUpdate(BaseModel):
     serial_number: Optional[int] = Field(None, ge=1)
@@ -431,8 +440,16 @@ class CourseCalendarUpdate(BaseModel):
     commencement_date: Optional[date] = None
     completion_date: Optional[date] = None
     instructor_id: Optional[str] = None
+    instructor_status: Optional[str] = Field(None, description="ASSIGNED or NOT_ASSIGNED")
     remarks: Optional[str] = None
     status: Optional[str] = Field(None, description="Active, Archived")
+
+    @field_validator('instructor_id', 'remarks', 'instructor_status', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
 class CourseCalendarResponse(BaseModel):
     id: str
@@ -446,6 +463,7 @@ class CourseCalendarResponse(BaseModel):
     commencement_date: date
     completion_date: date
     instructor_id: Optional[str] = None
+    instructor_status: str = "NOT_ASSIGNED"
     remarks: Optional[str] = None
     status: str
     created_by: Optional[str] = None

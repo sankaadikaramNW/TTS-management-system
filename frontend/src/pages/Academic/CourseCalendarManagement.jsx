@@ -34,7 +34,7 @@ export const CourseCalendarManagement = () => {
     working_days: 0,
     commencement_date: '',
     completion_date: '',
-    instructor_id: '',
+    instructor_selection: 'NOT_ASSIGNED',
     remarks: ''
   }
   const [formData, setFormData] = useState(defaultFormData)
@@ -134,6 +134,7 @@ export const CourseCalendarManagement = () => {
   const handleOpenEditModal = (entry) => {
     setIsEditing(true)
     setEditingEntryId(entry.id)
+    const isAssigned = entry.instructor_status === 'ASSIGNED' && entry.instructor_id
     setFormData({
       phase_name: entry.phase_name || '',
       theory_periods: entry.theory_periods || 0,
@@ -141,7 +142,7 @@ export const CourseCalendarManagement = () => {
       working_days: entry.working_days || 0,
       commencement_date: entry.commencement_date || '',
       completion_date: entry.completion_date || '',
-      instructor_id: entry.instructor_id || '',
+      instructor_selection: isAssigned ? entry.instructor_id : 'NOT_ASSIGNED',
       remarks: entry.remarks || ''
     })
     setShowModal(true)
@@ -161,9 +162,14 @@ export const CourseCalendarManagement = () => {
       toast.error('Completion date cannot be earlier than commencement date.')
       return
     }
+    if (formData.instructor_selection === 'NOT_ASSIGNED' && !formData.remarks.trim()) {
+      toast.warning('Remarks are mandatory when Instructor is NOT ASSIGNED (Record nomination status & responsible person).')
+      return
+    }
 
     setSubmitting(true)
     try {
+      const isSystemInstructor = formData.instructor_selection !== 'NOT_ASSIGNED' && Boolean(formData.instructor_selection)
       const payload = {
         phase_name: formData.phase_name.trim(),
         theory_periods: Number(formData.theory_periods) || 0,
@@ -171,7 +177,8 @@ export const CourseCalendarManagement = () => {
         working_days: Number(formData.working_days) || 0,
         commencement_date: formData.commencement_date,
         completion_date: formData.completion_date,
-        instructor_id: formData.instructor_id || null,
+        instructor_id: isSystemInstructor ? formData.instructor_selection : null,
+        instructor_status: isSystemInstructor ? 'ASSIGNED' : 'NOT_ASSIGNED',
         remarks: formData.remarks ? formData.remarks.trim() : null
       }
 
@@ -187,8 +194,15 @@ export const CourseCalendarManagement = () => {
       fetchCalendarEntries(selectedCourseId)
     } catch (err) {
       console.error('Error saving calendar entry', err)
-      const msg = err.response?.data?.detail || 'Failed to save calendar entry.'
-      toast.error(msg)
+      if (err.response?.status === 409 && err.response?.data?.detail?.message) {
+        const d = err.response.data.detail
+        toast.error(`Date Conflict: "${d.conflicting_activity}" (${d.conflicting_start_date} to ${d.conflicting_end_date}) overlaps with selected dates!`, { autoClose: 6000 })
+      } else {
+        const msg = typeof err.response?.data?.detail === 'string'
+          ? err.response.data.detail
+          : err.response?.data?.detail?.message || 'Failed to save calendar entry.'
+        toast.error(msg)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -469,13 +483,14 @@ export const CourseCalendarManagement = () => {
                     <th style={{ width: '130px' }} className="text-center">Commencement</th>
                     <th style={{ width: '130px' }} className="text-center">Completion</th>
                     <th style={{ minWidth: '160px' }}>Instructor</th>
+                    <th style={{ minWidth: '180px' }}>Remarks</th>
                     <th style={{ width: '130px' }} className="text-end pe-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="10" className="text-center py-5">
+                      <td colSpan="11" className="text-center py-5">
                         <div className="spinner-border text-primary me-2" role="status"></div>
                         <span className="text-muted fw-semibold">Loading course calendar phases...</span>
                       </td>
@@ -488,9 +503,6 @@ export const CourseCalendarManagement = () => {
                         </td>
                         <td>
                           <div className="fw-bold text-dark">{item.phase_name}</div>
-                          {item.remarks && (
-                            <small className="text-muted d-block text-truncate max-w-xs">{item.remarks}</small>
-                          )}
                         </td>
                         <td className="text-center fw-semibold">
                           {item.theory_periods > 0 ? item.theory_periods : <span className="text-muted">-</span>}
@@ -513,13 +525,29 @@ export const CourseCalendarManagement = () => {
                           {formatDateDisplay(item.completion_date)}
                         </td>
                         <td>
-                          {item.instructor_name ? (
-                            <span className="small text-dark fw-semibold">
-                              <i className="bi bi-person-badge text-primary me-1"></i>
-                              {item.instructor_name}
+                          {item.instructor_status === 'ASSIGNED' && item.instructor_name ? (
+                            <div>
+                              <span className="badge bg-success-subtle text-success me-1">Assigned</span>
+                              <span className="small text-dark fw-bold">
+                                <i className="bi bi-person-badge text-primary me-1"></i>
+                                {item.instructor_name}
+                              </span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="badge bg-warning text-dark fw-extrabold px-2 py-1">
+                                <i className="bi bi-person-x-fill me-1"></i>INSTRUCTOR NOT ASSIGNED
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {item.remarks ? (
+                            <span className="small text-dark d-block text-wrap" style={{ maxWidth: '240px' }}>
+                              {item.remarks}
                             </span>
                           ) : (
-                            <span className="text-muted small fst-italic">Unassigned</span>
+                            <span className="text-muted small">-</span>
                           )}
                         </td>
                         <td className="text-end pe-3">
@@ -560,7 +588,7 @@ export const CourseCalendarManagement = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="10" className="text-center py-5 text-muted">
+                      <td colSpan="11" className="text-center py-5 text-muted">
                         <i className="bi bi-inbox display-6 d-block mb-2 text-secondary opacity-50"></i>
                         No phase entries found. Click <strong>"Add Calendar Entry"</strong> to add course activities.
                       </td>
@@ -579,7 +607,7 @@ export const CourseCalendarManagement = () => {
                         </span>
                       </td>
                       <td className="text-center text-success fs-6">{totalWorkingDays}</td>
-                      <td colSpan="4" className="small text-muted ps-3">
+                      <td colSpan="5" className="small text-muted ps-3">
                         Total Phases: {calendarEntries.length}
                       </td>
                     </tr>
@@ -714,34 +742,44 @@ export const CourseCalendarManagement = () => {
                     {/* Instructor Selection */}
                     <div className="col-md-12">
                       <label className="form-label fw-bold small text-dark">
-                        Assigned Instructor
+                        Assigned Instructor <span className="text-danger">*</span>
                       </label>
                       <select
-                        className="form-select"
-                        value={formData.instructor_id}
-                        onChange={(e) => setFormData({ ...formData, instructor_id: e.target.value })}
+                        className={`form-select ${formData.instructor_selection === 'NOT_ASSIGNED' ? 'border-warning text-dark fw-semibold' : 'border-primary'}`}
+                        value={formData.instructor_selection}
+                        onChange={(e) => setFormData({ ...formData, instructor_selection: e.target.value })}
                       >
-                        <option value="">-- Select Instructor (Optional) --</option>
                         {instructors.map(inst => (
                           <option key={inst.id} value={inst.id}>
                             {inst.display_name}
                           </option>
                         ))}
+                        <option value="NOT_ASSIGNED">INSTRUCTOR NOT ASSIGNED</option>
                       </select>
-                      <small className="text-muted extra-small">Loaded dynamically from active Instructor/User management records.</small>
+                      {formData.instructor_selection === 'NOT_ASSIGNED' ? (
+                        <div className="alert alert-warning py-2 px-3 mt-2 mb-0 small border-warning">
+                          <i className="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+                          <strong>Instructor Nomination Pending:</strong> Please record nomination status & responsible person details in <strong>Remarks *</strong>.
+                        </div>
+                      ) : (
+                        <small className="text-muted extra-small">Loaded dynamically from active Instructor/User management records.</small>
+                      )}
                     </div>
 
                     {/* Remarks */}
                     <div className="col-12">
                       <label className="form-label fw-bold small text-dark">
-                        Remarks / Activity Notes
+                        Remarks / Nomination Details {formData.instructor_selection === 'NOT_ASSIGNED' && <span className="text-danger">*</span>}
                       </label>
                       <textarea
-                        className="form-control"
+                        className={`form-control ${formData.instructor_selection === 'NOT_ASSIGNED' ? 'border-warning' : ''}`}
                         rows="2"
-                        placeholder="Optional phase details, exam schedule notes, or ceremony details..."
+                        placeholder={formData.instructor_selection === 'NOT_ASSIGNED' 
+                          ? 'e.g. Instructor nomination pending. Responsible Person: Flt Lt Silva, Academic Section.' 
+                          : 'Optional phase details, exam schedule notes, or ceremony details...'}
                         value={formData.remarks}
                         onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                        required={formData.instructor_selection === 'NOT_ASSIGNED'}
                       ></textarea>
                     </div>
                   </div>

@@ -200,6 +200,20 @@ export const AcademicDashboard = ({ onNavigate }) => {
             <small className="text-primary fw-semibold"><i className="bi bi-arrow-right-circle me-1"></i>View Master Calendars</small>
           </div>
         </div>
+
+        {/* Pending Instructor Assignments */}
+        <div className="col-6 col-md-4 col-xl-3">
+          <div className="card slaf-card h-100 p-3 border-start border-4 border-warning shadow-sm hover-elevate cursor-pointer" onClick={() => onNavigate('calendar')}>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="text-muted small fw-bold text-uppercase">Pending Instructors</span>
+              <div className="bg-warning-subtle text-warning rounded-circle p-2">
+                <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+              </div>
+            </div>
+            <h2 className="fw-extrabold display-font mb-0 text-dark">{stats.pending_instructor_assignments || 0}</h2>
+            <small className="text-warning-emphasis fw-semibold"><i className="bi bi-person-x me-1"></i>Nomination Pending</small>
+          </div>
+        </div>
       </div>
 
       {/* Row 2: Analytics & Recent Activity Grid */}

@@ -225,6 +225,7 @@ class CourseCalendar(Base):
     commencement_date = Column(Date, nullable=False, index=True)
     completion_date = Column(Date, nullable=False, index=True)
     instructor_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    instructor_status = Column(String(30), default='NOT_ASSIGNED', nullable=False, index=True)
     remarks = Column(Text, nullable=True)
     status = Column(String(30), default='Active', index=True)
     created_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)

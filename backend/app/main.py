@@ -55,6 +55,7 @@ def run_lightweight_migrations():
             ("accommodation_billets", "bunk_bed_count", "INT DEFAULT 0"),
             ("accommodation_billets", "status", "VARCHAR(30) DEFAULT 'Active'"),
             ("accommodation_allocations", "bed_position_id", "VARCHAR(36) NULL"),
+            ("course_calendar", "instructor_status", "VARCHAR(30) DEFAULT 'NOT_ASSIGNED'"),
         ]
         for table, col, col_def in migrations:
             try:

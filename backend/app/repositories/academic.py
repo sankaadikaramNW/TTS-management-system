@@ -310,6 +310,13 @@ class CourseCalendarRepository(BaseRepository[CourseCalendar]):
                 name = u.full_name or u.username or ""
                 entry.instructor_name = f"{rank} {name}".strip()
                 entry.instructor_service_number = u.service_number
+        else:
+            entry.instructor_name = None
+            entry.instructor_service_number = None
+
+        if not hasattr(entry, 'instructor_status') or not entry.instructor_status:
+            entry.instructor_status = 'ASSIGNED' if entry.instructor_id else 'NOT_ASSIGNED'
+
         return entry
 
     def get_by_course(self, db: Session, course_id: str, status: str = 'Active') -> List[CourseCalendar]:

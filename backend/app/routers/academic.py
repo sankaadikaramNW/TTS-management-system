@@ -58,6 +58,12 @@ def get_academic_dashboard_summary(
     upcoming_phase_tests = db.query(Exam).filter(Exam.type == 'Phase Test', Exam.date >= today).count()
     upcoming_final_exams = db.query(Exam).filter(Exam.type == 'Final Exam', Exam.date >= today).count()
 
+    from app.models.academic import CourseCalendar
+    pending_instructor_assignments = db.query(CourseCalendar).filter(
+        CourseCalendar.status == 'Active',
+        CourseCalendar.instructor_status == 'NOT_ASSIGNED'
+    ).count()
+
     # Batch distribution by trade
     trades_list = db.query(Trade).filter(Trade.is_active == True).all()
     batch_distribution = []
@@ -101,6 +107,7 @@ def get_academic_dashboard_summary(
         "active_instructors": active_instructors,
         "active_students": active_students,
         "available_classrooms": available_classrooms,
+        "pending_instructor_assignments": pending_instructor_assignments,
         "upcoming_phase_tests": upcoming_phase_tests,
         "upcoming_final_exams": upcoming_final_exams,
         "classroom_utilization_rate": utilization_rate,
@@ -187,6 +194,15 @@ def create_course(
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
     from app.models.academic import Course
+    from app.models.student import Trade
+
+    if course_data.trade_id:
+        trade = db.query(Trade).filter(Trade.id == course_data.trade_id).first()
+        if not trade:
+            raise HTTPException(status_code=400, detail="Specified Trade does not exist.")
+        if not trade.is_active:
+            raise HTTPException(status_code=400, detail="Cannot assign a course to an inactive Trade.")
+
     existing = db.query(Course).filter(Course.code == course_data.code, Course.deleted_at == None).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Course code/number '{course_data.code}' already exists")
@@ -709,6 +725,7 @@ def create_course_calendar_entry(
         working_days=payload.working_days,
         serial_number=payload.serial_number,
         instructor_id=payload.instructor_id,
+        instructor_status=payload.instructor_status,
         remarks=payload.remarks,
         user_id=current_user.id,
         ip=ip,
@@ -749,6 +766,7 @@ def update_course_calendar_entry(
         working_days=payload.working_days,
         serial_number=payload.serial_number,
         instructor_id=payload.instructor_id,
+        instructor_status=payload.instructor_status,
         remarks=payload.remarks,
         status=payload.status,
         user_id=current_user.id,
