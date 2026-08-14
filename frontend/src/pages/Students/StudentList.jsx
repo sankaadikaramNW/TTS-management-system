@@ -124,12 +124,18 @@ export const StudentList = () => {
           <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" onClick={exportToCSV}>
             <i className="bi bi-file-earmark-spreadsheet"></i> Export CSV
           </button>
+          {hasPermission('personal_occurrence:read') && (
+            <Link to="/students/occurrences" className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1.5 fw-bold">
+              <i className="bi bi-shield-exclamation"></i> Personal Occurrences
+            </Link>
+          )}
           {hasPermission('student:write') && (
             <Link to="/students/new" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5">
               <i className="bi bi-plus-circle"></i> Add Trainee
             </Link>
           )}
         </div>
+
       </div>
 
       {/* Filter and Search Card */}
@@ -243,6 +249,11 @@ export const StudentList = () => {
                           <Link to={`/students/${s.id}`} className="btn btn-outline-primary btn-sm px-2.5" title="View Profile">
                             <i className="bi bi-eye"></i>
                           </Link>
+                          {hasPermission('personal_occurrence:read') && (
+                            <Link to={`/students/occurrences?trainee_id=${s.id}`} className="btn btn-outline-danger btn-sm px-2.5" title="Personal Occurrence Reporting">
+                              <i className="bi bi-shield-exclamation"></i>
+                            </Link>
+                          )}
                           {hasPermission('student:write') && (
                             <>
                               <Link to={`/students/${s.id}/edit`} className="btn btn-outline-secondary btn-sm px-2.5" title="Edit Profile">
@@ -254,6 +265,7 @@ export const StudentList = () => {
                             </>
                           )}
                         </div>
+
                       </td>
                     </tr>
                   ))

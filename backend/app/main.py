@@ -198,9 +198,31 @@ def run_lightweight_migrations():
                     INDEX idx_course_calendar_status (status)
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS personal_occurrences (
+                    id VARCHAR(36) PRIMARY KEY,
+                    trainee_id VARCHAR(36) NOT NULL,
+                    occurrence_type VARCHAR(30) NOT NULL,
+                    occurrence_date DATE NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT NOT NULL,
+                    remarks TEXT NULL,
+                    status VARCHAR(30) DEFAULT 'Active',
+                    created_by VARCHAR(36) NULL,
+                    updated_by VARCHAR(36) NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    deleted_at DATETIME NULL,
+                    INDEX idx_po_trainee (trainee_id),
+                    INDEX idx_po_type (occurrence_type),
+                    INDEX idx_po_date (occurrence_date),
+                    INDEX idx_po_trainee_date (trainee_id, occurrence_date)
+                )
+            """))
             conn.commit()
         except Exception:
             pass
+
 
         # Alter existing columns to allow NULL in MySQL if table already exists
         modify_sqls = [
@@ -262,10 +284,14 @@ def auto_seed_database():
                 Permission(id='perm-academic-read', name='Read Grades & Timetable', code='academic:read', description='Ability to view schedules and marks'),
                 Permission(id='perm-academic-write', name='Manage Academics', code='academic:write', description='Ability to record marks and edit timetables'),
                 Permission(id='perm-reports-read', name='Read Reports & Analytics', code='reports:read', description='Ability to generate reports and analytics'),
-                Permission(id='perm-audit-read', name='Read Audit Logs', code='system:audit', description='Ability to review security logs')
+                Permission(id='perm-audit-read', name='Read Audit Logs', code='system:audit', description='Ability to review security logs'),
+                Permission(id='perm-occurrence-read', name='Read Personal Occurrences', code='personal_occurrence:read', description='Ability to view trainee personal occurrence records'),
+                Permission(id='perm-occurrence-write', name='Create/Edit Personal Occurrences', code='personal_occurrence:write', description='Ability to record or edit personal occurrences'),
+                Permission(id='perm-occurrence-delete', name='Delete Personal Occurrences', code='personal_occurrence:delete', description='Ability to delete personal occurrence records according to policy')
             ]
             db.bulk_save_objects(permissions)
             db.commit()
+
             
             # Map Super Admin & System Admin permissions
             all_perms = db.query(Permission).all()
@@ -317,6 +343,43 @@ def auto_seed_database():
                 ])).all()
 
             db.commit()
+
+        # Ensure personal occurrence permissions exist for existing database setups
+        occ_perms = [
+            ('perm-occurrence-read', 'Read Personal Occurrences', 'personal_occurrence:read', 'Ability to view trainee personal occurrence records'),
+            ('perm-occurrence-write', 'Create/Edit Personal Occurrences', 'personal_occurrence:write', 'Ability to record or edit personal occurrences'),
+            ('perm-occurrence-delete', 'Delete Personal Occurrences', 'personal_occurrence:delete', 'Ability to delete personal occurrence records')
+        ]
+        for p_id, p_name, p_code, p_desc in occ_perms:
+            if not db.query(Permission).filter(Permission.code == p_code).first():
+                db.add(Permission(id=p_id, name=p_name, code=p_code, description=p_desc))
+        db.commit()
+
+        # Ensure roles have occurrence permissions mapped
+        for r_id in ['role-super-admin', 'role-sys-admin']:
+            r = db.query(Role).filter(Role.id == r_id).first()
+            if r:
+                all_p = db.query(Permission).all()
+                r.permissions = list(all_p)
+
+        inst_role = db.query(Role).filter(Role.id == 'role-instructor').first()
+        if inst_role:
+            for c in ['personal_occurrence:read', 'personal_occurrence:write']:
+                p = db.query(Permission).filter(Permission.code == c).first()
+                if p and p not in inst_role.permissions:
+                    inst_role.permissions.append(p)
+
+        for r_code in ['role-discipline', 'role-co']:
+            r_obj = db.query(Role).filter(Role.id == r_code).first()
+            if r_obj:
+                for c in ['personal_occurrence:read', 'personal_occurrence:write', 'personal_occurrence:delete']:
+                    p = db.query(Permission).filter(Permission.code == c).first()
+                    if p and p not in r_obj.permissions:
+                        r_obj.permissions.append(p)
+
+        db.commit()
+
+
 
         # 3. Seed Default Admin User
         if db.query(User).count() == 0:
@@ -461,12 +524,14 @@ app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="s
 # Include Routers
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(student.router, prefix="/api/v1")
+app.include_router(student.occ_router, prefix="/api/v1")
 app.include_router(parade.router, prefix="/api/v1")
 app.include_router(accommodation.router, prefix="/api/v1")
 app.include_router(academic.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
+
 
 @app.get("/")
 def read_root():

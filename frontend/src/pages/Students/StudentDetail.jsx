@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { PersonalOccurrenceReporting } from './PersonalOccurrenceReporting'
+
 
 export const StudentDetail = () => {
   const { id } = useParams()
@@ -186,8 +188,14 @@ export const StudentDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Personal Occurrence Reporting Section */}
+        <div className="col-12 mt-4">
+          <PersonalOccurrenceReporting initialTraineeId={id} />
+        </div>
       </div>
     </div>
   )
 }
 export default StudentDetail
+

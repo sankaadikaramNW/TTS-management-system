@@ -86,8 +86,15 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span>Add New Trainee</span>
             </NavLink>
           )}
+          {hasPermission('personal_occurrence:read') && (
+            <NavLink to="/students/occurrences" className="nav-link" title="Personal Occurrence Reporting">
+              <i className="bi bi-shield-exclamation"></i>
+              <span>Personal Occurrence Reporting</span>
+            </NavLink>
+          )}
           
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
+
           <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
             <i className="bi bi-arrow-left-square"></i>
             <span>Back to Portal Home</span>

@@ -116,7 +116,11 @@ export const AuthProvider = ({ children }) => {
 
   const hasPermission = (code) => {
     if (!user) return false
+    const roleName = (user.role?.name || '').toLowerCase()
+    const roleId = (user.role?.id || '').toLowerCase()
     if (
+      roleName.includes('admin') || 
+      roleId.includes('admin') ||
       user.role?.name === 'Super Administrator' || 
       user.role?.name === 'System Administrator' || 
       user.role?.id === 'role-super-admin' || 
@@ -126,6 +130,7 @@ export const AuthProvider = ({ children }) => {
     const perms = user.effective_permissions || user.role?.permissions || []
     return perms.some(p => p.code === code)
   }
+
 
   const hasRole = (roleName) => user?.role?.name === roleName
 

@@ -82,6 +82,8 @@ export const Landing = () => {
       path: '/parade',
       color: '#10b981'
     },
+
+
     {
       title: 'Accommodation Management',
       icon: 'bi-house-door-fill',

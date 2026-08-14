@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import date
 from typing import Optional, List
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
@@ -7,12 +8,18 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
-from app.repositories.student import student_repo
+from app.repositories.student import student_repo, personal_occurrence_repo
 from app.services.student import student_service
-from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentStatusTypeResponse, RankResponse, TradeResponse, TradeCreate, TradeUpdate, RankCreate, RankUpdate
-from app.models.student import Student, StudentStatusType, Rank, Trade
+from app.services.personal_occurrence_service import personal_occurrence_service
+from app.schemas.student import (
+    StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentStatusTypeResponse,
+    RankResponse, TradeResponse, TradeCreate, TradeUpdate, RankCreate, RankUpdate,
+    PersonalOccurrenceCreate, PersonalOccurrenceUpdate, PersonalOccurrenceResponse, PersonalOccurrenceListResponse
+)
+from app.models.student import Student, StudentStatusType, Rank, Trade, PersonalOccurrence
 
 router = APIRouter(prefix="/students", tags=["Student Management"])
+
 
 @router.get("", response_model=StudentListResponse)
 def list_students(
@@ -300,3 +307,111 @@ def upload_student_photo(
     db.commit()
     
     return {"photo_url": student.profile_photo_path}
+
+
+# --- Trainee Personal Occurrence Sub-Endpoints ---
+
+@router.get("/{trainee_id}/occurrences", response_model=List[PersonalOccurrenceResponse])
+def get_trainee_occurrences(
+    trainee_id: str,
+    occurrence_type: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:read"))
+):
+    """Fetch all personal occurrence records (Achievements & Misconduct) for a specific trainee."""
+    trainee = student_repo.get(db, trainee_id)
+    if not trainee or trainee.deleted_at:
+        raise HTTPException(status_code=404, detail="Trainee record not found.")
+    return personal_occurrence_repo.get_by_trainee(
+        db, trainee_id=trainee_id, occurrence_type=occurrence_type, date_from=date_from, date_to=date_to
+    )
+
+
+@router.post("/{trainee_id}/occurrences", response_model=PersonalOccurrenceResponse)
+def add_trainee_occurrence(
+    trainee_id: str,
+    payload: PersonalOccurrenceCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:write"))
+):
+    """Record a new personal occurrence (Achievement or Misconduct) for a trainee."""
+    if payload.trainee_id != trainee_id:
+        payload.trainee_id = trainee_id
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return personal_occurrence_service.create_occurrence(db, payload, current_user.id, ip, ua)
+
+
+# --- Standalone Personal Occurrence Reporting Endpoints ---
+
+occ_router = APIRouter(prefix="/personal-occurrences", tags=["Personal Occurrence Reporting"])
+
+@occ_router.get("", response_model=PersonalOccurrenceListResponse)
+def list_personal_occurrences(
+    search: Optional[str] = None,
+    trainee_id: Optional[str] = None,
+    occurrence_type: Optional[str] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:read"))
+):
+    """Search and filter personal occurrence records across trainees."""
+    total, items = personal_occurrence_repo.search_occurrences(
+        db,
+        search_query=search,
+        trainee_id=trainee_id,
+        occurrence_type=occurrence_type,
+        date_from=date_from,
+        date_to=date_to,
+        skip=skip,
+        limit=limit
+    )
+    return {"total": total, "items": items}
+
+
+@occ_router.get("/{occurrence_id}", response_model=PersonalOccurrenceResponse)
+def get_personal_occurrence_detail(
+    occurrence_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:read"))
+):
+    """Fetch single personal occurrence record by ID."""
+    occ = personal_occurrence_repo.get_by_id(db, occurrence_id)
+    if not occ:
+        raise HTTPException(status_code=404, detail="Personal occurrence record not found.")
+    return occ
+
+
+@occ_router.put("/{occurrence_id}", response_model=PersonalOccurrenceResponse)
+def update_personal_occurrence(
+    occurrence_id: str,
+    payload: PersonalOccurrenceUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:write"))
+):
+    """Update an existing personal occurrence record."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return personal_occurrence_service.update_occurrence(db, occurrence_id, payload, current_user.id, ip, ua)
+
+
+@occ_router.delete("/{occurrence_id}")
+def delete_personal_occurrence(
+    occurrence_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:delete"))
+):
+    """Delete (soft-delete) a personal occurrence record according to policy."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    personal_occurrence_service.delete_occurrence(db, occurrence_id, current_user.id, ip, ua)
+    return {"message": "Personal occurrence record deleted successfully."}
+

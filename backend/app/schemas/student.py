@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 class StudentBase(BaseModel):
     service_number: str
@@ -141,5 +141,80 @@ class RankUpdate(BaseModel):
     code: Optional[str] = None
     label: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+class PersonalOccurrenceCreate(BaseModel):
+    trainee_id: str = Field(..., description="Target trainee student ID")
+    occurrence_type: str = Field(..., description="ACHIEVEMENT or MISCONDUCT_OFFENSE")
+    occurrence_date: date = Field(..., description="Date of occurrence")
+    title: str = Field(..., min_length=1, max_length=255, description="Short summary title")
+    description: str = Field(..., min_length=1, description="Detailed occurrence description")
+    remarks: Optional[str] = Field(None, description="Optional administrative notes")
+
+    @field_validator('occurrence_type')
+    @classmethod
+    def validate_occurrence_type(cls, v: str) -> str:
+        upper_v = v.upper().strip()
+        if upper_v not in ['ACHIEVEMENT', 'MISCONDUCT_OFFENSE']:
+            raise ValueError("Occurrence type must be strictly 'ACHIEVEMENT' or 'MISCONDUCT_OFFENSE'")
+        return upper_v
+
+    @field_validator('title', 'description', 'remarks', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+
+class PersonalOccurrenceUpdate(BaseModel):
+    occurrence_type: Optional[str] = Field(None, description="ACHIEVEMENT or MISCONDUCT_OFFENSE")
+    occurrence_date: Optional[date] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = Field(None, min_length=1)
+    remarks: Optional[str] = None
+    status: Optional[str] = None
+
+    @field_validator('occurrence_type')
+    @classmethod
+    def validate_occurrence_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            upper_v = v.upper().strip()
+            if upper_v not in ['ACHIEVEMENT', 'MISCONDUCT_OFFENSE']:
+                raise ValueError("Occurrence type must be strictly 'ACHIEVEMENT' or 'MISCONDUCT_OFFENSE'")
+            return upper_v
+        return v
+
+
+class PersonalOccurrenceResponse(BaseModel):
+    id: str
+    trainee_id: str
+    occurrence_type: str
+    occurrence_date: date
+    title: str
+    description: str
+    remarks: Optional[str] = None
+    status: str
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_by: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    # Joined fields
+    trainee_service_number: Optional[str] = None
+    trainee_rank: Optional[str] = None
+    trainee_full_name: Optional[str] = None
+    trainee_trade: Optional[str] = None
+    trainee_batch: Optional[str] = None
+    creator_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PersonalOccurrenceListResponse(BaseModel):
+    total: int
+    items: List[PersonalOccurrenceResponse]
+
 
 

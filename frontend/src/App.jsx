@@ -13,6 +13,8 @@ import Dashboard from './pages/Dashboard'
 import StudentList from './pages/Students/StudentList'
 import StudentDetail from './pages/Students/StudentDetail'
 import StudentForm from './pages/Students/StudentForm'
+import PersonalOccurrenceReporting from './pages/Students/PersonalOccurrenceReporting'
+
 import DailyParade from './pages/ParadeState/DailyParade'
 import AccommodationPanel from './pages/Accommodation/AccommodationPanel'
 import CourseList from './pages/Academic/CourseList'
@@ -41,10 +43,14 @@ function App() {
                   <Route path="/students" element={<StudentList />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                 </Route>
+                <Route element={<ProtectedRoute permissionCode="personal_occurrence:read" />}>
+                  <Route path="/students/occurrences" element={<PersonalOccurrenceReporting />} />
+                </Route>
                 <Route element={<ProtectedRoute permissionCode="student:write" />}>
                   <Route path="/students/new" element={<StudentForm />} />
                   <Route path="/students/:id/edit" element={<StudentForm />} />
                 </Route>
+
 
                 {/* Parade State */}
                 <Route element={<ProtectedRoute permissionCode="parade:read" />}>

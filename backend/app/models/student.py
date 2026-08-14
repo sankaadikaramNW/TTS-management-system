@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, String, Date, DateTime, ForeignKey, Text, Boolean, Enum
+from sqlalchemy import Column, String, Date, DateTime, ForeignKey, Text, Boolean, Enum, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
@@ -43,6 +43,7 @@ class Student(Base, TimeStampedModelMixin):
     allocations = relationship("AccommodationAllocation", back_populates="student", cascade="all, delete-orphan")
     attendance = relationship("AcademicAttendance", back_populates="student", cascade="all, delete-orphan")
     exam_marks = relationship("ExamMark", back_populates="student", cascade="all, delete-orphan")
+    occurrences = relationship("PersonalOccurrence", back_populates="trainee", cascade="all, delete-orphan")
 
 class ParadeState(Base):
     __tablename__ = 'parade_states'
@@ -150,3 +151,29 @@ class OfficerInCharge(Base):
     # Relationships
     officer = relationship("User", foreign_keys=[user_id])
     appointed_by_user = relationship("User", foreign_keys=[appointed_by])
+
+
+class PersonalOccurrence(Base, TimeStampedModelMixin):
+    """Tracks significant personal occurrences (Achievements & Misconduct/Offenses) for trainees."""
+    __tablename__ = 'personal_occurrences'
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    trainee_id = Column(String(36), ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    occurrence_type = Column(String(30), nullable=False, index=True)  # ACHIEVEMENT or MISCONDUCT_OFFENSE
+    occurrence_date = Column(Date, nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(30), default='Active', index=True)
+    created_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    updated_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    trainee = relationship("Student", back_populates="occurrences")
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
+
+    __table_args__ = (
+        Index('idx_trainee_occ_date', 'trainee_id', 'occurrence_date'),
+    )
