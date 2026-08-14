@@ -349,5 +349,74 @@ class CourseCalendarRepository(BaseRepository[CourseCalendar]):
         db.commit()
         return self.get_by_course(db, course_id)
 
+    def get_calendar_events_by_date_range(
+        self,
+        db: Session,
+        start_date: date,
+        end_date: date,
+        trade_id: Optional[str] = None,
+        course_id: Optional[str] = None,
+        batch_id: Optional[str] = None,
+        instructor_id: Optional[str] = None,
+        instructor_status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Fetch course calendar events overlapping with the requested date range with filters."""
+        query = db.query(CourseCalendar).join(Course, CourseCalendar.course_id == Course.id).filter(
+            CourseCalendar.status == 'Active',
+            Course.deleted_at == None,
+            CourseCalendar.commencement_date <= end_date,
+            CourseCalendar.completion_date >= start_date
+        )
+
+        if trade_id:
+            query = query.filter(Course.trade_id == trade_id)
+
+        if course_id:
+            query = query.filter(CourseCalendar.course_id == course_id)
+
+        if instructor_id:
+            query = query.filter(CourseCalendar.instructor_id == instructor_id)
+
+        if instructor_status and instructor_status.upper() != 'ALL':
+            query = query.filter(CourseCalendar.instructor_status == instructor_status.upper())
+
+        if batch_id:
+            query = query.join(Batch, Batch.course_id == Course.id).filter(Batch.id == batch_id)
+
+        entries = query.order_by(CourseCalendar.commencement_date.asc(), CourseCalendar.serial_number.asc()).all()
+        results = []
+        for e in entries:
+            self._enrich(db, e)
+            
+            # Fetch active batch names for course
+            active_batches = db.query(Batch).filter(Batch.course_id == e.course_id, Batch.status == 'Active').all()
+            batch_names = ", ".join([b.name for b in active_batches]) if active_batches else "N/A"
+
+            inst_name = e.instructor_name if (e.instructor_status == 'ASSIGNED' and e.instructor_name) else "INSTRUCTOR NOT ASSIGNED"
+
+            results.append({
+                "id": e.id,
+                "course_id": e.course_id,
+                "course_name": getattr(e, 'course_name', 'N/A'),
+                "course_code": getattr(e, 'course_code', ''),
+                "trade_id": getattr(e.course, 'trade_id', None) if getattr(e, 'course', None) else None,
+                "trade_name": getattr(e, 'trade_name', None),
+                "batch_name": batch_names,
+                "activity": e.phase_name,
+                "serial_number": e.serial_number,
+                "start_date": e.commencement_date,
+                "end_date": e.completion_date,
+                "instructor_id": e.instructor_id,
+                "instructor_name": inst_name,
+                "instructor_status": e.instructor_status,
+                "theory_periods": e.theory_periods,
+                "practical_periods": e.practical_periods,
+                "total_periods": e.total_periods,
+                "working_days": e.working_days,
+                "remarks": e.remarks
+            })
+        return results
+
 course_calendar_repo = CourseCalendarRepository(CourseCalendar)
+
 

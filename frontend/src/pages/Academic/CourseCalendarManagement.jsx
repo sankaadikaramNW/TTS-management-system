@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { CourseCalendarPrintView } from './CourseCalendarPrintView'
 
 export const CourseCalendarManagement = () => {
+  const [searchParams] = useSearchParams()
+
   // Master data states
   const [trades, setTrades] = useState([])
   const [courses, setCourses] = useState([])
@@ -85,6 +88,25 @@ export const CourseCalendarManagement = () => {
       setCalendarEntries([])
     }
   }, [selectedCourseId, courses])
+
+  // Handle URL query parameters from landing page redirection (course_id & edit_id)
+  useEffect(() => {
+    const paramCourseId = searchParams.get('course_id')
+    if (paramCourseId && courses.length > 0 && paramCourseId !== selectedCourseId) {
+      setSelectedCourseId(paramCourseId)
+    }
+  }, [searchParams, courses])
+
+  useEffect(() => {
+    const paramEditId = searchParams.get('edit_id')
+    if (paramEditId && calendarEntries.length > 0) {
+      const entryToEdit = calendarEntries.find(e => e.id === paramEditId)
+      if (entryToEdit) {
+        handleOpenEditModal(entryToEdit)
+      }
+    }
+  }, [searchParams, calendarEntries])
+
 
   const fetchCalendarEntries = async (courseId) => {
     setLoading(true)

@@ -497,3 +497,33 @@ class CourseCalendarSummaryResponse(BaseModel):
 
 class ReorderCalendarEntriesRequest(BaseModel):
     ordered_ids: List[str] = Field(..., description="List of CourseCalendar IDs in desired display order")
+
+class AcademicCalendarEventItem(BaseModel):
+    id: str
+    course_id: str
+    course_name: str
+    course_code: str
+    trade_id: Optional[str] = None
+    trade_name: Optional[str] = None
+    batch_name: Optional[str] = None
+    activity: str
+    serial_number: int
+    start_date: date
+    end_date: date
+    instructor_id: Optional[str] = None
+    instructor_name: Optional[str] = None
+    instructor_status: str = "NOT_ASSIGNED"
+    theory_periods: int = 0
+    practical_periods: int = 0
+    total_periods: int = 0
+    working_days: int = 0
+    remarks: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AcademicDashboardCalendarResponse(BaseModel):
+    start_date: date
+    end_date: date
+    events: List[AcademicCalendarEventItem]
+

@@ -35,9 +35,12 @@ export const AcademicModule = () => {
     }
   }, [searchParams])
 
-  const handleNavigate = (view) => {
+  const handleNavigate = (view, extraParams = {}) => {
     setActiveView(view)
-    setSearchParams({ view })
+    const newParams = { view }
+    if (extraParams.courseId) newParams.course_id = extraParams.courseId
+    if (extraParams.entryId) newParams.edit_id = extraParams.entryId
+    setSearchParams(newParams)
   }
 
   const toggleSection = (sec) => {

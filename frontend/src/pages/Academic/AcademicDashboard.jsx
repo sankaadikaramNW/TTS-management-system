@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { AcademicCalendarView } from './AcademicCalendarView'
 
 export const AcademicDashboard = ({ onNavigate }) => {
   const [stats, setStats] = useState({
@@ -216,7 +217,11 @@ export const AcademicDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
+      {/* Primary Landing Page Component: Academic Course Calendar */}
+      <AcademicCalendarView onNavigate={onNavigate} />
+
       {/* Row 2: Analytics & Recent Activity Grid */}
+
       <div className="row g-3 mb-4">
         {/* Batch Distribution by Trade Widget */}
         <div className="col-lg-7">

@@ -25,7 +25,8 @@ from app.schemas.academic import (
     ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse,
     LessonPlanDocumentResponse, LessonPlanDocumentUpdate,
     CourseCalendarCreate, CourseCalendarUpdate, CourseCalendarResponse,
-    CourseCalendarSummaryResponse, ReorderCalendarEntriesRequest
+    CourseCalendarSummaryResponse, ReorderCalendarEntriesRequest,
+    AcademicCalendarEventItem, AcademicDashboardCalendarResponse
 )
 
 router = APIRouter(prefix="/academic", tags=["Academic Activities Management Module"])
@@ -796,4 +797,47 @@ def reorder_course_calendar_entries(
 ):
     """Reorder phase entries for a course calendar."""
     return course_calendar_repo.reorder_entries(db, course_id, payload.ordered_ids)
+
+
+@router.get("/dashboard/calendar", response_model=AcademicDashboardCalendarResponse)
+def get_academic_dashboard_calendar(
+    start_date: Optional[date] = Query(None, description="Start date window"),
+    end_date: Optional[date] = Query(None, description="End date window"),
+    trade_id: Optional[str] = Query(None),
+    course_id: Optional[str] = Query(None),
+    batch_id: Optional[str] = Query(None),
+    instructor_id: Optional[str] = Query(None),
+    instructor_status: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """
+    Fetch single-source-of-truth course calendar entries for the Academic Landing Page Dashboard.
+    Performs server-side date range filtering and joins to return optimized calendar event items.
+    """
+    today = date.today()
+    if not start_date:
+        start_date = today.replace(day=1)
+    if not end_date:
+        import calendar
+        _, last_day = calendar.monthrange(start_date.year, start_date.month)
+        end_date = start_date.replace(day=last_day)
+
+    events = course_calendar_repo.get_calendar_events_by_date_range(
+        db=db,
+        start_date=start_date,
+        end_date=end_date,
+        trade_id=trade_id,
+        course_id=course_id,
+        batch_id=batch_id,
+        instructor_id=instructor_id,
+        instructor_status=instructor_status
+    )
+
+    return AcademicDashboardCalendarResponse(
+        start_date=start_date,
+        end_date=end_date,
+        events=events
+    )
+
 
