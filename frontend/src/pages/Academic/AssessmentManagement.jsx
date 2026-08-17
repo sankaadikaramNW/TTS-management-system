@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassroomAttendanceRegister } from './ClassroomAttendanceRegister'
 
 export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
   const [activeSubTab, setActiveSubTab] = useState(initialTab)
@@ -194,18 +195,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
       {/* Sub Tab 1: Attendance */}
       {activeSubTab === 'attendance' && (
-        <div className="card slaf-card p-4 text-center shadow-sm">
-          <div className="py-4">
-            <i className="bi bi-calendar-check-fill display-3 text-primary mb-3 d-block"></i>
-            <h5 className="fw-bold text-dark">Academic Class Attendance Registry</h5>
-            <p className="text-muted small max-w-lg mx-auto">
-              Attendance records are synchronized per daily scheduled timetable period slot. Trainee attendance status (Present, Absent, Excused) is recorded directly by assigned instructors.
-            </p>
-            <button className="btn btn-outline-primary btn-sm fw-semibold" onClick={() => toast.info('Select a Timetable Slot from Timetable Schedule to mark daily attendance')}>
-              <i className="bi bi-clock me-1"></i> View Scheduled Timetable Registry
-            </button>
-          </div>
-        </div>
+        <ClassroomAttendanceRegister />
       )}
 
       {/* Sub Tab 2 & 3: Phase Tests & Final Exams */}

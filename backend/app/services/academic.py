@@ -2,7 +2,8 @@ from datetime import date
 from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from app.models.academic import Timetable, AcademicAttendance, Exam, ExamMark
+from app.models.academic import Course, Timetable, AcademicAttendance, Exam, ExamMark
+from app.models.student import Trade, ParadeSubmission
 from app.repositories.academic import timetable_repo, attendance_repo, exam_repo, exam_mark_repo
 from app.repositories.student import student_repo
 from app.repositories.user import audit_repo
@@ -41,38 +42,70 @@ class AcademicService:
     def update_timetable_attendance(self, db: Session, request: TimetableAttendanceUpdateRequest, user_id: str, ip: str, ua: str) -> List[AcademicAttendance]:
         tt = timetable_repo.get(db, request.timetable_id)
         if not tt:
-            raise HTTPException(status_code=404, detail="Timetable slot not found")
+            raise HTTPException(status_code=404, detail="Timetable session slot not found")
+
+        # Verify Parade State Approval for course trade and date
+        course = db.query(Course).filter(Course.id == tt.course_id).first()
+        trade_obj = db.query(Trade).filter(Trade.id == course.trade_id).first() if course and course.trade_id else None
+        trade_label = trade_obj.label if trade_obj else (course.trade_name if course else 'General')
+
+        ps_sub = None
+        if trade_label:
+            ps_sub = db.query(ParadeSubmission).filter(
+                ParadeSubmission.date == tt.date,
+                ParadeSubmission.trade == trade_label
+            ).first()
+            if not ps_sub and trade_obj:
+                ps_sub = db.query(ParadeSubmission).filter(
+                    ParadeSubmission.date == tt.date,
+                    ParadeSubmission.trade == trade_obj.code
+                ).first()
+
+        if not ps_sub or ps_sub.status != 'APPROVED':
+            raise HTTPException(
+                status_code=400,
+                detail="Today's Parade State has not been approved. Classroom attendance cannot be finalized until the Parade State is approved."
+            )
+
+        valid_statuses = {'PRESENT', 'ABSENT', 'LATE', 'SICK_REPORT', 'COURSE_VISIT', 'LEAVE', 'HOSPITAL', 'EXCUSED'}
 
         updated_records = []
-        for record in request.records:
-            student = student_repo.get(db, record.student_id)
-            if not student:
-                continue
-                
-            att = db.query(AcademicAttendance).filter(
-                AcademicAttendance.timetable_id == request.timetable_id,
-                AcademicAttendance.student_id == record.student_id
-            ).first()
+        try:
+            for record in request.records:
+                student = student_repo.get(db, record.student_id)
+                if not student:
+                    continue
 
-            if att:
-                att.status = record.status
-                att.remarks = record.remarks
-            else:
-                att = AcademicAttendance(
-                    timetable_id=request.timetable_id,
-                    student_id=record.student_id,
-                    status=record.status,
-                    remarks=record.remarks
-                )
-                db.add(att)
-            updated_records.append(att)
+                raw_status = (record.status or 'PRESENT').strip().upper()
+                norm_status = raw_status if raw_status in valid_statuses else 'PRESENT'
 
-        db.commit()
-        audit_repo.create_log(
-            db, user_id, "TIMETABLE_ATTENDANCE_UPDATED", ip, ua,
-            f"Updated class attendance registry for timetable slot ID {request.timetable_id}"
-        )
-        return updated_records
+                att = db.query(AcademicAttendance).filter(
+                    AcademicAttendance.timetable_id == request.timetable_id,
+                    AcademicAttendance.student_id == record.student_id
+                ).first()
+
+                if att:
+                    att.status = norm_status
+                    att.remarks = record.remarks
+                else:
+                    att = AcademicAttendance(
+                        timetable_id=request.timetable_id,
+                        student_id=record.student_id,
+                        status=norm_status,
+                        remarks=record.remarks
+                    )
+                    db.add(att)
+                updated_records.append(att)
+
+            db.commit()
+            audit_repo.create_log(
+                db, user_id, "TIMETABLE_ATTENDANCE_UPDATED", ip, ua,
+                f"Updated classroom attendance registry for timetable session ID {request.timetable_id} ({len(updated_records)} trainees)"
+            )
+            return updated_records
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to save bulk classroom attendance: {str(e)}")
 
     def enter_exam_marks(self, db: Session, request: ExamMarkUpdateRequest, user_id: str, ip: str, ua: str) -> List[ExamMark]:
         exam = exam_repo.get(db, request.exam_id)

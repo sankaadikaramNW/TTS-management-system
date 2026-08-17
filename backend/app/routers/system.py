@@ -270,6 +270,41 @@ def toggle_user_active_status(
 
     return {"message": f"User status set to {'Active' if user.is_active else 'Deactivated'}", "is_active": user.is_active}
 
+@router.post("/users/{user_id}/revoke-session")
+def revoke_user_session(
+    request: Request,
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role.name not in ["Super Administrator", "System Administrator"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    user = user_repo.get_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found")
+
+    # Update active login history record to mark logged out by admin
+    last_login = db.query(LoginHistory).filter(
+        LoginHistory.user_id == user.id,
+        LoginHistory.status == "SUCCESS"
+    ).order_by(LoginHistory.created_at.desc()).first()
+
+    if last_login and not last_login.logout_time:
+        last_login.logout_time = datetime.utcnow()
+
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    audit_repo.create_log(
+        db, current_user.id, "SESSION_REVOKED", ip, ua,
+        f"Admin '{current_user.username}' forcibly revoked session for user '{user.username}'",
+        username=current_user.username, module="User Management"
+    )
+    db.commit()
+
+    return {"message": f"Active session for user '{user.username}' revoked successfully"}
+
+
 # -----------------------------------------------------------------------------
 # 2. ROLE & PERMISSION MANAGEMENT ENDPOINTS
 # -----------------------------------------------------------------------------

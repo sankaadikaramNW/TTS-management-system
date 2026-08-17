@@ -270,6 +270,18 @@ export const UserManagement = () => {
     }
   }
 
+  const handleRevokeSession = async (user_id, username) => {
+    if (!window.confirm(`Are you sure you want to forcibly revoke session / log out user '${username}'?`)) return
+    try {
+      await axios.post(`/api/v1/system/users/${user_id}/revoke-session`)
+      toast.success(`Active session for user '${username}' revoked successfully`)
+      loadLoginHistory()
+      loadAuditLogs()
+    } catch (err) {
+      toast.error('Failed to revoke user session')
+    }
+  }
+
   const handleAdminResetPassword = async (e) => {
     e.preventDefault()
     try {
@@ -652,6 +664,7 @@ export const UserManagement = () => {
                                 <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); handleUnlockAccount(u.id, u.username); }}><i className="bi bi-unlock me-2 text-success"></i> Unlock Account</button></li>
                               )}
                               <li><button className="dropdown-menu-item dropdown-item" onClick={() => { setOpenUserDropdownId(null); handleToggleStatus(u); }}><i className={`bi bi-${u.is_active ? 'pause-circle' : 'play-circle'} me-2 text-info`}></i> {u.is_active ? 'Deactivate' : 'Activate'}</button></li>
+                              <li><button className="dropdown-menu-item dropdown-item text-danger" onClick={() => { setOpenUserDropdownId(null); handleRevokeSession(u.id, u.username); }}><i className="bi bi-box-arrow-right me-2"></i> Revoke Session / Logout</button></li>
                               <li><hr className="dropdown-divider" /></li>
                               <li><button className="dropdown-menu-item dropdown-item text-danger" onClick={() => { setOpenUserDropdownId(null); handleSoftDeleteUser(u); }}><i className="bi bi-trash me-2"></i> Soft Delete</button></li>
                             </ul>

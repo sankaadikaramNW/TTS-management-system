@@ -262,7 +262,7 @@ class TimetableResponse(TimetableBase):
 # --- Attendance ---
 class AttendanceRecord(BaseModel):
     student_id: str
-    status: str  # Present, Absent, Excused
+    status: str  # PRESENT, ABSENT, LATE, SICK_REPORT, COURSE_VISIT, LEAVE, HOSPITAL, EXCUSED
     remarks: Optional[str] = None
 
 class TimetableAttendanceUpdateRequest(BaseModel):
@@ -275,11 +275,82 @@ class AttendanceResponse(BaseModel):
     student_id: str
     student_name: Optional[str] = None
     student_service_number: Optional[str] = None
+    student_rank: Optional[str] = None
+    student_trade: Optional[str] = None
+    student_batch: Optional[str] = None
+    parade_state: Optional[str] = None
     status: str
     remarks: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+class ClassroomSessionStudentItem(BaseModel):
+    student_id: str
+    service_number: str
+    rank: str
+    full_name: str
+    trade: str
+    batch: str
+    parade_state: str
+    attendance_id: Optional[str] = None
+    attendance_status: str
+    remarks: Optional[str] = None
+
+class ClassroomAttendanceSessionResponse(BaseModel):
+    timetable_id: str
+    course_id: str
+    course_code: str
+    course_name: str
+    trade_name: str
+    batch: str
+    classroom_location: str
+    instructor_id: str
+    instructor_name: str
+    date: date
+    period_number: int
+    subject_name: str
+    lesson_name: Optional[str] = None
+    is_parade_approved: bool
+    parade_submission_status: str
+    students: List[ClassroomSessionStudentItem]
+
+class ClassAttendanceReportResponse(BaseModel):
+    timetable_id: str
+    date: date
+    period_number: int
+    course_name: str
+    batch: str
+    classroom_location: str
+    instructor_name: str
+    subject_name: str
+    total_students: int
+    present_count: int
+    late_count: int
+    sick_report_count: int
+    course_visit_count: int
+    leave_count: int
+    hospital_count: int
+    absent_count: int
+    excused_count: int
+
+class StudentAttendanceHistoryItem(BaseModel):
+    date: date
+    course_name: str
+    subject_name: str
+    classroom_location: str
+    period_number: int
+    status: str
+    remarks: Optional[str] = None
+
+class ClassroomWiseReportItem(BaseModel):
+    location: str
+    total_sessions: int
+    total_records: int
+    present_count: int
+    late_count: int
+    absent_count: int
+    other_count: int
 
 # --- Exam ---
 class ExamBase(BaseModel):

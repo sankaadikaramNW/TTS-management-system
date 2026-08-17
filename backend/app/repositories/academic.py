@@ -2,8 +2,9 @@ from datetime import date
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+from app.models.base import generate_uuid
 from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument, CourseCalendar
-from app.models.student import Student, Trade
+from app.models.student import Student, Trade, ParadeState, ParadeSubmission
 from app.models.user import User, Role
 from app.repositories.base import BaseRepository
 
@@ -161,11 +162,72 @@ class TimetableRepository(BaseRepository[Timetable]):
             Timetable.date == schedule_date
         ).order_by(Timetable.period_number).all()
         
+        # Auto-provision default timetable period sessions if none exist for course on this date
+        if not results:
+            course_obj = db.query(Course).filter(Course.id == course_id).first()
+            if course_obj:
+                subjects = db.query(Subject).filter(
+                    Subject.course_id == course_id,
+                    Subject.deleted_at == None
+                ).all()
+                if not subjects:
+                    default_sub = Subject(
+                        id=generate_uuid(),
+                        course_id=course_id,
+                        code=f"{course_obj.code if course_obj.code else 'CRS'}-MOD1",
+                        name=f"{course_obj.name} Core Modules",
+                        periods=40
+                    )
+                    db.add(default_sub)
+                    db.commit()
+                    db.refresh(default_sub)
+                    subjects = [default_sub]
+
+                batch_obj = db.query(Batch).filter(Batch.course_id == course_id).first()
+                inst_id = batch_obj.instructor_id if (batch_obj and batch_obj.instructor_id) else None
+                loc = f"{course_obj.code} Hall"
+                if batch_obj and batch_obj.classroom_id:
+                    cl_obj = db.query(Classroom).filter(Classroom.id == batch_obj.classroom_id).first()
+                    if cl_obj:
+                        loc = cl_obj.name
+
+                for p_num in range(1, 5):
+                    sub = subjects[(p_num - 1) % len(subjects)]
+                    les = db.query(Lesson).filter(Lesson.subject_id == sub.id).first()
+                    if not les:
+                        les = Lesson(
+                            id=generate_uuid(),
+                            subject_id=sub.id,
+                            name=f"Module Lesson 0{p_num}: {sub.name}",
+                            description="Core theory and trade practical application"
+                        )
+                        db.add(les)
+                        db.commit()
+                        db.refresh(les)
+
+                    new_tt = Timetable(
+                        id=generate_uuid(),
+                        course_id=course_id,
+                        subject_id=sub.id,
+                        lesson_id=les.id,
+                        instructor_id=inst_id,
+                        period_number=p_num,
+                        date=schedule_date,
+                        location=loc
+                    )
+                    db.add(new_tt)
+                db.commit()
+
+                results = db.query(Timetable).filter(
+                    Timetable.course_id == course_id,
+                    Timetable.date == schedule_date
+                ).order_by(Timetable.period_number).all()
+
         for t in results:
             course = db.query(Course).filter(Course.id == t.course_id).first()
             subject = db.query(Subject).filter(Subject.id == t.subject_id).first()
-            lesson = db.query(Lesson).filter(Lesson.id == t.lesson_id).first()
-            instructor = db.query(User).filter(User.id == t.instructor_id).first()
+            lesson = db.query(Lesson).filter(Lesson.id == t.lesson_id).first() if t.lesson_id else None
+            instructor = db.query(User).filter(User.id == t.instructor_id).first() if t.instructor_id else None
             
             t.course_name = course.name if course else None
             t.subject_name = subject.name if subject else None
@@ -182,7 +244,267 @@ class AttendanceRepository(BaseRepository[AcademicAttendance]):
             if student:
                 att.student_name = student.full_name
                 att.student_service_number = student.service_number
+                att.student_rank = student.rank or 'LAC'
+                att.student_trade = student.trade or 'General'
+                att.student_batch = student.batch or 'N/A'
+                
+                # Fetch parade state
+                tt = db.query(Timetable).filter(Timetable.id == timetable_id).first()
+                if tt:
+                    p_state = db.query(ParadeState).filter(
+                        ParadeState.student_id == student.id,
+                        ParadeState.date == tt.date
+                    ).first()
+                    att.parade_state = p_state.status if p_state else 'Present'
         return results
+
+    def map_parade_to_attendance_status(self, parade_status: str) -> str:
+        s = (parade_status or 'Present').strip().upper()
+        if 'SICK' in s:
+            return 'SICK_REPORT'
+        elif 'COURSE' in s or 'VISIT' in s:
+            return 'COURSE_VISIT'
+        elif 'LEAVE' in s:
+            return 'LEAVE'
+        elif 'HOSPITAL' in s:
+            return 'HOSPITAL'
+        elif 'AWOL' in s or 'ABSENT' in s:
+            return 'ABSENT'
+        elif 'DUTY' in s or 'EXCUSED' in s or 'DETACHED' in s:
+            return 'EXCUSED'
+        return 'PRESENT'
+
+    def get_session_details(self, db: Session, timetable_id: str) -> Optional[Dict[str, Any]]:
+        tt = db.query(Timetable).filter(Timetable.id == timetable_id).first()
+        if not tt:
+            return None
+
+        course = db.query(Course).filter(Course.id == tt.course_id).first()
+        trade_obj = db.query(Trade).filter(Trade.id == course.trade_id).first() if course and course.trade_id else None
+        trade_label = trade_obj.label if trade_obj else (course.trade_name if course else 'General')
+        instructor = db.query(User).filter(User.id == tt.instructor_id).first() if tt.instructor_id else None
+        subject = db.query(Subject).filter(Subject.id == tt.subject_id).first() if tt.subject_id else None
+        lesson = db.query(Lesson).filter(Lesson.id == tt.lesson_id).first() if tt.lesson_id else None
+
+        # Verify Parade State approval
+        # Check parade submission for date & trade
+        ps_sub = None
+        if trade_label:
+            ps_sub = db.query(ParadeSubmission).filter(
+                ParadeSubmission.date == tt.date,
+                ParadeSubmission.trade == trade_label
+            ).first()
+            if not ps_sub and trade_obj:
+                ps_sub = db.query(ParadeSubmission).filter(
+                    ParadeSubmission.date == tt.date,
+                    ParadeSubmission.trade == trade_obj.code
+                ).first()
+
+        is_parade_approved = True if (ps_sub and ps_sub.status == 'APPROVED') else False
+        parade_submission_status = ps_sub.status if ps_sub else 'NOT_SUBMITTED'
+
+        # Fetch trainees belonging to this course/trade for course-wise parade state roster
+        from sqlalchemy import or_
+        student_query = db.query(Student).filter(Student.status != 'Passed Out')
+        trade_conds = [Student.course_id == tt.course_id]
+        if trade_label and trade_label != 'General':
+            trade_conds.append(Student.trade == trade_label)
+        if trade_obj and trade_obj.label:
+            trade_conds.append(Student.trade == trade_obj.label)
+        if trade_obj and trade_obj.code:
+            trade_conds.append(Student.trade == trade_obj.code)
+
+        students = student_query.filter(or_(*trade_conds)).order_by(Student.service_number.asc()).all()
+
+        # Fetch existing academic attendance records for this session
+        existing_records = {
+            att.student_id: att for att in db.query(AcademicAttendance).filter(
+                AcademicAttendance.timetable_id == timetable_id
+            ).all()
+        }
+
+        # Build trainee list
+        student_items = []
+        for s in students:
+            p_state = db.query(ParadeState).filter(
+                ParadeState.student_id == s.id,
+                ParadeState.date == tt.date
+            ).first()
+            p_status = p_state.status if p_state else 'Present'
+
+            existing_att = existing_records.get(s.id)
+            if existing_att:
+                att_id = existing_att.id
+                att_status = existing_att.status
+                remarks = existing_att.remarks
+            else:
+                att_id = None
+                att_status = self.map_parade_to_attendance_status(p_status)
+                remarks = None
+
+            student_items.append({
+                'student_id': s.id,
+                'service_number': s.service_number,
+                'rank': s.rank or 'LAC',
+                'full_name': s.full_name,
+                'trade': s.trade or trade_label or 'General',
+                'batch': s.batch or (course.batch_code if hasattr(course, 'batch_code') else '26/1'),
+                'parade_state': p_status,
+                'attendance_id': att_id,
+                'attendance_status': att_status,
+                'remarks': remarks
+            })
+
+        return {
+            'timetable_id': tt.id,
+            'course_id': course.id if course else tt.course_id,
+            'course_code': course.code if course else 'COURSE',
+            'course_name': course.name if course else 'Course',
+            'trade_name': trade_label,
+            'batch': students[0].batch if (students and students[0].batch) else '26/1',
+            'classroom_location': tt.location or 'Main Lecture Hall',
+            'instructor_id': tt.instructor_id,
+            'instructor_name': instructor.full_name if instructor else 'Assigned Instructor',
+            'date': tt.date,
+            'period_number': tt.period_number,
+            'subject_name': subject.name if subject else 'Subject',
+            'lesson_name': lesson.name if lesson else None,
+            'is_parade_approved': is_parade_approved,
+            'parade_submission_status': parade_submission_status,
+            'students': student_items
+        }
+
+    def get_class_wise_report(
+        self, db: Session, course_id: Optional[str] = None, start_date: Optional[date] = None,
+        end_date: Optional[date] = None, location: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        q = db.query(Timetable)
+        if course_id:
+            q = q.filter(Timetable.course_id == course_id)
+        if start_date:
+            q = q.filter(Timetable.date >= start_date)
+        if end_date:
+            q = q.filter(Timetable.date <= end_date)
+        if location:
+            q = q.filter(Timetable.location == location)
+
+        timetables = q.order_by(Timetable.date.desc(), Timetable.period_number.asc()).all()
+        report_items = []
+        for tt in timetables:
+            course = db.query(Course).filter(Course.id == tt.course_id).first()
+            subject = db.query(Subject).filter(Subject.id == tt.subject_id).first()
+            instructor = db.query(User).filter(User.id == tt.instructor_id).first()
+            records = db.query(AcademicAttendance).filter(AcademicAttendance.timetable_id == tt.id).all()
+
+            counts = {
+                'PRESENT': 0, 'LATE': 0, 'SICK_REPORT': 0, 'COURSE_VISIT': 0,
+                'LEAVE': 0, 'HOSPITAL': 0, 'ABSENT': 0, 'EXCUSED': 0
+            }
+            for r in records:
+                st = (r.status or 'PRESENT').strip().upper()
+                if st in counts:
+                    counts[st] += 1
+                elif 'SICK' in st:
+                    counts['SICK_REPORT'] += 1
+                elif 'PRESENT' in st:
+                    counts['PRESENT'] += 1
+                elif 'LATE' in st:
+                    counts['LATE'] += 1
+                elif 'ABSENT' in st or 'AWOL' in st:
+                    counts['ABSENT'] += 1
+                else:
+                    counts['EXCUSED'] += 1
+
+            total_students = len(records)
+            report_items.append({
+                'timetable_id': tt.id,
+                'date': tt.date,
+                'period_number': tt.period_number,
+                'course_name': course.name if course else 'Course',
+                'batch': '26/1',
+                'classroom_location': tt.location or 'Main Hall',
+                'instructor_name': instructor.full_name if instructor else 'Instructor',
+                'subject_name': subject.name if subject else 'Subject',
+                'total_students': total_students,
+                'present_count': counts['PRESENT'],
+                'late_count': counts['LATE'],
+                'sick_report_count': counts['SICK_REPORT'],
+                'course_visit_count': counts['COURSE_VISIT'],
+                'leave_count': counts['LEAVE'],
+                'hospital_count': counts['HOSPITAL'],
+                'absent_count': counts['ABSENT'],
+                'excused_count': counts['EXCUSED']
+            })
+        return report_items
+
+    def get_student_attendance_history(
+        self, db: Session, student_id: str, start_date: Optional[date] = None, end_date: Optional[date] = None
+    ) -> List[Dict[str, Any]]:
+        q = db.query(AcademicAttendance, Timetable).join(
+            Timetable, AcademicAttendance.timetable_id == Timetable.id
+        ).filter(AcademicAttendance.student_id == student_id)
+
+        if start_date:
+            q = q.filter(Timetable.date >= start_date)
+        if end_date:
+            q = q.filter(Timetable.date <= end_date)
+
+        results = q.order_by(Timetable.date.desc(), Timetable.period_number.asc()).all()
+        items = []
+        for att, tt in results:
+            course = db.query(Course).filter(Course.id == tt.course_id).first()
+            subject = db.query(Subject).filter(Subject.id == tt.subject_id).first()
+            items.append({
+                'date': tt.date,
+                'course_name': course.name if course else 'Course',
+                'subject_name': subject.name if subject else 'Subject',
+                'classroom_location': tt.location or 'Main Hall',
+                'period_number': tt.period_number,
+                'status': att.status,
+                'remarks': att.remarks
+            })
+        return items
+
+    def get_classroom_wise_report(
+        self, db: Session, location: str, start_date: Optional[date] = None, end_date: Optional[date] = None
+    ) -> List[Dict[str, Any]]:
+        q = db.query(Timetable).filter(Timetable.location == location)
+        if start_date:
+            q = q.filter(Timetable.date >= start_date)
+        if end_date:
+            q = q.filter(Timetable.date <= end_date)
+
+        timetables = q.all()
+        total_sessions = len(timetables)
+        total_records = 0
+        p_count = 0
+        l_count = 0
+        a_count = 0
+        o_count = 0
+
+        for tt in timetables:
+            atts = db.query(AcademicAttendance).filter(AcademicAttendance.timetable_id == tt.id).all()
+            total_records += len(atts)
+            for a in atts:
+                st = (a.status or '').strip().upper()
+                if st == 'PRESENT':
+                    p_count += 1
+                elif st == 'LATE':
+                    l_count += 1
+                elif st == 'ABSENT':
+                    a_count += 1
+                else:
+                    o_count += 1
+
+        return [{
+            'location': location,
+            'total_sessions': total_sessions,
+            'total_records': total_records,
+            'present_count': p_count,
+            'late_count': l_count,
+            'absent_count': a_count,
+            'other_count': o_count
+        }]
 
 class ExamRepository(BaseRepository[Exam]):
     def get_by_course(self, db: Session, course_id: str) -> List[Exam]:

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models.user import User, Role, PasswordHistory
+from app.models.user import User, Role, PasswordHistory, LoginHistory
 from app.repositories.user import user_repo, audit_repo
 from app.security import (
     create_access_token, create_refresh_token, verify_password,
@@ -186,3 +186,30 @@ def upload_profile_avatar(
     )
 
     return {"message": "Profile photo uploaded successfully", "profile_photo": rel_url}
+
+@router.post("/logout")
+def logout(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    
+    # Update last login history entry with logout timestamp
+    last_login = db.query(LoginHistory).filter(
+        LoginHistory.user_id == current_user.id,
+        LoginHistory.status == "SUCCESS"
+    ).order_by(LoginHistory.created_at.desc()).first()
+    
+    if last_login and not last_login.logout_time:
+        last_login.logout_time = datetime.utcnow()
+    
+    audit_repo.create_log(
+        db, current_user.id, "USER_LOGOUT", ip, ua,
+        f"User '{current_user.username}' logged out successfully",
+        username=current_user.username, module="Authentication"
+    )
+    db.commit()
+    return {"message": "Logged out successfully"}
+

@@ -14,7 +14,7 @@ if (_bootstrapToken) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${_bootstrapToken}`
 }
 
-// ─── GLOBAL 401 INTERCEPTOR ──────────────────────────────────────────────────
+// ─── GLOBAL 401/403 INTERCEPTOR ─────────────────────────────────────────────
 // Single interceptor instance – we store its ID so we can eject it if needed.
 let _interceptorId = null
 let _logoutFn = null   // will be wired up once AuthProvider mounts
@@ -24,11 +24,15 @@ const wire401Interceptor = () => {
   _interceptorId = axios.interceptors.response.use(
     res => res,
     err => {
-      if (err.response?.status === 401 && typeof _logoutFn === 'function') {
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || ''
+      const isAuthOrForbiddenErr = status === 401 || (status === 403 && (detail.includes('Inactive') || detail.includes('Locked') || detail.includes('Access denied')))
+      
+      if (isAuthOrForbiddenErr && typeof _logoutFn === 'function') {
         // Only fire logout once per session – avoid toast storm
         if (localStorage.getItem('access_token')) {
           _logoutFn()
-          toast.error('Session expired. Please log in again.')
+          toast.error(detail || 'Session expired. Please log in again.')
         }
       }
       return Promise.reject(err)
@@ -42,18 +46,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const logoutCalledRef = useRef(false)
 
-  const logout = useCallback(() => {
-    setToken(null)
-    setUser(null)
-    delete axios.defaults.headers.common['Authorization']
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    if (!logoutCalledRef.current) {
-      logoutCalledRef.current = true
-      toast.info('Logged out successfully.')
-      setTimeout(() => { logoutCalledRef.current = false }, 2000)
+  const logout = useCallback(async () => {
+    try {
+      if (localStorage.getItem('access_token')) {
+        await axios.post('/api/v1/auth/logout').catch(() => {})
+      }
+    } catch (err) {
+      console.error('Logout notification failed', err)
+    } finally {
+      setToken(null)
+      setUser(null)
+      delete axios.defaults.headers.common['Authorization']
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      if (!logoutCalledRef.current) {
+        logoutCalledRef.current = true
+        toast.info('Logged out successfully.')
+        setTimeout(() => { logoutCalledRef.current = false }, 2000)
+      }
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
   }, [])
+
 
   // Wire the global 401 interceptor so it can call our logout
   useEffect(() => {

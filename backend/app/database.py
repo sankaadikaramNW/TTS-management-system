@@ -9,10 +9,15 @@ if settings.DB_ENGINE == "sqlite":
 
 if settings.DB_ENGINE == "mysql":
     try:
+        mysql_connect_args = dict(connect_args)
+        mysql_connect_args["connect_timeout"] = 3
         engine = create_engine(
             settings.database_url,
             pool_pre_ping=True,
-            connect_args=connect_args
+            pool_recycle=3600,
+            pool_size=20,
+            max_overflow=30,
+            connect_args=mysql_connect_args
         )
         # Test connection immediately so fallback to SQLite triggers if MySQL is unreachable
         with engine.connect() as conn:
@@ -23,12 +28,14 @@ if settings.DB_ENGINE == "mysql":
         engine = create_engine(
             sqlite_url,
             pool_pre_ping=True,
+            pool_recycle=3600,
             connect_args={"check_same_thread": False}
         )
 else:
     engine = create_engine(
         settings.database_url,
         pool_pre_ping=True,
+        pool_recycle=3600,
         connect_args=connect_args
     )
 

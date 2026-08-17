@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
@@ -136,11 +136,14 @@ class Timetable(Base):
 
 class AcademicAttendance(Base):
     __tablename__ = 'academic_attendance'
+    __table_args__ = (
+        UniqueConstraint('timetable_id', 'student_id', name='uq_timetable_student'),
+    )
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     timetable_id = Column(String(36), ForeignKey('timetables.id', ondelete='CASCADE'), nullable=False)
     student_id = Column(String(36), ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
-    status = Column(String(20), default='Present')  # Present, Absent, Excused
+    status = Column(String(30), default='PRESENT')  # PRESENT, ABSENT, LATE, SICK_REPORT, COURSE_VISIT, LEAVE, HOSPITAL, EXCUSED
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

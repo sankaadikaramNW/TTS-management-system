@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -127,7 +128,7 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
 
         {/* Logged user section */}
         <div className="d-flex align-items-center gap-2">
-          <a href="/profile" className="text-decoration-none d-flex align-items-center gap-2">
+          <Link to="/profile" className="text-decoration-none d-flex align-items-center gap-2">
             {user?.profile_photo ? (
               <img src={user.profile_photo} alt={user.full_name} className="rounded-circle object-fit-cover border border-2 border-primary" style={{ width: '32px', height: '32px' }} />
             ) : (
@@ -139,7 +140,7 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
               <div className="fw-semibold text-dark hover-primary" style={{ fontSize: '0.85rem' }}>{user?.full_name}</div>
               <div className="text-muted" style={{ fontSize: '0.7rem', fontWeight: 500 }}>{user?.role?.name}</div>
             </div>
-          </a>
+          </Link>
           <button className="btn btn-outline-danger btn-sm px-2.5 py-1 rounded-pill ms-1" onClick={logout} title="Logout">
             <i className="bi bi-box-arrow-right me-1"></i> <span className="d-none d-sm-inline">Logout</span>
           </button>

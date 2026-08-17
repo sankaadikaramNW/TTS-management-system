@@ -404,7 +404,7 @@ export const CourseCalendarManagement = () => {
               Select Course Calendar <span className="text-danger">*</span>
             </label>
             <select
-              className="form-select form-select-lg border-primary fw-bold"
+              className="form-select border-primary fw-semibold"
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
             >

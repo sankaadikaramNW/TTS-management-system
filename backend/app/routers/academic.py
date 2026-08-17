@@ -22,6 +22,7 @@ from app.schemas.academic import (
     InstructorResponse, AcademicDashboardSummary,
     SubjectResponse, SubjectCreate, LessonResponse, LessonCreate,
     TimetableResponse, TimetableCreate, TimetableAttendanceUpdateRequest, AttendanceResponse,
+    ClassroomAttendanceSessionResponse, ClassAttendanceReportResponse, StudentAttendanceHistoryItem, ClassroomWiseReportItem,
     ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse,
     LessonPlanDocumentResponse, LessonPlanDocumentUpdate,
     CourseCalendarCreate, CourseCalendarUpdate, CourseCalendarResponse,
@@ -382,11 +383,12 @@ def create_lesson(
 @router.get("/timetables", response_model=List[TimetableResponse])
 def get_timetables(
     course_id: str,
-    timetable_date: Optional[date] = None,
+    timetable_date: Optional[date] = Query(None, alias="timetable_date"),
+    date_param: Optional[date] = Query(None, alias="date"),
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
-    t_date = timetable_date or date.today()
+    t_date = timetable_date or date_param or date.today()
     return timetable_repo.get_schedule(db, course_id, t_date)
 
 @router.post("/timetables", response_model=TimetableResponse)
@@ -399,6 +401,63 @@ def create_timetable_slot(
     ip = request.client.host if request.client else "unknown"
     ua = request.headers.get("user-agent", "unknown")
     return academic_service.create_timetable_entry(db, timetable_data, current_user.id, ip, ua)
+
+@router.get("/attendance/session/{timetable_id}", response_model=ClassroomAttendanceSessionResponse)
+def get_classroom_session_attendance(
+    timetable_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    details = attendance_repo.get_session_details(db, timetable_id)
+    if not details:
+        raise HTTPException(status_code=404, detail="Timetable class session not found")
+    return details
+
+@router.post("/attendance/approve-parade-state")
+def approve_parade_state_for_attendance(
+    request: Request,
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    from app.models.student import ParadeSubmission
+    from app.models.base import generate_uuid
+    trade_name = payload.get("trade_name") or "General"
+    session_date_str = payload.get("date")
+    if not session_date_str:
+        raise HTTPException(status_code=400, detail="Session date required")
+
+    from datetime import datetime
+    try:
+        session_date = datetime.strptime(session_date_str, "%Y-%m-%d").date()
+    except Exception:
+        session_date = date.today()
+
+    sub = db.query(ParadeSubmission).filter(
+        ParadeSubmission.date == session_date,
+        ParadeSubmission.trade == trade_name
+    ).first()
+
+    if not sub:
+        sub = ParadeSubmission(
+            id=generate_uuid(),
+            date=session_date,
+            trade=trade_name,
+            total_strength=0,
+            present_count=0,
+            sick_report_count=0,
+            leave_count=0,
+            status="APPROVED",
+            submitted_by=current_user.id,
+            approved_by=current_user.id
+        )
+        db.add(sub)
+    else:
+        sub.status = "APPROVED"
+        sub.approved_by = current_user.id
+
+    db.commit()
+    return {"message": "Parade State approved successfully for attendance recording."}
 
 @router.get("/attendance/{timetable_id}", response_model=List[AttendanceResponse])
 def get_class_attendance(
@@ -418,6 +477,50 @@ def record_class_attendance(
     ip = request.client.host if request.client else "unknown"
     ua = request.headers.get("user-agent", "unknown")
     return academic_service.update_timetable_attendance(db, attendance_data, current_user.id, ip, ua)
+
+@router.post("/attendance/{timetable_id}", response_model=List[AttendanceResponse])
+def record_class_attendance_by_id(
+    timetable_id: str,
+    request: Request,
+    attendance_data: TimetableAttendanceUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    attendance_data.timetable_id = timetable_id
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return academic_service.update_timetable_attendance(db, attendance_data, current_user.id, ip, ua)
+
+@router.get("/attendance/reports/class-wise", response_model=List[ClassAttendanceReportResponse])
+def get_class_wise_attendance_report(
+    course_id: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    location: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    return attendance_repo.get_class_wise_report(db, course_id, start_date, end_date, location)
+
+@router.get("/students/{student_id}/attendance", response_model=List[StudentAttendanceHistoryItem])
+def get_student_attendance_history(
+    student_id: str,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    return attendance_repo.get_student_attendance_history(db, student_id, start_date, end_date)
+
+@router.get("/attendance/reports/classroom-wise", response_model=List[ClassroomWiseReportItem])
+def get_classroom_wise_attendance_report(
+    location: str,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    return attendance_repo.get_classroom_wise_report(db, location, start_date, end_date)
 
 
 # --- 9. Exams & Results ---

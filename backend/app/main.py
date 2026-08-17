@@ -56,6 +56,7 @@ def run_lightweight_migrations():
             ("accommodation_billets", "status", "VARCHAR(30) DEFAULT 'Active'"),
             ("accommodation_allocations", "bed_position_id", "VARCHAR(36) NULL"),
             ("course_calendar", "instructor_status", "VARCHAR(30) DEFAULT 'NOT_ASSIGNED'"),
+            ("course_calendar", "subject_id", "VARCHAR(36) NULL"),
         ]
         for table, col, col_def in migrations:
             try:
@@ -177,6 +178,7 @@ def run_lightweight_migrations():
                 CREATE TABLE IF NOT EXISTS course_calendar (
                     id VARCHAR(36) PRIMARY KEY,
                     course_id VARCHAR(36) NOT NULL,
+                    subject_id VARCHAR(36) NULL,
                     serial_number INT NOT NULL,
                     phase_name VARCHAR(255) NOT NULL,
                     theory_periods INT DEFAULT 0,
@@ -186,12 +188,14 @@ def run_lightweight_migrations():
                     commencement_date DATE NOT NULL,
                     completion_date DATE NOT NULL,
                     instructor_id VARCHAR(36) NULL,
+                    instructor_status VARCHAR(30) DEFAULT 'NOT_ASSIGNED',
                     remarks TEXT NULL,
                     status VARCHAR(30) DEFAULT 'Active',
                     created_by VARCHAR(36) NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     INDEX idx_course_calendar_course_id (course_id),
+                    INDEX idx_course_calendar_subject_id (subject_id),
                     INDEX idx_course_calendar_instructor_id (instructor_id),
                     INDEX idx_course_calendar_commencement (commencement_date),
                     INDEX idx_course_calendar_completion (completion_date),
@@ -235,7 +239,10 @@ def run_lightweight_migrations():
             "ALTER TABLE students MODIFY COLUMN emergency_contact_phone VARCHAR(20) NULL",
             "ALTER TABLE students MODIFY COLUMN permanent_address TEXT NULL",
             "ALTER TABLE students MODIFY COLUMN religion VARCHAR(30) NULL",
-            "ALTER TABLE students MODIFY COLUMN blood_group VARCHAR(10) NULL"
+            "ALTER TABLE students MODIFY COLUMN blood_group VARCHAR(10) NULL",
+            "DELETE a1 FROM academic_attendance a1 INNER JOIN academic_attendance a2 ON a1.timetable_id = a2.timetable_id AND a1.student_id = a2.student_id AND a1.id > a2.id",
+            "CREATE UNIQUE INDEX idx_unique_timetable_student ON academic_attendance (timetable_id, student_id)",
+            "CREATE INDEX idx_academic_att_status ON academic_attendance (status)"
         ]
         for m_sql in modify_sqls:
             try:
