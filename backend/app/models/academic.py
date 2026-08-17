@@ -68,7 +68,7 @@ class Subject(Base, TimeStampedModelMixin):
     __tablename__ = 'subjects'
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False)
+    course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
     code = Column(String(30), nullable=False)
     name = Column(String(150), nullable=False)
     description = Column(Text, nullable=True)
@@ -216,6 +216,7 @@ class CourseCalendar(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     course_id = Column(String(36), ForeignKey('courses.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(String(36), ForeignKey('subjects.id', ondelete='SET NULL'), nullable=True, index=True)
     serial_number = Column(Integer, nullable=False)
     phase_name = Column(String(255), nullable=False)
     theory_periods = Column(Integer, default=0, nullable=False)
@@ -234,5 +235,6 @@ class CourseCalendar(Base):
 
     # Relationships
     course = relationship("Course", back_populates="calendar_entries")
+    subject = relationship("Subject", foreign_keys=[subject_id])
     instructor = relationship("User", foreign_keys=[instructor_id])
     creator = relationship("User", foreign_keys=[created_by])

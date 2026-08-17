@@ -415,6 +415,7 @@ class LessonPlanDocumentResponse(BaseModel):
 class CourseCalendarCreate(BaseModel):
     serial_number: Optional[int] = Field(None, description="Order / Serial Number. Auto-assigned if omitted.")
     phase_name: str = Field(..., min_length=1, max_length=255, description="Name of the course phase/activity")
+    subject_id: Optional[str] = Field(None, description="Linked subject ID from subjects table")
     theory_periods: int = Field(0, ge=0, description="Number of theory periods")
     practical_periods: int = Field(0, ge=0, description="Number of practical periods")
     working_days: int = Field(0, ge=0, description="Number of working days")
@@ -424,7 +425,7 @@ class CourseCalendarCreate(BaseModel):
     instructor_status: Optional[str] = Field("NOT_ASSIGNED", description="ASSIGNED or NOT_ASSIGNED")
     remarks: Optional[str] = Field(None, description="Optional remarks")
 
-    @field_validator('instructor_id', 'remarks', 'instructor_status', mode='before')
+    @field_validator('instructor_id', 'subject_id', 'remarks', 'instructor_status', mode='before')
     @classmethod
     def empty_str_to_none(cls, v):
         if isinstance(v, str) and not v.strip():
@@ -434,6 +435,7 @@ class CourseCalendarCreate(BaseModel):
 class CourseCalendarUpdate(BaseModel):
     serial_number: Optional[int] = Field(None, ge=1)
     phase_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    subject_id: Optional[str] = Field(None, description="Linked subject ID from subjects table")
     theory_periods: Optional[int] = Field(None, ge=0)
     practical_periods: Optional[int] = Field(None, ge=0)
     working_days: Optional[int] = Field(None, ge=0)
@@ -444,7 +446,7 @@ class CourseCalendarUpdate(BaseModel):
     remarks: Optional[str] = None
     status: Optional[str] = Field(None, description="Active, Archived")
 
-    @field_validator('instructor_id', 'remarks', 'instructor_status', mode='before')
+    @field_validator('instructor_id', 'subject_id', 'remarks', 'instructor_status', mode='before')
     @classmethod
     def empty_str_to_none(cls, v):
         if isinstance(v, str) and not v.strip():
@@ -454,6 +456,7 @@ class CourseCalendarUpdate(BaseModel):
 class CourseCalendarResponse(BaseModel):
     id: str
     course_id: str
+    subject_id: Optional[str] = None
     serial_number: int
     phase_name: str
     theory_periods: int
@@ -474,6 +477,8 @@ class CourseCalendarResponse(BaseModel):
     course_name: Optional[str] = None
     course_code: Optional[str] = None
     trade_name: Optional[str] = None
+    subject_code: Optional[str] = None
+    subject_name: Optional[str] = None
     instructor_name: Optional[str] = None
     instructor_service_number: Optional[str] = None
 

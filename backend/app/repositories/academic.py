@@ -1,6 +1,6 @@
 from datetime import date
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument, CourseCalendar
 from app.models.student import Student, Trade
@@ -129,10 +129,15 @@ class InstructorRepository:
 
 class SubjectRepository(BaseRepository[Subject]):
     def get_by_course(self, db: Session, course_id: str) -> List[Subject]:
-        results = db.query(Subject).filter(Subject.course_id == course_id, Subject.deleted_at == None).all()
+        results = (
+            db.query(Subject)
+            .options(joinedload(Subject.course))
+            .filter(Subject.course_id == course_id, Subject.deleted_at == None)
+            .order_by(Subject.code.asc(), Subject.name.asc())
+            .all()
+        )
         for s in results:
-            c = db.query(Course).filter(Course.id == s.course_id).first()
-            s.course_name = c.name if c else None
+            s.course_name = s.course.name if s.course else None
         return results
 
 class LessonRepository(BaseRepository[Lesson]):
@@ -313,6 +318,18 @@ class CourseCalendarRepository(BaseRepository[CourseCalendar]):
         else:
             entry.instructor_name = None
             entry.instructor_service_number = None
+
+        if entry.subject_id:
+            sub = db.query(Subject).filter(Subject.id == entry.subject_id).first()
+            if sub:
+                entry.subject_code = sub.code
+                entry.subject_name = sub.name
+            else:
+                entry.subject_code = None
+                entry.subject_name = None
+        else:
+            entry.subject_code = None
+            entry.subject_name = None
 
         if not hasattr(entry, 'instructor_status') or not entry.instructor_status:
             entry.instructor_status = 'ASSIGNED' if entry.instructor_id else 'NOT_ASSIGNED'

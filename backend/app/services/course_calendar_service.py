@@ -151,6 +151,7 @@ class CourseCalendarService:
         phase_name: str,
         commencement_date: date,
         completion_date: date,
+        subject_id: Optional[str] = None,
         theory_periods: int = 0,
         practical_periods: int = 0,
         working_days: int = 0,
@@ -188,6 +189,7 @@ class CourseCalendarService:
         try:
             entry = CourseCalendar(
                 course_id=course_id,
+                subject_id=subject_id,
                 serial_number=serial_number,
                 phase_name=phase_name.strip(),
                 theory_periods=theory_periods,
@@ -229,6 +231,7 @@ class CourseCalendarService:
         db: Session,
         calendar_id: str,
         phase_name: Optional[str] = None,
+        subject_id: Optional[str] = None,
         commencement_date: Optional[date] = None,
         completion_date: Optional[date] = None,
         theory_periods: Optional[int] = None,
@@ -276,6 +279,8 @@ class CourseCalendarService:
 
         try:
             entry.phase_name = new_phase_name
+            if subject_id is not None:
+                entry.subject_id = subject_id
             entry.commencement_date = new_commencement
             entry.completion_date = new_completion
             entry.theory_periods = new_theory

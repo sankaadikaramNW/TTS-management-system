@@ -11,6 +11,8 @@ export const CourseCalendarManagement = () => {
   const [trades, setTrades] = useState([])
   const [courses, setCourses] = useState([])
   const [instructors, setInstructors] = useState([])
+  const [courseSubjects, setCourseSubjects] = useState([])
+  const [loadingSubjects, setLoadingSubjects] = useState(false)
   
   // Selection states
   const [selectedTradeId, setSelectedTradeId] = useState('')
@@ -31,6 +33,7 @@ export const CourseCalendarManagement = () => {
 
   // Form states with auto-sum
   const defaultFormData = {
+    subject_id: '',
     phase_name: '',
     theory_periods: 0,
     practical_periods: 0,
@@ -77,15 +80,17 @@ export const CourseCalendarManagement = () => {
     return courses.filter(c => c.trade_id === selectedTradeId)
   }, [courses, selectedTradeId])
 
-  // Load calendar when selected course changes
+  // Load calendar & course subjects when selected course changes
   useEffect(() => {
     if (selectedCourseId) {
       const foundCourse = courses.find(c => c.id === selectedCourseId)
       setSelectedCourse(foundCourse || null)
       fetchCalendarEntries(selectedCourseId)
+      fetchCourseSubjects(selectedCourseId)
     } else {
       setSelectedCourse(null)
       setCalendarEntries([])
+      setCourseSubjects([])
     }
   }, [selectedCourseId, courses])
 
@@ -107,7 +112,6 @@ export const CourseCalendarManagement = () => {
     }
   }, [searchParams, calendarEntries])
 
-
   const fetchCalendarEntries = async (courseId) => {
     setLoading(true)
     try {
@@ -118,6 +122,38 @@ export const CourseCalendarManagement = () => {
       toast.error('Failed to load course calendar.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCourseSubjects = async (courseId) => {
+    setLoadingSubjects(true)
+    try {
+      const res = await axios.get(`/api/v1/academic/subjects/${courseId}`)
+      setCourseSubjects(res.data || [])
+    } catch (err) {
+      console.error('Failed to fetch course subjects', err)
+      setCourseSubjects([])
+    } finally {
+      setLoadingSubjects(false)
+    }
+  }
+
+  const handleSubjectSelect = (subjectId) => {
+    const selectedSub = courseSubjects.find(s => s.id === subjectId)
+    if (selectedSub) {
+      const displayName = selectedSub.code ? `[${selectedSub.code}] ${selectedSub.name}` : selectedSub.name
+      setFormData(prev => ({
+        ...prev,
+        subject_id: selectedSub.id,
+        phase_name: displayName,
+        theory_periods: prev.theory_periods > 0 ? prev.theory_periods : (selectedSub.periods || 0)
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        subject_id: '',
+        phase_name: ''
+      }))
     }
   }
 
@@ -157,7 +193,18 @@ export const CourseCalendarManagement = () => {
     setIsEditing(true)
     setEditingEntryId(entry.id)
     const isAssigned = entry.instructor_status === 'ASSIGNED' && entry.instructor_id
+
+    let matchedSubId = entry.subject_id || ''
+    if (!matchedSubId && entry.phase_name && courseSubjects.length > 0) {
+      const match = courseSubjects.find(s =>
+        (s.code && entry.phase_name.includes(s.code)) ||
+        s.name.toLowerCase() === entry.phase_name.toLowerCase()
+      )
+      if (match) matchedSubId = match.id
+    }
+
     setFormData({
+      subject_id: matchedSubId,
       phase_name: entry.phase_name || '',
       theory_periods: entry.theory_periods || 0,
       practical_periods: entry.practical_periods || 0,
@@ -173,7 +220,11 @@ export const CourseCalendarManagement = () => {
   const handleSubmitForm = async (e) => {
     e.preventDefault()
     if (!formData.phase_name.trim()) {
-      toast.warning('Phase Name is required.')
+      toast.warning('Subject / Phase Activity is required.')
+      return
+    }
+    if (courseSubjects.length > 0 && !formData.subject_id) {
+      toast.warning('Please select a subject from the list for this course.')
       return
     }
     if (!formData.commencement_date || !formData.completion_date) {
@@ -194,6 +245,7 @@ export const CourseCalendarManagement = () => {
       const isSystemInstructor = formData.instructor_selection !== 'NOT_ASSIGNED' && Boolean(formData.instructor_selection)
       const payload = {
         phase_name: formData.phase_name.trim(),
+        subject_id: formData.subject_id || null,
         theory_periods: Number(formData.theory_periods) || 0,
         practical_periods: Number(formData.practical_periods) || 0,
         working_days: Number(formData.working_days) || 0,
@@ -665,19 +717,49 @@ export const CourseCalendarManagement = () => {
                   </div>
 
                   <div className="row g-3">
-                    {/* Phase Name */}
+                    {/* Subject / Phase Activity Name */}
                     <div className="col-12">
                       <label className="form-label fw-bold small text-dark">
-                        Phase / Subject Activity Name <span className="text-danger">*</span>
+                        Course Subject / Activity <span className="text-danger">*</span>
                       </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. English Intensive Period, Practical Flight Line Training..."
-                        value={formData.phase_name}
-                        onChange={(e) => setFormData({ ...formData, phase_name: e.target.value })}
-                        required
-                      />
+                      {loadingSubjects ? (
+                        <div className="p-3 border rounded bg-light text-center small text-muted">
+                          <span className="spinner-border spinner-border-sm me-2 text-primary" role="status"></span>
+                          Loading subjects for course...
+                        </div>
+                      ) : courseSubjects.length === 0 ? (
+                        <div className="alert alert-warning py-2 px-3 small mb-0 d-flex align-items-center justify-content-between">
+                          <div>
+                            <i className="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+                            No subjects registered for <strong>{selectedCourse?.name || 'this course'}</strong> in the database yet.
+                          </div>
+                          <a href="/academic?tab=subjects" target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-warning text-dark fw-semibold ms-2">
+                            <i className="bi bi-plus-circle me-1"></i>Add Subjects
+                          </a>
+                        </div>
+                      ) : (
+                        <div>
+                          <select
+                            className="form-select border-primary-subtle"
+                            value={formData.subject_id}
+                            onChange={(e) => handleSubjectSelect(e.target.value)}
+                            required
+                          >
+                            <option value="">-- Select Subject from {selectedCourse?.code || 'Course'} --</option>
+                            {courseSubjects.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.code ? `[${s.code}] ${s.name}` : s.name} ({s.periods} Periods)
+                              </option>
+                            ))}
+                          </select>
+                          {formData.phase_name && (
+                            <div className="form-text text-muted small mt-1 d-flex align-items-center">
+                              <i className="bi bi-journal-check me-1 text-success"></i>
+                              Selected Subject Activity: <strong className="text-dark ms-1">{formData.phase_name}</strong>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Periods Breakdown & Auto-Sum */}
