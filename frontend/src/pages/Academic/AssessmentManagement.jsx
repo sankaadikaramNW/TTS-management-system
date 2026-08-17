@@ -48,9 +48,10 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
         axios.get(`/api/v1/academic/subjects/${courseId}`),
         axios.get('/api/v1/students', { params: { course_id: courseId } })
       ])
-      setExams(eRes.data)
-      setSubjects(sRes.data)
-      setStudents(stRes.data)
+      setExams(eRes.data || [])
+      setSubjects(sRes.data || [])
+      const rawStudents = stRes.data?.items || stRes.data || []
+      setStudents(Array.isArray(rawStudents) ? rawStudents : [])
     } catch (err) {
       toast.error('Failed to load assessment details')
     } finally {
@@ -92,9 +93,10 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
     setSelectedExam(ex)
     try {
       const res = await axios.get(`/api/v1/academic/exam-marks/${ex.id}`)
-      // Prepare marks list for all course students
-      const existingMap = new Map(res.data.map(m => [m.student_id, m]))
-      const markRecords = students.map(st => ({
+      const markData = Array.isArray(res.data) ? res.data : []
+      const existingMap = new Map(markData.map(m => [m.student_id, m]))
+      const studentArr = Array.isArray(students) ? students : []
+      const markRecords = studentArr.map(st => ({
         student_id: st.id,
         student_name: st.full_name,
         service_number: st.service_number,
@@ -104,6 +106,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       setExamMarks(markRecords)
       setShowMarksModal(true)
     } catch (err) {
+      console.error('Error loading exam marks:', err)
       toast.error('Failed to load student exam marks')
     }
   }

@@ -392,7 +392,7 @@ class ExamMarkResponse(BaseModel):
     status: str  # Pass, Fail, Absent
     remarks: Optional[str] = None
     entered_by: Optional[str] = None
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
