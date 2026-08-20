@@ -231,7 +231,13 @@ export const LessonPlanDocuments = () => {
                 id="filter-course"
               >
                 <option value="">
-                  {!selectedTradeId ? 'Select a Trade first' : loadingCourses ? 'Loading...' : 'All Courses'}
+                  {!selectedTradeId 
+                    ? 'Select a Trade first' 
+                    : loadingCourses 
+                    ? 'Loading...' 
+                    : courses.length === 0 
+                    ? 'No courses available for this Trade' 
+                    : 'All Courses'}
                 </option>
                 {courses.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>

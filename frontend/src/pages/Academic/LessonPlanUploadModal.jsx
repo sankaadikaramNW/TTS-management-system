@@ -218,7 +218,13 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
                   id="upload-course"
                 >
                   <option value="">
-                    {!selectedTradeId ? 'Select a Trade first' : loadingCourses ? 'Loading courses...' : 'Select Course...'}
+                    {!selectedTradeId 
+                      ? 'Select a Trade first' 
+                      : loadingCourses 
+                      ? 'Loading courses...' 
+                      : courses.length === 0 
+                      ? 'No courses available for this Trade' 
+                      : 'Select Course...'}
                   </option>
                   {courses.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>

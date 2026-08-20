@@ -54,7 +54,20 @@ class CourseRepository(BaseRepository[Course]):
         return c
 
     def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
-        results = db.query(Course).filter(Course.trade_id == trade_id, Course.deleted_at == None).all()
+        trade_obj = db.query(Trade).filter(
+            (Trade.id == trade_id) | (Trade.code == trade_id) | (Trade.label == trade_id)
+        ).first()
+
+        target_ids = {trade_id}
+        if trade_obj:
+            target_ids.add(trade_obj.id)
+            if trade_obj.code:
+                target_ids.add(trade_obj.code)
+
+        results = db.query(Course).filter(
+            Course.trade_id.in_(list(target_ids)),
+            Course.deleted_at == None
+        ).all()
         for c in results:
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
