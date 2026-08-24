@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 // ─── Status badge config ──────────────────────────────────────
 const SUBMISSION_STATUS_CONFIG = {
@@ -55,6 +56,7 @@ export const DailyParade = () => {
   const [submitterRemarks, setSubmitterRemarks] = useState('')
   const [tradeSubmissions, setTradeSubmissions] = useState({})  // trade -> submission info
   const [showSubmitPreviewModal, setShowSubmitPreviewModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // ── Tab 2: Pending Approvals ─────────────────────────────
   const [pendingApprovals, setPendingApprovals] = useState([])
@@ -396,8 +398,16 @@ export const DailyParade = () => {
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
           />
+          <button
+            className="btn btn-outline-dark fw-semibold shadow-xs"
+            onClick={() => setShowReportModal(true)}
+            title="Print Classical Official Parade State Report"
+          >
+            <i className="bi bi-printer me-1 text-primary"></i> Print Official Report
+          </button>
         </div>
       </div>
+
 
       {/* ─── Navigation Tabs ─── */}
       <ul className="nav nav-tabs mb-4" style={{ borderBottom: '2px solid #e2e8f0' }}>
@@ -1306,8 +1316,22 @@ export const DailyParade = () => {
           )}
         </div>
       )}
+
+      {/* Classical Formal Daily Parade State Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title={`DAILY PARADE STATE & STRENGTH REGISTER — ${selectedDate}`}
+        endpoint="/api/v1/reports/parade-state"
+        params={{
+          parade_date: selectedDate,
+          trade: selectedTrade !== 'All' ? selectedTrade : ''
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
 
 export default DailyParade
+

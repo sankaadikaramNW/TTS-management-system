@@ -3,12 +3,13 @@ import { useParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { PersonalOccurrenceReporting } from './PersonalOccurrenceReporting'
-
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const StudentDetail = () => {
   const { id } = useParams()
   const [student, setStudent] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -77,6 +78,9 @@ export const StudentDetail = () => {
           <Link to="/students" className="btn btn-outline-secondary">
             <i className="bi bi-arrow-left"></i> Back to list
           </Link>
+          <button className="btn btn-outline-dark d-flex align-items-center gap-1.5 fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-file-earmark-text text-primary"></i> Print Official Dossier
+          </button>
           <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={handlePrintQR}>
             <i className="bi bi-printer"></i> Print QR Card
           </button>
@@ -194,8 +198,21 @@ export const StudentDetail = () => {
           <PersonalOccurrenceReporting initialTraineeId={id} />
         </div>
       </div>
+
+      {/* Classical Formal Trainee Dossier Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title={`OFFICIAL TRAINEE DOSSIER — ${student.rank || ''} ${student.full_name || ''} (${student.service_number})`}
+        endpoint="/api/v1/reports/students"
+        params={{
+          search: student.service_number
+        }}
+        defaultOrientation="portrait"
+      />
     </div>
   )
 }
 export default StudentDetail
+
 

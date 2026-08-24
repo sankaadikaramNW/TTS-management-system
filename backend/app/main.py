@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.routers import auth, student, parade, accommodation, academic, dashboard, system, public
+from app.routers import auth, student, parade, accommodation, academic, dashboard, system, public, reports
 
 # Import ALL models before create_all so SQLAlchemy can resolve all cross-model relationships
 import app.models  # noqa: F401 — loads __init__.py which imports every model
@@ -542,6 +542,7 @@ app.include_router(student.occ_router, prefix="/api/v1")
 app.include_router(parade.router, prefix="/api/v1")
 app.include_router(accommodation.router, prefix="/api/v1")
 app.include_router(academic.router, prefix="/api/v1")
+app.include_router(reports.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")

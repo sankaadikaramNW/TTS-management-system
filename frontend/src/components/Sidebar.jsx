@@ -175,12 +175,36 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
       return (
         <>
           <div className="sidebar-module-header px-4 py-2 text-white-50 small fw-bold text-uppercase border-bottom border-secondary mb-3 d-flex align-items-center">
-            <i className="bi bi-bar-chart-line me-2"></i>
-            <span className="module-header-text">Analytics Module</span>
+            <i className="bi bi-file-earmark-bar-graph me-2"></i>
+            <span className="module-header-text">Reports & Analytics</span>
           </div>
-          <NavLink to="/reports" className="nav-link" title="General Reports">
-            <i className="bi bi-file-earmark-bar-graph"></i>
-            <span>General Reports</span>
+          <NavLink to="/reports" end className="nav-link" title="Enterprise Report Center">
+            <i className="bi bi-speedometer2"></i>
+            <span>Report Center</span>
+          </NavLink>
+          <NavLink to="/reports?tab=student" className="nav-link" title="Trainee Dossiers">
+            <i className="bi bi-person-lines-fill"></i>
+            <span>Trainee Dossiers</span>
+          </NavLink>
+          <NavLink to="/reports?tab=parade" className="nav-link" title="Parade Strength">
+            <i className="bi bi-clipboard2-check-fill"></i>
+            <span>Parade Strength</span>
+          </NavLink>
+          <NavLink to="/reports?tab=academic_results" className="nav-link" title="Academic Results">
+            <i className="bi bi-award-fill"></i>
+            <span>Academic Results</span>
+          </NavLink>
+          <NavLink to="/reports?tab=attendance" className="nav-link" title="Class Attendance">
+            <i className="bi bi-calendar-check-fill"></i>
+            <span>Class Attendance</span>
+          </NavLink>
+          <NavLink to="/reports?tab=accommodation" className="nav-link" title="Bunk Housing">
+            <i className="bi bi-building-fill"></i>
+            <span>Bunk Housing</span>
+          </NavLink>
+          <NavLink to="/reports?tab=course_calendar" className="nav-link" title="Course Schedules">
+            <i className="bi bi-calendar-range-fill"></i>
+            <span>Course Schedules</span>
           </NavLink>
           
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />

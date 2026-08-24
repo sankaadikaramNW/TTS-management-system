@@ -7,6 +7,7 @@ import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title
 } from 'chart.js'
 import { Bar, Pie } from 'react-chartjs-2'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title)
 
@@ -41,6 +42,7 @@ export const AccommodationPanel = () => {
   const [showAllocateModal, setShowAllocateModal] = useState(false)
   const [showTransferModal, setShowTransferModal] = useState(false)
   const [showVacateModal, setShowVacateModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // ── Form Inputs ───────────────────────────────────────────
   const [buildingForm, setBuildingForm] = useState({ name: '', type: 'Airmen', capacity: 40 })
@@ -810,9 +812,14 @@ export const AccommodationPanel = () => {
             List of currently accommodated SLAF trainees with live Daily Parade Status
           </p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => navigate('/accommodation/allocate')}>
-          <i className="bi bi-plus-lg me-1" />Allocate New Bed
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-printer me-1 text-primary" />Print Billeting Report
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/accommodation/allocate')}>
+            <i className="bi bi-plus-lg me-1" />Allocate New Bed
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -1090,11 +1097,16 @@ export const AccommodationPanel = () => {
   // ── SUBVIEW 8: REPORTS & ANALYTICS ────────────────────────
   const renderReportsView = () => (
     <div>
-      <div className="mb-4">
-        <h4 className="fw-bold text-primary mb-1">Accommodation Reports & Capacity Breakdown</h4>
-        <p className="text-muted mb-0" style={{ fontSize: '0.88rem' }}>
-          Official strength and utilization reports for SLAF management
-        </p>
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h4 className="fw-bold text-primary mb-1">Accommodation Reports & Capacity Breakdown</h4>
+          <p className="text-muted mb-0" style={{ fontSize: '0.88rem' }}>
+            Official strength and utilization reports for SLAF management
+          </p>
+        </div>
+        <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+          <i className="bi bi-printer me-1 text-primary" />Print Official Billeting Report
+        </button>
       </div>
 
       <div className="row g-3">
@@ -1525,8 +1537,22 @@ export const AccommodationPanel = () => {
           </div>
         </div>
       )}
+
+      {/* Classical Formal Trainee Billeting & Accommodation Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL TRAINEE BILLETING & BUNK ACCOMMODATION REGISTER"
+        endpoint="/api/v1/reports/accommodation"
+        params={{
+          billet_id: selectedBilletId,
+          trade: tradeFilter !== 'All' ? tradeFilter : ''
+        }}
+        defaultOrientation="portrait"
+      />
     </div>
   )
 }
 
 export default AccommodationPanel
+

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const ClassroomAttendanceRegister = () => {
   const [courses, setCourses] = useState([])
@@ -13,6 +14,9 @@ export const ClassroomAttendanceRegister = () => {
   const [traineeList, setTraineeList] = useState([])
   const [loadingSession, setLoadingSession] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Report Modal State
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Reporting State
   const [activeMode, setActiveMode] = useState('register') // 'register' | 'class-report' | 'student-report' | 'classroom-report'
@@ -281,6 +285,13 @@ export const ClassroomAttendanceRegister = () => {
               }}
             >
               <i className="bi bi-door-open me-1"></i> Classroom Report
+            </button>
+            <button
+              className="btn btn-sm btn-outline-dark fw-semibold shadow-xs"
+              onClick={() => setShowReportModal(true)}
+              title="Print Classical Official Attendance Register"
+            >
+              <i className="bi bi-printer me-1 text-primary"></i> Print Official Register
             </button>
           </div>
         </div>
@@ -888,6 +899,21 @@ export const ClassroomAttendanceRegister = () => {
           )}
         </div>
       )}
+
+      {/* Classical Formal Classroom Attendance Register Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL CLASSROOM ATTENDANCE REGISTER REPORT"
+        endpoint="/api/v1/reports/attendance"
+        params={{
+          course_id: selectedCourseId,
+          date_from: selectedDate,
+          date_to: selectedDate
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
+

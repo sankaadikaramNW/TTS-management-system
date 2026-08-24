@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   const { hasPermission } = useAuth()
@@ -32,6 +33,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [deletingTitle, setDeletingTitle] = useState('')
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Form State
   const defaultForm = {
@@ -201,11 +203,16 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
             Restricted Personnel Management SSOT for Trainee Achievements & Misconduct Records.
           </p>
         </div>
-        {hasPermission('personal_occurrence:write') && (
-          <button className="btn btn-primary btn-sm fw-bold shadow-sm" onClick={handleOpenCreate}>
-            <i className="bi bi-plus-lg me-1"></i> Add Personal Occurrence
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-printer me-1 text-primary"></i> Print Official Dossier Report
           </button>
-        )}
+          {hasPermission('personal_occurrence:write') && (
+            <button className="btn btn-primary btn-sm fw-bold shadow-sm" onClick={handleOpenCreate}>
+              <i className="bi bi-plus-lg me-1"></i> Add Personal Occurrence
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -535,8 +542,24 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
           </div>
         </div>
       )}
+
+      {/* Classical Formal Trainee Personal Occurrence & Conduct Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL TRAINEE PERSONAL OCCURRENCE & CONDUCT DOSSIER"
+        endpoint="/api/v1/reports/occurrences"
+        params={{
+          trainee_id: selectedTraineeId,
+          occurrence_type: filterType,
+          date_from: dateFrom,
+          date_to: dateTo
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
 
 export default PersonalOccurrenceReporting
+

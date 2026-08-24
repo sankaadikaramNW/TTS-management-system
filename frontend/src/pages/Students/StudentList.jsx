@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const StudentList = () => {
   const { hasPermission } = useAuth()
@@ -18,6 +19,7 @@ export const StudentList = () => {
   const [skip, setSkip] = useState(0)
   const [limit] = useState(10)
   const [loading, setLoading] = useState(true)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   const fetchStudents = async () => {
     setLoading(true)
@@ -121,8 +123,8 @@ export const StudentList = () => {
           <p className="text-muted mb-0 small">Master database (Single Source of Truth) for all school trainees</p>
         </div>
         <div className="d-flex gap-2 flex-wrap">
-          <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" onClick={exportToCSV}>
-            <i className="bi bi-file-earmark-spreadsheet"></i> Export CSV
+          <button className="btn btn-outline-dark btn-sm d-flex align-items-center gap-1.5 fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-printer text-primary"></i> Print Trainee Dossier Directory
           </button>
           {hasPermission('personal_occurrence:read') && (
             <Link to="/students/occurrences" className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1.5 fw-bold">
@@ -300,7 +302,23 @@ export const StudentList = () => {
           </div>
         </div>
       )}
+
+      {/* Classical Formal Student Personal Dossier Directory Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL TRAINEE PERSONAL DOSSIER & MASTER DIRECTORY"
+        endpoint="/api/v1/reports/students"
+        params={{
+          trade: trade,
+          rank: rank,
+          status: status,
+          search: search
+        }}
+        defaultOrientation="portrait"
+      />
     </div>
   )
 }
 export default StudentList
+

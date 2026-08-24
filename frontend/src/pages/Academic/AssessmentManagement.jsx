@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { ClassroomAttendanceRegister } from './ClassroomAttendanceRegister'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
   const [activeSubTab, setActiveSubTab] = useState(initialTab)
@@ -23,6 +24,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
   // Integrated Result Sheet / Marks Modal
   const [selectedExam, setSelectedExam] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [resultSheetData, setResultSheetData] = useState(null)
   const [examMarks, setExamMarks] = useState([])
   const [showMarksModal, setShowMarksModal] = useState(false)
@@ -229,9 +231,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
     }
   }
 
-  // Print Marksheet
+  // Print Marksheet — Open Classical Official Institutional Result Sheet Modal
   const handlePrintMarksheet = () => {
-    window.print()
+    setShowReportModal(true)
   }
 
   // Filtered list of exams for main tabs
@@ -291,13 +293,13 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
     }
 
     return (
-      <span className={`badge ${bgClass} border d-inline-flex align-items-center gap-1.5 px-2 py-1`}>
+      <span className={`badge ${bgClass} border d-inline-flex align-items-center text-nowrap px-2.5 py-1`} style={{ gap: '6px' }}>
         <i className={`bi ${icon}`}></i>
-        <span>{status || 'Present'}</span>
+        <span className="fw-semibold">{status || 'Present'}</span>
         {isApproved ? (
-          <i className="bi bi-shield-fill-check text-success ms-0.5" title="Approved Parade State"></i>
+          <i className="bi bi-shield-fill-check text-success ms-1" title="Approved Parade State"></i>
         ) : (
-          <i className="bi bi-clock-history text-muted ms-0.5" title="Pending Approval"></i>
+          <i className="bi bi-clock-history text-muted ms-1" title="Pending Approval"></i>
         )}
       </span>
     )
@@ -547,11 +549,11 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
       {/* Comprehensive Result Sheet Modal */}
       {showMarksModal && selectedExam && resultSheetData && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: '92vw' }}>
-            <div className="modal-content slaf-card shadow-lg border-0">
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '96vw', width: '96vw', height: '94vh', margin: '3vh auto' }}>
+            <div className="modal-content slaf-card shadow-lg border-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               {/* Header */}
-              <div className="modal-header border-bottom bg-light py-2.5 px-4">
+              <div className="modal-header border-bottom bg-light py-2.5 px-4 flex-shrink-0">
                 <div>
                   <div className="d-flex align-items-center gap-2">
                     <h5 className="modal-title display-font text-primary fw-bold mb-0">
@@ -587,7 +589,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
               {/* Summary Metric Strip */}
               {resultSheetData.summary && (
-                <div className="px-4 py-2.5 bg-light border-bottom">
+                <div className="px-4 py-2.5 bg-light border-bottom flex-shrink-0">
                   <div className="row g-2 text-center align-items-center">
                     <div className="col-auto">
                       <div className="p-1.5 px-3 rounded bg-white border shadow-xs">
@@ -637,7 +639,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
               )}
 
               {/* Filter Controls & Search */}
-              <div className="px-4 py-2 bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div className="px-4 py-2 bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 flex-shrink-0">
                 <div className="d-flex flex-wrap align-items-center gap-1">
                   <small className="text-muted fw-bold me-1">Filter:</small>
                   <button 
@@ -715,7 +717,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     </button>
                   )}
                 </div>
-                <div style={{ width: '220px' }}>
+                <div style={{ width: '240px' }}>
                   <input 
                     type="text" 
                     className="form-control form-control-sm" 
@@ -727,19 +729,19 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
               </div>
 
               {/* Marksheet Form & Interactive Table */}
-              <form onSubmit={handleSaveMarks} className="d-flex flex-column flex-grow-1 overflow-hidden">
-                <div className="modal-body p-0 flex-grow-1 overflow-auto" style={{ maxHeight: '58vh' }}>
+              <form onSubmit={handleSaveMarks} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                <div className="modal-body p-0" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
                   <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.875rem' }}>
-                    <thead className="table-light sticky-top" style={{ zIndex: 10 }}>
+                    <thead className="table-light sticky-top shadow-xs" style={{ zIndex: 10 }}>
                       <tr>
-                        <th style={{ width: '120px' }}>Service No</th>
-                        <th>Trainee Full Name</th>
-                        <th style={{ width: '110px' }}>Trade / Batch</th>
-                        <th style={{ width: '160px' }}>Parade State Status</th>
-                        <th style={{ width: '150px' }}>Exam Eligibility</th>
-                        <th style={{ width: '130px' }}>Marks Obtained</th>
-                        <th style={{ width: '130px' }}>Result Status</th>
-                        <th>Remarks / Override Action</th>
+                        <th style={{ minWidth: '110px', width: '120px', padding: '12px 16px' }}>Service No</th>
+                        <th style={{ minWidth: '220px', padding: '12px 16px' }}>Trainee Full Name</th>
+                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Trade / Batch</th>
+                        <th style={{ minWidth: '170px', padding: '12px 16px' }}>Parade State Status</th>
+                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Exam Eligibility</th>
+                        <th style={{ minWidth: '130px', padding: '12px 16px' }}>Marks Obtained</th>
+                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Result Status</th>
+                        <th style={{ minWidth: '250px', padding: '12px 16px' }}>Remarks / Override Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -760,33 +762,33 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                           return (
                             <tr key={st.student_id} className={!st.can_sit_exam ? 'table-light' : ''}>
                               {/* 1. Service No */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 <strong className="text-primary font-monospace">{st.service_number}</strong>
                               </td>
 
                               {/* 2. Trainee Name */}
-                              <td>
-                                <div className="fw-semibold text-dark">
-                                  <span className="badge bg-secondary-subtle text-dark border me-1.5" style={{ fontSize: '0.7rem' }}>
+                              <td className="px-3 py-2.5">
+                                <div className="fw-semibold text-dark d-flex align-items-center flex-wrap gap-1">
+                                  <span className="badge bg-secondary-subtle text-dark border" style={{ fontSize: '0.72rem' }}>
                                     {st.rank || 'LAC'}
                                   </span>
-                                  {st.student_name}
+                                  <span>{st.student_name}</span>
                                 </div>
                               </td>
 
                               {/* 3. Trade & Batch */}
-                              <td>
-                                <small className="text-muted d-block">{st.trade || 'General'}</small>
+                              <td className="px-3 py-2.5">
+                                <small className="text-muted d-block fw-medium">{st.trade || 'General'}</small>
                                 <span className="badge bg-light text-muted border" style={{ fontSize: '0.675rem' }}>{st.batch || '26/1'}</span>
                               </td>
 
                               {/* 4. Parade State Status (Authoritative Source) */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 {getParadeStatusBadge(st.parade_state_status, st.is_parade_approved)}
                               </td>
 
                               {/* 5. Exam Eligibility */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 {st.is_overridden ? (
                                   <div>
                                     <span className="badge bg-primary-subtle text-primary border" title={st.override_reason}>
@@ -808,7 +810,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                               </td>
 
                               {/* 6. Marks Obtained Input */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 {st.marks_entry_allowed ? (
                                   <input 
                                     type="number"
@@ -835,7 +837,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                               </td>
 
                               {/* 7. Result Status Badge */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 {hasValidMarks ? (
                                   getResultBadge(isPass ? 'PASS' : 'FAIL', isPass, marksNum)
                                 ) : (
@@ -844,11 +846,11 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                               </td>
 
                               {/* 8. Remarks & Controlled Override */}
-                              <td>
+                              <td className="px-3 py-2.5">
                                 <div className="d-flex align-items-center gap-1.5">
                                   <input 
-                                    type="text"
-                                    className="form-control form-control-sm"
+                                    type="text" 
+                                    className="form-control form-control-sm" 
                                     placeholder="Remarks..."
                                     value={st.remarks}
                                     onChange={(e) => {
@@ -994,7 +996,23 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
           </div>
         </div>
       )}
+
+      {/* Classical Formal Academic Examination Result Sheet Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title={selectedExam ? `EXAMINATION RESULT SHEET — ${selectedExam.subject_name || 'Subject'} (${selectedExam.type})` : 'EXAMINATION RESULT SHEET'}
+        endpoint="/api/v1/reports/academic-results"
+        params={{
+          course_id: selectedExam?.course_id || selectedCourseId,
+          subject_id: selectedExam?.subject_id,
+          batch: selectedExam?.batch_name,
+          exam_id: selectedExam?.id
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
+
 
