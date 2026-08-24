@@ -529,6 +529,216 @@ class ExamRepository(BaseRepository[Exam]):
             ex.subject_name = subj.name if subj else None
         return results
 
+    def get_result_sheet(self, db: Session, exam_id: str) -> Optional[Dict[str, Any]]:
+        exam = db.query(Exam).filter(Exam.id == exam_id, Exam.deleted_at == None).first()
+        if not exam:
+            return None
+
+        course = db.query(Course).filter(Course.id == exam.course_id).first()
+        subject = db.query(Subject).filter(Subject.id == exam.subject_id).first()
+        trade_obj = db.query(Trade).filter(Trade.id == course.trade_id).first() if course and course.trade_id else None
+        trade_label = trade_obj.label if trade_obj else (getattr(course, 'trade_name', None))
+
+        # Check parade submission for date & trade
+        ps_sub = None
+        if trade_label:
+            ps_sub = db.query(ParadeSubmission).filter(
+                ParadeSubmission.date == exam.date,
+                ParadeSubmission.trade == trade_label
+            ).first()
+            if not ps_sub and trade_obj:
+                ps_sub = db.query(ParadeSubmission).filter(
+                    ParadeSubmission.date == exam.date,
+                    ParadeSubmission.trade == trade_obj.code
+                ).first()
+
+        parade_submission_status = ps_sub.status if ps_sub else 'NOT_SUBMITTED'
+        is_trade_parade_approved = (ps_sub.status == 'APPROVED') if ps_sub else False
+
+        # Trainees belonging to this course/trade
+        from sqlalchemy import or_
+        student_query = db.query(Student).filter(Student.status != 'Passed Out')
+        trade_conds = [Student.course_id == exam.course_id]
+        if trade_label and trade_label != 'General':
+            trade_conds.append(Student.trade == trade_label)
+        if trade_obj and trade_obj.label:
+            trade_conds.append(Student.trade == trade_obj.label)
+        if trade_obj and trade_obj.code:
+            trade_conds.append(Student.trade == trade_obj.code)
+
+        students = student_query.filter(or_(*trade_conds)).order_by(Student.service_number.asc()).all()
+
+        existing_marks = {
+            m.student_id: m for m in db.query(ExamMark).filter(ExamMark.exam_id == exam_id).all()
+        }
+
+        # Statuses that prohibit sitting exam
+        ineligible_keywords = ['LEAVE', 'HOSPITAL', 'AWOL', 'COURSE', 'SICK', 'DETACHED']
+
+        student_items = []
+        summary_counts = {
+            'total_trainees': len(students),
+            'eligible_count': 0,
+            'sat_exam_count': 0,
+            'did_not_sit_count': 0,
+            'present_count': 0,
+            'leave_count': 0,
+            'hospital_count': 0,
+            'awol_count': 0,
+            'course_visit_count': 0,
+            'sick_report_count': 0,
+            'other_count': 0,
+            'overridden_count': 0,
+            'pass_count': 0,
+            'fail_count': 0
+        }
+
+        for s in students:
+            p_state = db.query(ParadeState).filter(
+                ParadeState.student_id == s.id,
+                ParadeState.date == exam.date
+            ).first()
+
+            is_p_approved = False
+            p_sub_status = parade_submission_status
+            if p_state:
+                if p_state.submission_id:
+                    sub = db.query(ParadeSubmission).filter(ParadeSubmission.id == p_state.submission_id).first()
+                    if sub:
+                        p_sub_status = sub.status
+                        is_p_approved = (sub.status == 'APPROVED')
+                elif is_trade_parade_approved:
+                    is_p_approved = True
+            elif is_trade_parade_approved:
+                is_p_approved = True
+
+            raw_status = p_state.status if p_state else 'Present'
+            norm_status_upper = raw_status.strip().upper()
+
+            is_status_ineligible = any(kw in norm_status_upper for kw in ineligible_keywords)
+
+            existing_m = existing_marks.get(s.id)
+            is_overridden = bool(existing_m and existing_m.is_overridden)
+            override_reason = existing_m.override_reason if existing_m else None
+            overridden_by_name = None
+            overridden_at = None
+            original_parade_status = existing_m.original_parade_status if existing_m else None
+
+            if existing_m and existing_m.overridden_by:
+                u = db.query(User).filter(User.id == existing_m.overridden_by).first()
+                if u:
+                    overridden_by_name = u.full_name
+                overridden_at = existing_m.overridden_at
+
+            entered_by_name = None
+            if existing_m and existing_m.entered_by:
+                u = db.query(User).filter(User.id == existing_m.entered_by).first()
+                if u:
+                    entered_by_name = u.full_name
+
+            # can_sit_exam logic:
+            if is_p_approved and is_status_ineligible:
+                can_sit_exam = True if is_overridden else False
+            else:
+                can_sit_exam = True
+
+            marks_entry_allowed = can_sit_exam
+
+            # Result status calculation
+            if existing_m and existing_m.marks_obtained is not None and existing_m.marks_obtained >= 0:
+                marks_val = existing_m.marks_obtained
+                if marks_val >= exam.pass_marks:
+                    result_status = 'PASS'
+                    summary_counts['pass_count'] += 1
+                else:
+                    result_status = 'FAIL'
+                    summary_counts['fail_count'] += 1
+                summary_counts['sat_exam_count'] += 1
+            elif is_p_approved and not can_sit_exam:
+                marks_val = None
+                if 'LEAVE' in norm_status_upper:
+                    result_status = 'LEAVE'
+                elif 'HOSPITAL' in norm_status_upper:
+                    result_status = 'IN HOSPITAL'
+                elif 'AWOL' in norm_status_upper:
+                    result_status = 'AWOL'
+                elif 'COURSE' in norm_status_upper or 'VISIT' in norm_status_upper:
+                    result_status = 'COURSE VISIT'
+                elif 'SICK' in norm_status_upper:
+                    result_status = 'SICK REPORT'
+                elif 'DETACHED' in norm_status_upper:
+                    result_status = 'DETACHED DUTY'
+                else:
+                    result_status = norm_status_upper
+            else:
+                marks_val = None
+                result_status = 'ELIGIBLE'
+
+            if can_sit_exam:
+                summary_counts['eligible_count'] += 1
+            else:
+                summary_counts['did_not_sit_count'] += 1
+
+            if is_overridden:
+                summary_counts['overridden_count'] += 1
+
+            if 'PRESENT' in norm_status_upper:
+                summary_counts['present_count'] += 1
+            elif 'LEAVE' in norm_status_upper:
+                summary_counts['leave_count'] += 1
+            elif 'HOSPITAL' in norm_status_upper:
+                summary_counts['hospital_count'] += 1
+            elif 'AWOL' in norm_status_upper:
+                summary_counts['awol_count'] += 1
+            elif 'COURSE' in norm_status_upper or 'VISIT' in norm_status_upper:
+                summary_counts['course_visit_count'] += 1
+            elif 'SICK' in norm_status_upper:
+                summary_counts['sick_report_count'] += 1
+            else:
+                summary_counts['other_count'] += 1
+
+            student_items.append({
+                'student_id': s.id,
+                'service_number': s.service_number,
+                'student_name': s.full_name,
+                'rank': s.rank or 'LAC',
+                'trade': s.trade or trade_label or 'General',
+                'batch': s.batch or '26/1',
+                'parade_state_status': raw_status,
+                'parade_submission_status': p_sub_status,
+                'is_parade_approved': is_p_approved,
+                'can_sit_exam': can_sit_exam,
+                'marks_entry_allowed': marks_entry_allowed,
+                'marks_obtained': marks_val,
+                'result_status': result_status,
+                'remarks': existing_m.remarks if existing_m else None,
+                'is_overridden': is_overridden,
+                'override_reason': override_reason,
+                'overridden_by_name': overridden_by_name,
+                'overridden_at': overridden_at,
+                'original_parade_status': original_parade_status,
+                'entered_by_name': entered_by_name
+            })
+
+        return {
+            'exam_id': exam.id,
+            'course_id': course.id if course else exam.course_id,
+            'course_name': course.name if course else 'Course',
+            'course_code': course.code if course else None,
+            'trade_name': trade_label,
+            'subject_id': subject.id if subject else exam.subject_id,
+            'subject_name': subject.name if subject else 'Subject',
+            'subject_code': subject.code if subject else None,
+            'exam_type': exam.type,
+            'exam_date': exam.date,
+            'max_marks': exam.max_marks,
+            'pass_marks': exam.pass_marks,
+            'is_parade_approved': is_trade_parade_approved,
+            'parade_submission_status': parade_submission_status,
+            'summary': summary_counts,
+            'students': student_items
+        }
+
 class ExamMarkRepository(BaseRepository[ExamMark]):
     def get_by_exam(self, db: Session, exam_id: str) -> List[ExamMark]:
         results = db.query(ExamMark).filter(ExamMark.exam_id == exam_id).all()

@@ -242,7 +242,14 @@ def run_lightweight_migrations():
             "ALTER TABLE students MODIFY COLUMN blood_group VARCHAR(10) NULL",
             "DELETE a1 FROM academic_attendance a1 INNER JOIN academic_attendance a2 ON a1.timetable_id = a2.timetable_id AND a1.student_id = a2.student_id AND a1.id > a2.id",
             "CREATE UNIQUE INDEX idx_unique_timetable_student ON academic_attendance (timetable_id, student_id)",
-            "CREATE INDEX idx_academic_att_status ON academic_attendance (status)"
+            "CREATE INDEX idx_academic_att_status ON academic_attendance (status)",
+            "ALTER TABLE parade_status_types ADD COLUMN can_sit_exam BOOLEAN DEFAULT 1",
+            "ALTER TABLE exam_marks ADD COLUMN is_overridden BOOLEAN DEFAULT 0",
+            "ALTER TABLE exam_marks ADD COLUMN override_reason TEXT NULL",
+            "ALTER TABLE exam_marks ADD COLUMN overridden_by VARCHAR(36) NULL",
+            "ALTER TABLE exam_marks ADD COLUMN overridden_at DATETIME NULL",
+            "ALTER TABLE exam_marks ADD COLUMN original_parade_status VARCHAR(50) NULL",
+            "UPDATE parade_status_types SET can_sit_exam = 0 WHERE code IN ('SICK_REPORT', 'HOSPITAL', 'LEAVE', 'COURSE_VISIT', 'DETACHED_DUTY', 'AWOL')"
         ]
         for m_sql in modify_sqls:
             try:
@@ -447,14 +454,14 @@ def auto_seed_database():
         # 7. Seed Parade Status Types
         if db.query(ParadeStatusType).count() == 0:
             status_types = [
-                ParadeStatusType(code='PRESENT', label='Present'),
-                ParadeStatusType(code='SICK_REPORT', label='Sick Report'),
-                ParadeStatusType(code='HOSPITAL', label='Hospital'),
-                ParadeStatusType(code='LEAVE', label='Leave'),
-                ParadeStatusType(code='TEMPORARY_DUTY', label='Temporary Duty'),
-                ParadeStatusType(code='COURSE_VISIT', label='Course Visit'),
-                ParadeStatusType(code='DETACHED_DUTY', label='Detached Duty'),
-                ParadeStatusType(code='AWOL', label='AWOL')
+                ParadeStatusType(code='PRESENT', label='Present', can_sit_exam=True),
+                ParadeStatusType(code='SICK_REPORT', label='Sick Report', can_sit_exam=False),
+                ParadeStatusType(code='HOSPITAL', label='Hospital', can_sit_exam=False),
+                ParadeStatusType(code='LEAVE', label='Leave', can_sit_exam=False),
+                ParadeStatusType(code='TEMPORARY_DUTY', label='Temporary Duty', can_sit_exam=True),
+                ParadeStatusType(code='COURSE_VISIT', label='Course Visit', can_sit_exam=False),
+                ParadeStatusType(code='DETACHED_DUTY', label='Detached Duty', can_sit_exam=False),
+                ParadeStatusType(code='AWOL', label='AWOL', can_sit_exam=False)
             ]
             db.bulk_save_objects(status_types)
             db.commit()

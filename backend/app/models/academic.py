@@ -175,16 +175,22 @@ class ExamMark(Base):
     exam_id = Column(String(36), ForeignKey('exams.id', ondelete='CASCADE'), nullable=False)
     student_id = Column(String(36), ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
     marks_obtained = Column(Double, nullable=False)
-    status = Column(String(20), nullable=False)  # Pass, Fail, Absent
+    status = Column(String(20), nullable=False)  # Pass, Fail, Absent, or LEAVE, HOSPITAL, AWOL, COURSE_VISIT
     remarks = Column(Text, nullable=True)
     entered_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    is_overridden = Column(Boolean, default=False)
+    override_reason = Column(Text, nullable=True)
+    overridden_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    overridden_at = Column(DateTime, nullable=True)
+    original_parade_status = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     exam = relationship("Exam", back_populates="marks")
     student = relationship("Student", back_populates="exam_marks")
-    recorder = relationship("User")
+    recorder = relationship("User", foreign_keys=[entered_by])
+    overriding_user = relationship("User", foreign_keys=[overridden_by])
 
 class LessonPlanDocument(Base):
     __tablename__ = 'lesson_plan_documents'

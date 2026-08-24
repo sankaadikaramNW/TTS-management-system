@@ -375,7 +375,7 @@ class ExamResponse(ExamBase):
 # --- Exam Mark ---
 class ExamMarkRecord(BaseModel):
     student_id: str
-    marks_obtained: float
+    marks_obtained: Optional[float] = None
     remarks: Optional[str] = None
 
 class ExamMarkUpdateRequest(BaseModel):
@@ -388,14 +388,79 @@ class ExamMarkResponse(BaseModel):
     student_id: str
     student_name: Optional[str] = None
     student_service_number: Optional[str] = None
-    marks_obtained: float
-    status: str  # Pass, Fail, Absent
+    marks_obtained: Optional[float] = None
+    status: str  # Pass, Fail, Absent, LEAVE, HOSPITAL, AWOL, COURSE_VISIT, etc.
     remarks: Optional[str] = None
     entered_by: Optional[str] = None
+    is_overridden: bool = False
+    override_reason: Optional[str] = None
+    original_parade_status: Optional[str] = None
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+# --- Exam Result Sheet & Parade Integration Schemas ---
+class ExamResultSheetItem(BaseModel):
+    student_id: str
+    service_number: str
+    student_name: str
+    rank: Optional[str] = 'LAC'
+    trade: Optional[str] = 'General'
+    batch: Optional[str] = 'N/A'
+    parade_state_status: str
+    parade_submission_status: str
+    is_parade_approved: bool
+    can_sit_exam: bool
+    marks_entry_allowed: bool
+    marks_obtained: Optional[float] = None
+    result_status: str
+    remarks: Optional[str] = None
+    is_overridden: bool = False
+    override_reason: Optional[str] = None
+    overridden_by_name: Optional[str] = None
+    overridden_at: Optional[datetime] = None
+    original_parade_status: Optional[str] = None
+    entered_by_name: Optional[str] = None
+
+class ExamResultSummary(BaseModel):
+    total_trainees: int
+    eligible_count: int
+    sat_exam_count: int
+    did_not_sit_count: int
+    present_count: int
+    leave_count: int
+    hospital_count: int
+    awol_count: int
+    course_visit_count: int
+    sick_report_count: int
+    other_count: int
+    overridden_count: int
+    pass_count: int
+    fail_count: int
+
+class ExamResultSheetResponse(BaseModel):
+    exam_id: str
+    course_id: str
+    course_name: str
+    course_code: Optional[str] = None
+    trade_name: Optional[str] = None
+    subject_id: str
+    subject_name: str
+    subject_code: Optional[str] = None
+    exam_type: str
+    exam_date: date
+    max_marks: float
+    pass_marks: float
+    is_parade_approved: bool
+    parade_submission_status: str
+    summary: ExamResultSummary
+    students: List[ExamResultSheetItem]
+
+class ExamEligibilityOverrideRequest(BaseModel):
+    student_id: str
+    reason: str
+    remarks: Optional[str] = None
 
 # --- Academic Dashboard Summary Schema ---
 class AcademicDashboardSummary(BaseModel):

@@ -24,6 +24,7 @@ from app.schemas.academic import (
     TimetableResponse, TimetableCreate, TimetableAttendanceUpdateRequest, AttendanceResponse,
     ClassroomAttendanceSessionResponse, ClassAttendanceReportResponse, StudentAttendanceHistoryItem, ClassroomWiseReportItem,
     ExamResponse, ExamCreate, ExamMarkUpdateRequest, ExamMarkResponse,
+    ExamResultSheetResponse, ExamEligibilityOverrideRequest,
     LessonPlanDocumentResponse, LessonPlanDocumentUpdate,
     CourseCalendarCreate, CourseCalendarUpdate, CourseCalendarResponse,
     CourseCalendarSummaryResponse, ReorderCalendarEntriesRequest,
@@ -549,6 +550,28 @@ def get_exam_grades(
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
     return exam_mark_repo.get_by_exam(db, exam_id)
+
+@router.get("/exams/{exam_id}/result-sheet", response_model=ExamResultSheetResponse)
+def get_exam_result_sheet(
+    exam_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Retrieve comprehensive result sheet integrated with Parade State attendance & eligibility."""
+    return academic_service.get_exam_result_sheet(db, exam_id)
+
+@router.post("/exams/{exam_id}/override-eligibility", response_model=ExamResultSheetResponse)
+def override_exam_eligibility(
+    exam_id: str,
+    override_data: ExamEligibilityOverrideRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """Authorized override allowing an ineligible trainee to sit an examination with audit logging."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return academic_service.override_exam_eligibility(db, exam_id, override_data, current_user.id, ip, ua)
 
 @router.post("/exam-marks", response_model=List[ExamMarkResponse])
 def record_exam_grades(

@@ -57,6 +57,7 @@ class ParadeStatusTypeResponse(BaseModel):
     id: str
     code: str
     label: str
+    can_sit_exam: bool = True
     is_active: bool
 
     class Config:
