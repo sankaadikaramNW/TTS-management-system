@@ -42,6 +42,10 @@ def run_lightweight_migrations():
             ("audit_logs", "previous_value", "TEXT NULL"),
             ("audit_logs", "new_value", "TEXT NULL"),
             ("parade_states", "submission_id", "VARCHAR(36) NULL"),
+            ("parade_submissions", "course_id", "VARCHAR(36) NULL"),
+            ("parade_submissions", "batch", "VARCHAR(30) NULL"),
+            ("parade_submissions", "returned_by", "VARCHAR(36) NULL"),
+            ("parade_submissions", "returned_at", "DATETIME NULL"),
             ("trades", "description", "TEXT NULL"),
             ("courses", "trade_id", "VARCHAR(36) NULL"),
             ("courses", "course_type", "VARCHAR(50) DEFAULT 'Basic'"),
@@ -369,27 +373,63 @@ def auto_seed_database():
                 db.add(Permission(id=p_id, name=p_name, code=p_code, description=p_desc))
         db.commit()
 
-        # Ensure roles have occurrence permissions mapped
+        # Ensure comprehensive role permissions synchronization across all roles
         for r_id in ['role-super-admin', 'role-sys-admin']:
             r = db.query(Role).filter(Role.id == r_id).first()
             if r:
                 all_p = db.query(Permission).all()
                 r.permissions = list(all_p)
 
+        # Instructor permissions: academic + parade state reviews/approval + occurrences + student reading
         inst_role = db.query(Role).filter(Role.id == 'role-instructor').first()
         if inst_role:
-            for c in ['personal_occurrence:read', 'personal_occurrence:write']:
+            inst_codes = [
+                'student:read', 'academic:read', 'academic:write',
+                'parade:read', 'parade:write', 'parade:approve',
+                'personal_occurrence:read', 'personal_occurrence:write', 'reports:read'
+            ]
+            for c in inst_codes:
                 p = db.query(Permission).filter(Permission.code == c).first()
                 if p and p not in inst_role.permissions:
                     inst_role.permissions.append(p)
 
+        # Discipline & CO permissions
         for r_code in ['role-discipline', 'role-co']:
             r_obj = db.query(Role).filter(Role.id == r_code).first()
             if r_obj:
-                for c in ['personal_occurrence:read', 'personal_occurrence:write', 'personal_occurrence:delete']:
+                co_disc_codes = [
+                    'student:read', 'student:write', 'parade:read', 'parade:write', 'parade:approve',
+                    'parade:manage_officers', 'reports:read',
+                    'personal_occurrence:read', 'personal_occurrence:write', 'personal_occurrence:delete'
+                ]
+                for c in co_disc_codes:
                     p = db.query(Permission).filter(Permission.code == c).first()
                     if p and p not in r_obj.permissions:
                         r_obj.permissions.append(p)
+
+        # Academic Section permissions
+        acad_role = db.query(Role).filter(Role.id == 'role-academic').first()
+        if acad_role:
+            for c in ['student:read', 'academic:read', 'academic:write', 'parade:read', 'reports:read']:
+                p = db.query(Permission).filter(Permission.code == c).first()
+                if p and p not in acad_role.permissions:
+                    acad_role.permissions.append(p)
+
+        # Accommodation Officer permissions
+        acc_role = db.query(Role).filter(Role.id == 'role-accommodation').first()
+        if acc_role:
+            for c in ['student:read', 'room:read', 'room:write', 'parade:read', 'reports:read']:
+                p = db.query(Permission).filter(Permission.code == c).first()
+                if p and p not in acc_role.permissions:
+                    acc_role.permissions.append(p)
+
+        # Viewer permissions
+        view_role = db.query(Role).filter(Role.id == 'role-viewer').first()
+        if view_role:
+            for c in ['student:read', 'parade:read', 'reports:read']:
+                p = db.query(Permission).filter(Permission.code == c).first()
+                if p and p not in view_role.permissions:
+                    view_role.permissions.append(p)
 
         db.commit()
 

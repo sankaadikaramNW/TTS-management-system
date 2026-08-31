@@ -110,12 +110,14 @@ class Trade(Base):
 
 
 class ParadeSubmission(Base):
-    """Tracks the full two-stage workflow lifecycle for a daily parade per trade."""
+    """Tracks the full two-stage workflow lifecycle for a daily parade per trade/course/batch."""
     __tablename__ = 'parade_submissions'
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     date = Column(Date, nullable=False, index=True)
-    trade = Column(String(50), nullable=False)  # Trade name that this submission covers
+    trade = Column(String(50), nullable=False, index=True)  # Trade name that this submission covers
+    course_id = Column(String(36), ForeignKey('courses.id', ondelete='SET NULL'), nullable=True)
+    batch = Column(String(30), nullable=True)
     submitted_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     approving_officer_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     status = Column(
@@ -124,7 +126,9 @@ class ParadeSubmission(Base):
     )
     submitter_remarks = Column(Text, nullable=True)   # Remarks from NCO on submission
     approver_remarks = Column(Text, nullable=True)    # Remarks from Officer I/C on approval
-    rejection_reason = Column(Text, nullable=True)    # Reason given on rejection
+    rejection_reason = Column(Text, nullable=True)    # Reason given on rejection/return
+    returned_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    returned_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -133,6 +137,8 @@ class ParadeSubmission(Base):
     # Relationships
     submitter = relationship("User", foreign_keys=[submitted_by])
     approving_officer = relationship("User", foreign_keys=[approving_officer_id])
+    returned_by_user = relationship("User", foreign_keys=[returned_by])
+    course = relationship("Course")
     parade_states = relationship("ParadeState", back_populates="submission")
 
 

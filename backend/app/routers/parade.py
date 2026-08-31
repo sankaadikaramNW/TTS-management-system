@@ -1,6 +1,6 @@
 from datetime import date
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -13,7 +13,9 @@ from app.schemas.parade import (
     ParadeStateResponse, DailyParadeUpdateRequest, ParadeStateSummary,
     ParadeStatusTypeResponse, OfficerInChargeCreate, OfficerInChargeResponse,
     ParadeSubmissionCreate, ParadeSubmissionDraftSave, ParadeSubmissionResponse,
-    ParadeSubmissionDetailResponse, ApprovalActionRequest, RejectionActionRequest
+    ParadeSubmissionDetailResponse, ApprovalActionRequest, RejectionActionRequest,
+    ParadeReturnActionRequest, ParadeMonitoringResponse, ParadeMonitoringSummary,
+    ParadeDateRangeResponse
 )
 
 router = APIRouter(prefix="/parade", tags=["Daily Parade State"])
@@ -33,6 +35,135 @@ def get_parade_statuses(
 
 
 # ─────────────────────────────────────────────────────────────
+# Submission Monitoring & Outstanding Endpoints
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/monitoring", response_model=ParadeMonitoringResponse,
+            summary="Get live parade state monitoring status for a date")
+def get_parade_monitoring(
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    course_id: Optional[str] = Query(None),
+    batch: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Get live submission monitoring status for all required trades on the specified date.
+    Automatically determines whether each trade is NOT SUBMITTED, PENDING APPROVAL, APPROVED, or RETURNED.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_monitoring(
+        db, target_date=target_date,
+        trade=trade, course_id=course_id,
+        batch=batch, status_filter=status
+    )
+
+
+@router.get("/monitoring/summary", response_model=ParadeMonitoringSummary,
+            summary="Get compact parade state monitoring summary KPIs")
+def get_parade_monitoring_summary(
+    parade_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get high-level summary counts (Total Required, Not Submitted, Pending Approval, Approved, Returned, Overdue)
+    for dashboard widgets and badges.
+    """
+    target_date = parade_date or date.today()
+    data = parade_service.get_monitoring(db, target_date=target_date)
+    return data["summary"]
+
+
+@router.get("/monitoring/outstanding", response_model=ParadeMonitoringResponse,
+            summary="Get only outstanding parade states needing submission or revision")
+def get_outstanding_parade_states(
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Get only outstanding trades (NOT SUBMITTED and RETURNED FOR CORRECTION) for the target date.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_monitoring(
+        db, target_date=target_date, trade=trade, only_outstanding=True
+    )
+
+
+@router.get("/monitoring/pending", response_model=ParadeMonitoringResponse,
+            summary="Get only parade states awaiting Officer I/C approval")
+def get_pending_approval_parade_states(
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Get all parade states currently in SUBMITTED state awaiting review.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_monitoring(
+        db, target_date=target_date, trade=trade, only_pending=True
+    )
+
+
+@router.get("/monitoring/my-outstanding", response_model=ParadeMonitoringResponse,
+            summary="Get outstanding parade states relevant to the current user")
+def get_my_outstanding_parade_states(
+    parade_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get outstanding parade states scoped to trades assigned to or managed by the logged-in user.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_my_outstanding(db, current_user, target_date)
+
+
+@router.get("/monitoring/date-range", response_model=ParadeDateRangeResponse,
+            summary="Get multi-day compliance tracking across a date range")
+def get_date_range_monitoring(
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    trade: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Analyze submission compliance for each date and trade across a multi-day range.
+    """
+    return parade_service.get_date_range_monitoring(
+        db, start_date=start_date, end_date=end_date, trade=trade
+    )
+
+
+@router.get("/reports/outstanding", summary="Generate classical Sri Lanka Air Force Outstanding Parade State Report")
+def get_outstanding_classical_report(
+    request: Request,
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("reports:read"))
+):
+    """
+    Generate the official Classical Report dataset for Outstanding / Pending Parade States.
+    """
+    target_date = parade_date or date.today()
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.get_outstanding_report_data(
+        db, current_user=current_user, target_date=target_date,
+        trade=trade, status_filter=status, ip=ip, ua=ua
+    )
+
+
+# ─────────────────────────────────────────────────────────────
 # Existing Parade State Endpoints (Backward Compatible)
 # ─────────────────────────────────────────────────────────────
 
@@ -46,7 +177,7 @@ def get_daily_parade_state(
     """Get per-student parade records for a given date, optionally filtered by trade."""
     target_date = parade_date or date.today()
     results = parade_repo.get_parade_states_by_date(db, target_date)
-    if trade:
+    if trade and trade != 'All':
         # Filter by student trade
         from app.models.student import Student
         results = [r for r in results if (
@@ -58,12 +189,15 @@ def get_daily_parade_state(
 @router.get("/summary", response_model=ParadeStateSummary)
 def get_daily_parade_summary(
     parade_date: Optional[date] = None,
+    official_only: bool = Query(False),
+    official_approved_only: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("parade:read"))
 ):
     """Get strength summary counts for a given date."""
     target_date = parade_date or date.today()
-    return parade_repo.get_summary(db, target_date)
+    is_official = official_only or official_approved_only
+    return parade_repo.get_summary(db, target_date, official_approved_only=is_official)
 
 
 @router.post("/update")
@@ -80,7 +214,7 @@ def batch_update_parade_state(
 
 
 # ─────────────────────────────────────────────────────────────
-# Parade Submissions — Approval Workflow
+# Parade Submissions — Approval & Return Workflow
 # ─────────────────────────────────────────────────────────────
 
 @router.post("/draft", summary="Save parade records as DRAFT for a specific trade")
@@ -165,7 +299,7 @@ def approve_parade_submission(
     return parade_service.approve_parade(db, submission_id, current_user.id, action.remarks, ip, ua)
 
 
-@router.post("/submissions/{submission_id}/reject", summary="Reject a parade submission")
+@router.post("/submissions/{submission_id}/reject", summary="Reject/return a parade submission")
 def reject_parade_submission(
     submission_id: str,
     request: Request,
@@ -173,10 +307,28 @@ def reject_parade_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("parade:approve"))
 ):
-    """Reject a submitted parade state with a mandatory reason. Notifies the submitter to revise."""
+    """Reject/return a submitted parade state with a mandatory reason. Notifies the submitter to revise."""
     ip = request.client.host if request.client else "unknown"
     ua = request.headers.get("user-agent", "unknown")
     return parade_service.reject_parade(db, submission_id, current_user.id, action.rejection_reason, ip, ua)
+
+
+@router.post("/submissions/{submission_id}/return", summary="Return a parade submission for correction")
+def return_parade_submission(
+    submission_id: str,
+    request: Request,
+    action: ParadeReturnActionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:approve"))
+):
+    """Return a parade submission for correction with remarks."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.reject_parade(
+        db, submission_id, current_user.id,
+        action.rejection_reason, ip, ua,
+        remarks=action.remarks
+    )
 
 
 # ─────────────────────────────────────────────────────────────

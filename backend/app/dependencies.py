@@ -42,8 +42,16 @@ class PermissionChecker:
         # Super admin & System admin have all permissions
         if (current_user.role and current_user.role.name in ["Super Administrator", "System Administrator"]) or current_user.role_id in ["role-super-admin", "role-sys-admin"]:
             return current_user
+
+        # Direct permissions assigned to the user
+        if current_user.direct_permissions and any(p.code == self.required_permission_code for p in current_user.direct_permissions):
+            return current_user
+
+        # Role-based permissions
+        if current_user.role and current_user.role.permissions and any(p.code == self.required_permission_code for p in current_user.role.permissions):
+            return current_user
             
-        # Check permissions associated with user role
+        # Check permissions associated with user role via DB lookup
         permissions = (
             db.query(Permission)
             .join(Permission.roles)
@@ -57,5 +65,5 @@ class PermissionChecker:
             
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action"
+            detail=f"You do not have permission ({self.required_permission_code}) to perform this action"
         )

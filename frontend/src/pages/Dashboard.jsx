@@ -19,12 +19,17 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 export const Dashboard = () => {
   const { hasPermission, hasRole } = useAuth()
   const [summary, setSummary] = useState(null)
+  const [paradeMonitoring, setParadeMonitoring] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const fetchSummary = async () => {
     try {
-      const res = await axios.get('/api/v1/dashboard/summary')
-      setSummary(res.data)
+      const [sumRes, paradeMonRes] = await Promise.all([
+        axios.get('/api/v1/dashboard/summary'),
+        axios.get('/api/v1/parade/monitoring/summary').catch(() => ({ data: null }))
+      ])
+      setSummary(sumRes.data)
+      setParadeMonitoring(paradeMonRes.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -135,6 +140,59 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Parade State Submission Monitoring Quick Widget */}
+      {paradeMonitoring && (
+        <div className="card slaf-card p-3 mb-4 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff' }}>
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div className="d-flex align-items-center gap-3">
+              <div className="rounded p-2 bg-primary bg-opacity-25 text-primary">
+                <i className="bi bi-clipboard2-check-fill fs-3 text-info" />
+              </div>
+              <div>
+                <div className="fw-bold text-white mb-0" style={{ fontSize: '1rem' }}>
+                  Today's Parade State Submission Status ({paradeMonitoring.date})
+                </div>
+                <div className="text-white-50 small">
+                  Official daily strength aggregates approved parade states only.
+                </div>
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center gap-3 flex-wrap">
+              <div className="d-flex gap-2">
+                <div className="px-3 py-1 rounded bg-white bg-opacity-10 text-center">
+                  <div className="fw-bold fs-6 text-white">{paradeMonitoring.total_required}</div>
+                  <div className="text-white-50" style={{ fontSize: '0.68rem' }}>Required</div>
+                </div>
+                <div className="px-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
+                  <div className="fw-bold fs-6 text-danger">{paradeMonitoring.not_submitted}</div>
+                  <div className="text-danger" style={{ fontSize: '0.68rem' }}>Not Submitted</div>
+                </div>
+                <div className="px-3 py-1 rounded bg-warning bg-opacity-20 text-center border border-warning border-opacity-25">
+                  <div className="fw-bold fs-6 text-warning">{paradeMonitoring.pending_approval}</div>
+                  <div className="text-warning" style={{ fontSize: '0.68rem' }}>Pending</div>
+                </div>
+                <div className="px-3 py-1 rounded bg-success bg-opacity-20 text-center border border-success border-opacity-25">
+                  <div className="fw-bold fs-6 text-success">{paradeMonitoring.approved}</div>
+                  <div className="text-success" style={{ fontSize: '0.68rem' }}>Approved</div>
+                </div>
+                {paradeMonitoring.returned > 0 && (
+                  <div className="px-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
+                    <div className="fw-bold fs-6 text-danger">{paradeMonitoring.returned}</div>
+                    <div className="text-danger" style={{ fontSize: '0.68rem' }}>Returned</div>
+                  </div>
+                )}
+              </div>
+
+              <a href="/parade?tab=monitoring" className="btn btn-info btn-sm fw-semibold text-dark shadow-sm">
+                <i className="bi bi-speedometer2 me-1" />
+                Manage Monitoring
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Graphs Layout */}
       <div className="row g-4 mb-4">

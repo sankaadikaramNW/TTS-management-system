@@ -288,22 +288,25 @@ export const BatchManagement = () => {
                       <small className="text-muted">Only active classrooms are displayed.</small>
                     </div>
 
-                    {/* Step 5: Assign Instructor (SSOT) */}
+                    {/* Step 5: Assign Instructor (SSOT & Parade State Approver) */}
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold small text-muted">Step 4: Assign Instructor (User Management SSOT)*</label>
+                      <label className="form-label fw-semibold small text-muted">Step 4: Assign Instructor (Parade State Approval Authority)*</label>
                       <select 
                         className="form-select"
                         value={form.instructor_id}
                         onChange={(e) => setForm({ ...form, instructor_id: e.target.value })}
                       >
-                        <option value="">-- Select Active Instructor --</option>
+                        <option value="">-- INSTRUCTOR NOT ASSIGNED --</option>
                         {instructors.map(inst => (
                           <option key={inst.id} value={inst.id}>
                             {inst.rank || ''} {inst.full_name} ({inst.service_number || 'Staff'})
                           </option>
                         ))}
                       </select>
-                      <small className="text-muted">Dynamically loaded from User Management Portal.</small>
+                      <small className="text-muted d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                        <i className="bi bi-info-circle me-1"></i>
+                        Parade State submissions for this Course/Batch will automatically route to this Instructor for approval.
+                      </small>
                     </div>
 
                     {/* Dates */}

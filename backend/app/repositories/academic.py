@@ -92,6 +92,37 @@ class BatchRepository(BaseRepository[Batch]):
             b.student_count = db.query(Student).filter(Student.course_id == b.course_id).count()
         return results
 
+    def get_by_course_and_batch(self, db: Session, course_id: Optional[str] = None,
+                                batch_name: Optional[str] = None,
+                                trade: Optional[str] = None) -> Optional[Batch]:
+        """Find active batch record for a course, batch name, or trade."""
+        query = db.query(Batch).filter(Batch.status == 'Active')
+        if course_id:
+            query = query.filter(Batch.course_id == course_id)
+        if batch_name:
+            query = query.filter((Batch.name == batch_name) | (Batch.id == batch_name))
+        if trade:
+            trade_obj = db.query(Trade).filter((Trade.label == trade) | (Trade.code == trade) | (Trade.id == trade)).first()
+            if trade_obj:
+                query = query.filter(Batch.trade_id == trade_obj.id)
+
+        batch = query.first()
+        if not batch and trade:
+            # Fallback by trade only
+            trade_obj = db.query(Trade).filter((Trade.label == trade) | (Trade.code == trade) | (Trade.id == trade)).first()
+            if trade_obj:
+                batch = db.query(Batch).filter(Batch.trade_id == trade_obj.id, Batch.status == 'Active').first()
+        return batch
+
+    def get_instructor_for_batch(self, db: Session, trade: Optional[str] = None,
+                                 course_id: Optional[str] = None,
+                                 batch_name: Optional[str] = None) -> Optional[User]:
+        """Resolve the assigned instructor User object for a given Course/Batch."""
+        batch = self.get_by_course_and_batch(db, course_id=course_id, batch_name=batch_name, trade=trade)
+        if batch and batch.instructor_id:
+            return db.query(User).filter(User.id == batch.instructor_id, User.deleted_at == None).first()
+        return None
+
 class InstructorRepository:
     def get_instructors(self, db: Session) -> List[Dict[str, Any]]:
         """

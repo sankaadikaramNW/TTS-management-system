@@ -104,16 +104,76 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
     }
 
     if (isParade) {
+      const queryParams = new URLSearchParams(location.search)
+      const curTab = queryParams.get('tab') || 'monitoring'
       return (
         <>
           <div className="sidebar-module-header px-4 py-2 text-white-50 small fw-bold text-uppercase border-bottom border-secondary mb-3 d-flex align-items-center">
             <i className="bi bi-clipboard2-check me-2"></i>
-            <span className="module-header-text">Parade Module</span>
+            <span className="module-header-text">Parade State Module</span>
           </div>
-          <NavLink to="/parade" className="nav-link" title="Parade Board">
-            <i className="bi bi-clipboard2-check-fill"></i>
-            <span>Parade Board</span>
+          <NavLink
+            to="/parade?tab=monitoring"
+            className={`nav-link ${(curTab === 'monitoring' || curTab === 'outstanding') ? 'active' : ''}`}
+            title="Outstanding & Monitoring"
+          >
+            <i className="bi bi-speedometer2"></i>
+            <span>Outstanding / Monitoring</span>
           </NavLink>
+          <NavLink
+            to="/parade?tab=record"
+            className={`nav-link ${curTab === 'record' ? 'active' : ''}`}
+            title="Submit Parade State"
+          >
+            <i className="bi bi-clipboard2-check-fill"></i>
+            <span>Submit Parade State</span>
+          </NavLink>
+          {hasPermission('parade:approve') && (
+            <NavLink
+              to="/parade?tab=approvals"
+              className={`nav-link ${curTab === 'approvals' ? 'active' : ''}`}
+              title="Pending Approvals"
+            >
+              <i className="bi bi-shield-check"></i>
+              <span>Pending Approvals</span>
+            </NavLink>
+          )}
+          <NavLink
+            to="/parade?tab=daterange"
+            className={`nav-link ${curTab === 'daterange' ? 'active' : ''}`}
+            title="Date-Range Monitoring"
+          >
+            <i className="bi bi-calendar3-range"></i>
+            <span>Date Range Monitoring</span>
+          </NavLink>
+          <NavLink
+            to="/parade?tab=history"
+            className={`nav-link ${curTab === 'history' ? 'active' : ''}`}
+            title="Parade History"
+          >
+            <i className="bi bi-clock-history"></i>
+            <span>Parade State History</span>
+          </NavLink>
+          {(hasPermission('parade:manage_officers') || hasPermission('parade:read')) && (
+            <NavLink
+              to="/parade?tab=officers"
+              className={`nav-link ${curTab === 'officers' ? 'active' : ''}`}
+              title="Officer I/C Setup"
+            >
+              <i className="bi bi-person-badge"></i>
+              <span>Officer I/C Setup</span>
+            </NavLink>
+          )}
+          {hasPermission('reports:read') && (
+            <NavLink
+              to="/reports?tab=parade"
+              className="nav-link"
+              title="Official Parade Reports"
+            >
+              <i className="bi bi-file-earmark-bar-graph"></i>
+              <span>Official Reports</span>
+            </NavLink>
+          )}
           
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
           <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
