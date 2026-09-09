@@ -3,6 +3,32 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
+const INITIAL_FORM_DATA = {
+  service_number: '',
+  initials: '',
+  full_name: '',
+  nic: '',
+  dob: '',
+  gender: 'Male',
+  rank: 'Aircraftman',
+  trade: 'Airframe',
+  course_id: '',
+  batch: '',
+  joining_date: '',
+  passing_out_date: '',
+  status: 'Active',
+  phone: '',
+  email: '',
+  emergency_contact_name: '',
+  emergency_contact_phone: '',
+  blood_group: 'O+',
+  medical_category: 'A4G4',
+  religion: 'Buddhist',
+  nationality: 'Sri Lankan',
+  permanent_address: '',
+  temporary_address: ''
+}
+
 export const StudentForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -12,34 +38,12 @@ export const StudentForm = () => {
   const [statuses, setStatuses] = useState([])
   const [ranks, setRanks] = useState([])
   const [trades, setTrades] = useState([])
-  const [formData, setFormData] = useState({
-    service_number: '',
-    initials: '',
-    full_name: '',
-    nic: '',
-    dob: '',
-    gender: 'Male',
-    rank: 'Aircraftman',
-    trade: 'Airframe',
-    course_id: '',
-    batch: '',
-    joining_date: '',
-    passing_out_date: '',
-    status: 'Active',
-    phone: '',
-    email: '',
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    blood_group: 'O+',
-    medical_category: 'A4G4',
-    religion: 'Buddhist',
-    nationality: 'Sri Lankan',
-    permanent_address: '',
-    temporary_address: ''
-  })
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA)
   
   const [photoFile, setPhotoFile] = useState(null)
+  const [fileInputKey, setFileInputKey] = useState(Date.now())
   const [loading, setLoading] = useState(false)
+  const [submitMode, setSubmitMode] = useState('save_and_view') // 'save_and_view' or 'save_and_new'
 
   useEffect(() => {
     // Load courses
@@ -140,8 +144,18 @@ export const StudentForm = () => {
     setPhotoFile(e.target.files[0])
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleResetForm = () => {
+    if (window.confirm('Are you sure you want to clear all form inputs?')) {
+      setFormData(INITIAL_FORM_DATA)
+      setPhotoFile(null)
+      setFileInputKey(Date.now())
+    }
+  }
+
+  const handleSubmit = async (e, explicitMode = null) => {
+    if (e && e.preventDefault) e.preventDefault()
+    const currentMode = explicitMode || submitMode
+    setSubmitMode(currentMode)
     setLoading(true)
     try {
       let savedStudent = null
@@ -170,7 +184,23 @@ export const StudentForm = () => {
         toast.success('Profile photo uploaded')
       }
 
-      navigate(`/students/${savedStudent.id}`)
+      if (currentMode === 'save_and_new' && !isEdit) {
+        // Keep batch and course context to expedite bulk trainee intake registration
+        setFormData(prev => ({
+          ...INITIAL_FORM_DATA,
+          course_id: prev.course_id,
+          batch: prev.batch,
+          joining_date: prev.joining_date,
+          rank: prev.rank,
+          trade: prev.trade
+        }))
+        setPhotoFile(null)
+        setFileInputKey(Date.now())
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        toast.info(`Ready to register next trainee for ${formData.batch || 'current batch'}`)
+      } else {
+        navigate(`/students/${savedStudent.id}`)
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'An error occurred during submission')
     } finally {
@@ -185,9 +215,16 @@ export const StudentForm = () => {
           <h2 className="mb-0 text-primary display-font">{isEdit ? 'Modify Profile' : 'Register New Trainee'}</h2>
           <p className="text-muted mb-0">{isEdit ? `Edit details for service number ${formData.service_number}` : 'Add a new student profile to single source of truth'}</p>
         </div>
-        <Link to="/students" className="btn btn-outline-secondary">
-          Cancel
-        </Link>
+        <div className="d-flex gap-2">
+          {!isEdit && (
+            <button type="button" onClick={handleResetForm} className="btn btn-outline-secondary d-flex align-items-center gap-1.5">
+              <i className="bi bi-arrow-counterclockwise"></i> Clear Form
+            </button>
+          )}
+          <Link to="/students" className="btn btn-outline-secondary">
+            Cancel
+          </Link>
+        </div>
       </div>
 
       <div className="card slaf-card p-4">
@@ -472,6 +509,7 @@ export const StudentForm = () => {
             <div className="col-md-4">
               <label className="form-label fw-semibold">Profile Photo</label>
               <input 
+                key={fileInputKey}
                 type="file" 
                 className="form-control" 
                 onChange={handleFileChange}
@@ -495,13 +533,36 @@ export const StudentForm = () => {
           </div>
 
           <div className="d-flex justify-content-end gap-2 mt-4">
-            <button 
-              type="submit" 
-              className="btn btn-primary px-5 py-2 fw-semibold"
-              disabled={loading}
-            >
-              {loading ? 'Saving Trainee Profile...' : 'Save Trainee Profile'}
-            </button>
+            {!isEdit ? (
+              <>
+                <button 
+                  type="button" 
+                  onClick={(e) => handleSubmit(e, 'save_and_new')}
+                  className="btn btn-outline-primary px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-xs"
+                  disabled={loading}
+                >
+                  <i className="bi bi-person-plus-fill"></i>
+                  {loading && submitMode === 'save_and_new' ? 'Saving Trainee...' : 'Save & Add Another Trainee'}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={(e) => handleSubmit(e, 'save_and_view')}
+                  className="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-xs"
+                  disabled={loading}
+                >
+                  <i className="bi bi-check-circle-fill"></i>
+                  {loading && submitMode === 'save_and_view' ? 'Saving Trainee...' : 'Save & View Profile'}
+                </button>
+              </>
+            ) : (
+              <button 
+                type="submit" 
+                className="btn btn-primary px-5 py-2 fw-semibold"
+                disabled={loading}
+              >
+                {loading ? 'Saving Trainee Profile...' : 'Save Trainee Profile'}
+              </button>
+            )}
           </div>
         </form>
       </div>

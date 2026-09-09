@@ -4,8 +4,10 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { PersonalOccurrenceReporting } from './PersonalOccurrenceReporting'
 import { ClassicalReportModal } from '../../components/ClassicalReportModal'
+import { useAuth } from '../../context/AuthContext'
 
 export const StudentDetail = () => {
+  const { hasPermission } = useAuth()
   const { id } = useParams()
   const [student, setStudent] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -74,8 +76,13 @@ export const StudentDetail = () => {
           <h2 className="mb-0 text-primary display-font">Trainee Profile</h2>
           <p className="text-muted mb-0">Master record for service number {student.service_number}</p>
         </div>
-        <div className="d-flex gap-2">
-          <Link to="/students" className="btn btn-outline-secondary">
+        <div className="d-flex gap-2 flex-wrap">
+          {hasPermission('student:write') && (
+            <Link to="/students/new" className="btn btn-primary d-flex align-items-center gap-1.5 shadow-xs">
+              <i className="bi bi-person-plus-fill"></i> Add Another Trainee
+            </Link>
+          )}
+          <Link to="/students" className="btn btn-outline-secondary d-flex align-items-center gap-1.5">
             <i className="bi bi-arrow-left"></i> Back to list
           </Link>
           <button className="btn btn-outline-dark d-flex align-items-center gap-1.5 fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
