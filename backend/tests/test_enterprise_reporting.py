@@ -56,8 +56,7 @@ def report_test_data(db_session):
         trade='Airframe',
         course_id=course.id,
         batch='26/1',
-        status='Active',
-        squadron='Training Squadron'
+        status='Active'
     )
     s2 = Student(
         id='std-rep-02',
@@ -67,8 +66,7 @@ def report_test_data(db_session):
         trade='Airframe',
         course_id=course.id,
         batch='26/1',
-        status='Leave',
-        squadron='Training Squadron'
+        status='Leave'
     )
     s3 = Student(
         id='std-rep-03',
@@ -78,8 +76,7 @@ def report_test_data(db_session):
         trade='Airframe',
         course_id=course.id,
         batch='26/1',
-        status='Active',
-        squadron='Training Squadron'
+        status='Active'
     )
     db_session.add_all([s1, s2, s3])
     db_session.commit()

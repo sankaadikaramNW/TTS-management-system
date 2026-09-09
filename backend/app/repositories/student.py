@@ -24,7 +24,6 @@ class StudentRepository(BaseRepository[Student]):
         trade: Optional[str] = None,
         course_id: Optional[str] = None,
         status: Optional[str] = None,
-        squadron: Optional[str] = None,
         skip: int = 0, 
         limit: int = 20
     ) -> Tuple[int, List[Student]]:
@@ -49,8 +48,6 @@ class StudentRepository(BaseRepository[Student]):
             query = query.filter(Student.course_id == course_id)
         if status:
             query = query.filter(Student.status == status)
-        if squadron:
-            query = query.filter(Student.squadron == squadron)
 
         total = query.count()
         results = query.offset(skip).limit(limit).all()

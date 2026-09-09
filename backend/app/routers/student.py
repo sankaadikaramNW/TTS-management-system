@@ -28,7 +28,6 @@ def list_students(
     trade: Optional[str] = None,
     course_id: Optional[str] = None,
     status: Optional[str] = None,
-    squadron: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
@@ -41,7 +40,6 @@ def list_students(
         trade=trade, 
         course_id=course_id, 
         status=status,
-        squadron=squadron,
         skip=skip, 
         limit=limit
     )

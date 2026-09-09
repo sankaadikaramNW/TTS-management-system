@@ -18,9 +18,6 @@ class Student(Base, TimeStampedModelMixin):
     trade = Column(String(50), nullable=True, default='Airframe')
     course_id = Column(String(36), ForeignKey('courses.id', ondelete='SET NULL'), nullable=True)
     batch = Column(String(30), nullable=True, default='N/A')
-    squadron = Column(String(50), default='Training Squadron')
-    unit = Column(String(50), default='SLAF TTS Ekala')
-    posting = Column(String(100), nullable=True)
     joining_date = Column(Date, nullable=True)
     passing_out_date = Column(Date, nullable=True)
     status = Column(String(30), default='Active')  # Active, Sick, Leave, Detached, AWOL, Passed Out

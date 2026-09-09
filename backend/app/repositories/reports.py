@@ -21,7 +21,6 @@ class ReportRepository:
         course_id: Optional[str] = None,
         batch: Optional[str] = None,
         status: Optional[str] = None,
-        squadron: Optional[str] = None,
         rank: Optional[str] = None,
         search: Optional[str] = None
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -34,7 +33,6 @@ class ReportRepository:
             Student.nic,
             Student.trade,
             Student.batch,
-            Student.squadron,
             Student.status,
             Student.blood_group,
             Student.phone.label("contact_number"),
@@ -51,8 +49,6 @@ class ReportRepository:
             query = query.filter(Student.batch == batch)
         if status:
             query = query.filter(Student.status == status)
-        if squadron:
-            query = query.filter(Student.squadron == squadron)
         if rank:
             query = query.filter(Student.rank == rank)
         if search:
@@ -83,7 +79,6 @@ class ReportRepository:
                 "trade": s.trade or "General",
                 "course": f"{s.course_name} ({s.course_code})" if s.course_name else "N/A",
                 "batch": s.batch or "N/A",
-                "squadron": s.squadron or "N/A",
                 "status": st_label,
                 "nic": s.nic or "N/A",
                 "blood_group": s.blood_group or "N/A",
@@ -125,7 +120,6 @@ class ReportRepository:
             Student.full_name,
             Student.trade,
             Student.batch,
-            Student.squadron,
             ParadeSubmission.status.label("submission_status"),
             ParadeSubmission.submitted_at,
             ParadeSubmission.reviewed_at,

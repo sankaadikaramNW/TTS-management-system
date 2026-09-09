@@ -36,7 +36,7 @@ export const ReportGenerator = () => {
   })
 
   // Filter Parameters State
-  const [studentParams, setStudentParams] = useState({ trade: '', course_id: '', batch: '', status: '', squadron: '', rank: '', search: '' })
+  const [studentParams, setStudentParams] = useState({ trade: '', course_id: '', batch: '', status: '', rank: '', search: '' })
   const [paradeParams, setParadeParams] = useState({ parade_date: new Date().toISOString().substring(0, 10), trade: '', status: '', approval_status: '' })
   const [academicParams, setAcademicParams] = useState({ course_id: '', subject_id: '', batch: '', result_status: 'ALL' })
   const [attendanceParams, setAttendanceParams] = useState({ course_id: '', subject_id: '', batch: '', date_from: '', date_to: '', status: '' })

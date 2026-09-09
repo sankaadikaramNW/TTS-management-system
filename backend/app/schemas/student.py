@@ -13,9 +13,6 @@ class StudentBase(BaseModel):
     trade: Optional[str] = "Airframe"
     course_id: Optional[str] = None
     batch: Optional[str] = "Intake 171"
-    squadron: Optional[str] = "Training Squadron"
-    unit: Optional[str] = "SLAF TTS Ekala"
-    posting: Optional[str] = None
     joining_date: Optional[date] = None
     passing_out_date: Optional[date] = None
     status: Optional[str] = "Active"
@@ -43,9 +40,6 @@ class StudentUpdate(BaseModel):
     trade: Optional[str] = None
     course_id: Optional[str] = None
     batch: Optional[str] = None
-    squadron: Optional[str] = None
-    unit: Optional[str] = None
-    posting: Optional[str] = None
     joining_date: Optional[date] = None
     passing_out_date: Optional[date] = None
     status: Optional[str] = None

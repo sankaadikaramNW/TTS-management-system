@@ -523,14 +523,6 @@ export const CourseManagement = () => {
                               <strong className="text-primary">{selectedStudentDetail.course_name || selectedCourseForStudents?.name || 'N/A'}</strong>
                             </div>
                             <div className="col-6">
-                              <span className="text-muted d-block">Squadron:</span>
-                              <strong className="text-dark">{selectedStudentDetail.squadron || 'Training Squadron'}</strong>
-                            </div>
-                            <div className="col-6">
-                              <span className="text-muted d-block">Station / Unit:</span>
-                              <strong className="text-dark">{selectedStudentDetail.unit || 'SLAF TTS Ekala'}</strong>
-                            </div>
-                            <div className="col-6">
                               <span className="text-muted d-block">Joining Date:</span>
                               <strong className="text-dark">{formatDate(selectedStudentDetail.joining_date)}</strong>
                             </div>

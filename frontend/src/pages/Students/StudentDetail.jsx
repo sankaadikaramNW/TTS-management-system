@@ -150,10 +150,6 @@ export const StudentDetail = () => {
                 <span className="fw-semibold">{student.batch}</span>
               </div>
               <div className="col-md-6 col-sm-12">
-                <span className="text-muted d-block" style={{ fontSize: '0.8rem' }}>Squadron / Unit</span>
-                <span className="fw-semibold">{student.squadron} / {student.unit}</span>
-              </div>
-              <div className="col-md-6 col-sm-12">
                 <span className="text-muted d-block" style={{ fontSize: '0.8rem' }}>Enlistment Date</span>
                 <span className="fw-semibold">{new Date(student.joining_date).toLocaleDateString()}</span>
               </div>

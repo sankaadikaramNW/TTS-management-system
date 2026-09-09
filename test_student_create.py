@@ -34,9 +34,6 @@ try:
         rank="Aircraftman",
         trade="Airframe",
         batch="TEST-BATCH-01",
-        squadron="Training Squadron",
-        unit="SLAF TTS Ekala",
-        posting="SLAF Katunayake",
         joining_date=date(2024, 1, 1),
         passing_out_date=date(2025, 1, 1),
         phone="0771234567",
@@ -55,9 +52,6 @@ try:
     print("SUCCESS: Student created:", student.id, student.service_number)
     print("  -> Phone:", student.phone)
     print("  -> Email:", student.email)
-    print("  -> Squadron:", student.squadron)
-    print("  -> Unit:", student.unit)
-    print("  -> Posting:", student.posting)
     print("  -> Joining Date:", student.joining_date)
     print("  -> Temp Address:", student.temporary_address)
     

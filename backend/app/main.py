@@ -253,7 +253,10 @@ def run_lightweight_migrations():
             "ALTER TABLE exam_marks ADD COLUMN overridden_by VARCHAR(36) NULL",
             "ALTER TABLE exam_marks ADD COLUMN overridden_at DATETIME NULL",
             "ALTER TABLE exam_marks ADD COLUMN original_parade_status VARCHAR(50) NULL",
-            "UPDATE parade_status_types SET can_sit_exam = 0 WHERE code IN ('SICK_REPORT', 'HOSPITAL', 'LEAVE', 'COURSE_VISIT', 'DETACHED_DUTY', 'AWOL')"
+            "UPDATE parade_status_types SET can_sit_exam = 0 WHERE code IN ('SICK_REPORT', 'HOSPITAL', 'LEAVE', 'COURSE_VISIT', 'DETACHED_DUTY', 'AWOL')",
+            "ALTER TABLE students DROP COLUMN squadron",
+            "ALTER TABLE students DROP COLUMN unit",
+            "ALTER TABLE students DROP COLUMN posting"
         ]
         for m_sql in modify_sqls:
             try:

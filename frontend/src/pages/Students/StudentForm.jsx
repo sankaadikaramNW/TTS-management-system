@@ -23,9 +23,6 @@ export const StudentForm = () => {
     trade: 'Airframe',
     course_id: '',
     batch: '',
-    squadron: 'Training Squadron',
-    unit: 'SLAF TTS Ekala',
-    posting: '',
     joining_date: '',
     passing_out_date: '',
     status: 'Active',
@@ -112,9 +109,6 @@ export const StudentForm = () => {
             trade: data.trade || 'Airframe',
             course_id: data.course_id || '',
             batch: data.batch || '',
-            squadron: data.squadron || 'Training Squadron',
-            unit: data.unit || 'SLAF TTS Ekala',
-            posting: data.posting || '',
             joining_date: data.joining_date ? data.joining_date.substring(0, 10) : '',
             passing_out_date: data.passing_out_date ? data.passing_out_date.substring(0, 10) : '',
             status: data.status || 'Active',
@@ -310,39 +304,6 @@ export const StudentForm = () => {
               />
             </div>
 
-            <div className="col-md-3">
-              <label className="form-label fw-semibold">Squadron</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                name="squadron"
-                value={formData.squadron}
-                onChange={handleInputChange}
-                placeholder="Training Squadron"
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label fw-semibold">Unit / Base</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                name="unit"
-                value={formData.unit}
-                onChange={handleInputChange}
-                placeholder="SLAF TTS Ekala"
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label fw-semibold">Unit Posting</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                name="posting"
-                value={formData.posting}
-                onChange={handleInputChange}
-                placeholder="e.g. SLAF Katunayake"
-              />
-            </div>
             <div className="col-md-3">
               <label className="form-label fw-semibold">Enlistment / Joining Date</label>
               <input 

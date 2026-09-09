@@ -94,9 +94,6 @@ CREATE TABLE students (
     trade VARCHAR(50) NOT NULL,
     course_id VARCHAR(36),
     batch VARCHAR(30) NOT NULL,
-    squadron VARCHAR(50) DEFAULT 'Training Squadron',
-    unit VARCHAR(50) DEFAULT 'SLAF TTS Ekala',
-    posting VARCHAR(100),
     joining_date DATE NOT NULL,
     passing_out_date DATE,
     status VARCHAR(30) DEFAULT 'Active', -- Active, Sick, Leave, Detached, AWOL, Passed Out, Suspended

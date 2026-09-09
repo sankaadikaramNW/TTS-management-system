@@ -35,7 +35,6 @@ def get_student_report(
     course_id: Optional[str] = Query(None),
     batch: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
-    squadron: Optional[str] = Query(None),
     rank: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -45,7 +44,7 @@ def get_student_report(
     ua = request.headers.get("user-agent", "unknown")
     return report_service.get_student_report(
         db, current_user, trade=trade, course_id=course_id, batch=batch,
-        status=status, squadron=squadron, rank=rank, search=search, ip=ip, ua=ua
+        status=status, rank=rank, search=search, ip=ip, ua=ua
     )
 
 

@@ -44,7 +44,6 @@ class ReportService:
         course_id: Optional[str] = None,
         batch: Optional[str] = None,
         status: Optional[str] = None,
-        squadron: Optional[str] = None,
         rank: Optional[str] = None,
         search: Optional[str] = None,
         ip: str = "127.0.0.1",
@@ -52,12 +51,12 @@ class ReportService:
     ) -> StandardReportResponse:
         rows, summary = report_repo.get_student_dossier_data(
             db, trade=trade, course_id=course_id, batch=batch,
-            status=status, squadron=squadron, rank=rank, search=search
+            status=status, rank=rank, search=search
         )
 
         params = {
             "trade": trade, "course_id": course_id, "batch": batch,
-            "status": status, "squadron": squadron, "rank": rank, "search": search
+            "status": status, "rank": rank, "search": search
         }
         self._log_report_audit(db, current_user.id, "student_dossier", params, ip, ua)
 
@@ -92,7 +91,6 @@ class ReportService:
             ReportTableColumn(field="trade", label="Trade", align="left", min_width="140px"),
             ReportTableColumn(field="course", label="Course Assigned", align="left", min_width="180px"),
             ReportTableColumn(field="batch", label="Batch", align="center", min_width="90px"),
-            ReportTableColumn(field="squadron", label="Squadron", align="left", min_width="130px"),
             ReportTableColumn(field="status", label="Status", align="center", is_badge=True, min_width="110px"),
             ReportTableColumn(field="blood_group", label="Blood Grp", align="center", min_width="90px"),
             ReportTableColumn(field="intake_date", label="Intake Date", align="center", min_width="110px")
