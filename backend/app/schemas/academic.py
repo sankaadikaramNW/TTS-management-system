@@ -77,6 +77,34 @@ class CourseResponse(CourseBase):
     class Config:
         from_attributes = True
 
+class CourseEnrollmentOptionResponse(BaseModel):
+    course_id: str
+    course_code: str
+    course_name: str
+    course_full_title: str
+    trade_id: Optional[str] = None
+    trade_name: Optional[str] = None
+    course_type: Optional[str] = "Basic"
+    duration_weeks: int = 24
+    intake_capacity: Optional[int] = 30
+    batch_id: Optional[str] = None
+    batch_name: Optional[str] = None
+    classroom_id: Optional[str] = None
+    classroom_name: Optional[str] = None
+    instructor_id: Optional[str] = None
+    instructor_name: Optional[str] = None
+    instructor_rank: Optional[str] = None
+    instructor_service_number: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    status: str = "Active"
+    is_active: bool = True
+    enrolled_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 # --- Classroom Schemas ---
 class ClassroomBase(BaseModel):
     code: str

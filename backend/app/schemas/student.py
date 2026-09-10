@@ -74,6 +74,7 @@ class StudentResponse(StudentBase):
     created_at: datetime
     updated_at: datetime
     course_name: Optional[str] = None
+    course_code: Optional[str] = None
 
     class Config:
         from_attributes = True

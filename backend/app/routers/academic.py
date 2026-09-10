@@ -16,7 +16,7 @@ from app.services.lesson_plan_service import lesson_plan_service
 from app.services.course_calendar_service import course_calendar_service
 from app.schemas.academic import (
     TradeResponse, TradeCreate, TradeUpdate,
-    CourseResponse, CourseCreate, CourseUpdate,
+    CourseResponse, CourseCreate, CourseUpdate, CourseEnrollmentOptionResponse,
     ClassroomResponse, ClassroomCreate, ClassroomUpdate,
     BatchResponse, BatchCreate, BatchUpdate,
     InstructorResponse, AcademicDashboardSummary,
@@ -189,6 +189,18 @@ def get_courses(
     if trade_id and trade_id.strip():
         return course_repo.get_by_trade(db, trade_id.strip())
     return course_repo.get_all(db)
+
+@router.get("/courses/enrollment-options", response_model=List[CourseEnrollmentOptionResponse])
+def get_course_enrollment_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves all active courses and configured batches for Student Registration -> Course Enrollment.
+    Provides Single Source of Truth linking Course Number, Course Name, Trade, Batch, Classroom, Instructor, and Dates.
+    """
+    return course_repo.get_enrollment_options(db)
+
 
 @router.post("/courses", response_model=CourseResponse)
 def create_course(

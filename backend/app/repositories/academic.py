@@ -74,6 +74,98 @@ class CourseRepository(BaseRepository[Course]):
             c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
         return results
 
+    def get_enrollment_options(self, db: Session) -> List[Dict[str, Any]]:
+        """
+        Retrieves active courses and batches for Student Registration -> Course Enrollment.
+        Guarantees single source of truth from Academic Activity master records.
+        """
+        active_courses = db.query(Course).filter(
+            Course.is_active == True,
+            Course.deleted_at == None
+        ).order_by(Course.created_at.desc()).all()
+
+        options = []
+        for c in active_courses:
+            trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
+            trade_name = trade.label if trade else "General"
+
+            # Query active batches for this course
+            active_batches = db.query(Batch).filter(
+                Batch.course_id == c.id,
+                Batch.status == 'Active'
+            ).order_by(Batch.created_at.desc()).all()
+
+            if active_batches:
+                for b in active_batches:
+                    b_trade = db.query(Trade).filter(Trade.id == b.trade_id).first() if b.trade_id else trade
+                    b_classroom = db.query(Classroom).filter(Classroom.id == b.classroom_id).first() if b.classroom_id else None
+                    b_instructor = db.query(User).filter(User.id == b.instructor_id).first() if b.instructor_id else None
+                    
+                    enrolled_count = db.query(Student).filter(
+                        Student.course_id == c.id,
+                        (Student.batch == b.name) | (Student.batch == c.code),
+                        Student.deleted_at == None
+                    ).count()
+
+                    options.append({
+                        "course_id": c.id,
+                        "course_code": c.code,
+                        "course_name": c.name,
+                        "course_full_title": f"{c.code} {c.name}",
+                        "trade_id": b.trade_id or c.trade_id,
+                        "trade_name": b_trade.label if b_trade else trade_name,
+                        "course_type": c.course_type or "Basic",
+                        "duration_weeks": c.duration_weeks or 24,
+                        "intake_capacity": b.capacity or c.intake_capacity or 30,
+                        "batch_id": b.id,
+                        "batch_name": b.name,
+                        "classroom_id": b.classroom_id,
+                        "classroom_name": b_classroom.name if b_classroom else "Unassigned",
+                        "instructor_id": b.instructor_id,
+                        "instructor_name": b_instructor.full_name if b_instructor else "Unassigned",
+                        "instructor_rank": b_instructor.rank if b_instructor else None,
+                        "instructor_service_number": b_instructor.service_number if b_instructor else None,
+                        "start_date": b.intake_date or c.start_date,
+                        "end_date": b.passing_out_date or c.end_date,
+                        "status": b.status or "Active",
+                        "is_active": True,
+                        "enrolled_count": enrolled_count
+                    })
+            else:
+                # Active course without batches configured yet
+                enrolled_count = db.query(Student).filter(
+                    Student.course_id == c.id,
+                    Student.deleted_at == None
+                ).count()
+
+                options.append({
+                    "course_id": c.id,
+                    "course_code": c.code,
+                    "course_name": c.name,
+                    "course_full_title": f"{c.code} {c.name}",
+                    "trade_id": c.trade_id,
+                    "trade_name": trade_name,
+                    "course_type": c.course_type or "Basic",
+                    "duration_weeks": c.duration_weeks or 24,
+                    "intake_capacity": c.intake_capacity or 30,
+                    "batch_id": None,
+                    "batch_name": c.code,
+                    "classroom_id": None,
+                    "classroom_name": "Unassigned",
+                    "instructor_id": None,
+                    "instructor_name": "Unassigned",
+                    "instructor_rank": None,
+                    "instructor_service_number": None,
+                    "start_date": c.start_date,
+                    "end_date": c.end_date,
+                    "status": "Active",
+                    "is_active": True,
+                    "enrolled_count": enrolled_count
+                })
+
+        return options
+
+
 class BatchRepository(BaseRepository[Batch]):
     def get_all(self, db: Session) -> List[Batch]:
         results = db.query(Batch).order_by(Batch.created_at.desc()).all()

@@ -236,9 +236,10 @@ def get_student_details(
     if not student or student.deleted_at:
         raise HTTPException(status_code=404, detail="Student record not found")
     
-    # Inject course name
+    # Inject course name & code
     if student.course:
-        student.course_name = student.course.name
+        student.course_name = f"{student.course.code} - {student.course.name}"
+        student.course_code = student.course.code
     return student
 
 @router.post("", response_model=StudentResponse)

@@ -56,9 +56,11 @@ class StudentRepository(BaseRepository[Student]):
         for student in results:
             if student.course_id:
                 course = db.query(Course).filter(Course.id == student.course_id).first()
-                student.course_name = course.name if course else None
+                student.course_name = f"{course.code} - {course.name}" if course else None
+                student.course_code = course.code if course else None
             else:
                 student.course_name = None
+                student.course_code = None
 
         return total, results
 

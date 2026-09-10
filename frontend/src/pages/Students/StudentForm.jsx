@@ -35,6 +35,9 @@ export const StudentForm = () => {
   const isEdit = !!id
 
   const [courses, setCourses] = useState([])
+  const [enrollmentOptions, setEnrollmentOptions] = useState([])
+  const [courseSearch, setCourseSearch] = useState('')
+  const [showCourseSelector, setShowCourseSelector] = useState(true)
   const [statuses, setStatuses] = useState([])
   const [ranks, setRanks] = useState([])
   const [trades, setTrades] = useState([])
@@ -46,16 +49,17 @@ export const StudentForm = () => {
   const [submitMode, setSubmitMode] = useState('save_and_view') // 'save_and_view' or 'save_and_new'
 
   useEffect(() => {
-    // Load courses
-    const loadCourses = async () => {
+    // Load active course enrollment options from Academic Activity SSOT
+    const loadEnrollmentOptions = async () => {
       try {
-        const res = await axios.get('/api/v1/academic/courses')
+        const res = await axios.get('/api/v1/academic/courses/enrollment-options')
+        setEnrollmentOptions(res.data)
         setCourses(res.data)
       } catch (err) {
-        console.error(err)
+        console.error('Failed to load course enrollment options', err)
       }
     }
-    loadCourses()
+    loadEnrollmentOptions()
 
     // Load student status types from DB
     const loadStatuses = async () => {
@@ -134,6 +138,54 @@ export const StudentForm = () => {
       loadStudent()
     }
   }, [id, isEdit])
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A'
+    const parts = dateStr.split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+    return dateStr
+  }
+
+  const selectedCourseOption = enrollmentOptions.find(
+    opt => opt.course_id === formData.course_id && (!formData.batch || opt.batch_name === formData.batch || opt.course_code === formData.batch)
+  ) || enrollmentOptions.find(opt => opt.course_id === formData.course_id)
+
+  const handleSelectCourseOption = (option) => {
+    setFormData(prev => ({
+      ...prev,
+      course_id: option.course_id,
+      batch: option.batch_name || option.course_code || '',
+      trade: option.trade_name && trades.some(t => t.label.toLowerCase() === option.trade_name.toLowerCase()) 
+        ? trades.find(t => t.label.toLowerCase() === option.trade_name.toLowerCase()).label
+        : (option.trade_name || prev.trade),
+      joining_date: (!prev.joining_date && option.start_date) ? option.start_date : prev.joining_date,
+      passing_out_date: (!prev.passing_out_date && option.end_date) ? option.end_date : prev.passing_out_date
+    }))
+    setShowCourseSelector(false)
+    toast.info(`Assigned to ${option.course_code} - ${option.course_name} (${option.batch_name})`)
+  }
+
+  const handleClearCourseOption = () => {
+    setFormData(prev => ({
+      ...prev,
+      course_id: '',
+      batch: ''
+    }))
+    setShowCourseSelector(true)
+  }
+
+  const filteredEnrollmentOptions = enrollmentOptions.filter(opt => {
+    const q = courseSearch.toLowerCase()
+    return (
+      (opt.course_code && opt.course_code.toLowerCase().includes(q)) ||
+      (opt.course_name && opt.course_name.toLowerCase().includes(q)) ||
+      (opt.course_full_title && opt.course_full_title.toLowerCase().includes(q)) ||
+      (opt.trade_name && opt.trade_name.toLowerCase().includes(q)) ||
+      (opt.batch_name && opt.batch_name.toLowerCase().includes(q)) ||
+      (opt.instructor_name && opt.instructor_name.toLowerCase().includes(q))
+    )
+  })
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -320,28 +372,6 @@ export const StudentForm = () => {
               </select>
             </div>
             <div className="col-md-3">
-              <label className="form-label fw-semibold">Course Enrollment</label>
-              <select className="form-select" name="course_id" value={formData.course_id} onChange={handleInputChange}>
-                <option value="">No Course Assignment</option>
-                {courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-3">
-              <label className="form-label fw-semibold">Batch / Intake *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                name="batch"
-                value={formData.batch}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. Intake 171"
-              />
-            </div>
-
-            <div className="col-md-3">
               <label className="form-label fw-semibold">Enlistment / Joining Date</label>
               <input 
                 type="date" 
@@ -362,6 +392,192 @@ export const StudentForm = () => {
               />
             </div>
           </div>
+
+          {/* Section 1.1: Academic Course & Batch Enrollment */}
+          <div className="card bg-light border p-3 mb-4 rounded-3">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <h6 className="fw-bold text-primary mb-0 display-font d-flex align-items-center gap-1.5">
+                  <i className="bi bi-journal-bookmark-fill"></i> Course Enrollment (Academic Activity Master Records)
+                </h6>
+                <small className="text-muted">Trainees are enrolled into active courses/batches created via Academic Activity module.</small>
+              </div>
+              {formData.course_id && (
+                <div className="d-flex gap-2">
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-primary btn-sm py-1 px-2.5 d-flex align-items-center gap-1"
+                    onClick={() => setShowCourseSelector(!showCourseSelector)}
+                  >
+                    <i className={`bi bi-${showCourseSelector ? 'eye-slash' : 'pencil'}`}></i>
+                    {showCourseSelector ? 'Hide Course List' : 'Change Course / Batch'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-danger btn-sm py-1 px-2.5 d-flex align-items-center gap-1"
+                    onClick={handleClearCourseOption}
+                  >
+                    <i className="bi bi-x-circle"></i> Clear Assignment
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Current Active Selection Summary Banner */}
+            {formData.course_id ? (
+              <div className="card bg-white border-primary border-2 p-3 shadow-xs mb-3">
+                <div className="row g-3 align-items-center">
+                  <div className="col-md-4 border-end">
+                    <span className="text-muted d-block small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Selected Course & Batch</span>
+                    <h6 className="fw-bold text-primary mb-1">
+                      {selectedCourseOption?.course_full_title || `${formData.batch} Course`}
+                    </h6>
+                    <div className="d-flex gap-1.5 flex-wrap align-items-center">
+                      <span className="badge bg-primary-subtle text-primary border">Batch: {formData.batch || selectedCourseOption?.batch_name || 'N/A'}</span>
+                      <span className="badge bg-secondary-subtle text-dark border">Trade: {selectedCourseOption?.trade_name || formData.trade}</span>
+                      <span className="badge bg-info-subtle text-info border">{selectedCourseOption?.course_type || 'Basic'}</span>
+                    </div>
+                  </div>
+                  <div className="col-md-4 border-end">
+                    <span className="text-muted d-block small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Assigned Instructor & Classroom</span>
+                    <strong className="text-dark d-block">
+                      <i className="bi bi-person-badge me-1 text-primary"></i>
+                      {selectedCourseOption?.instructor_name && selectedCourseOption.instructor_name !== 'Unassigned'
+                        ? `${selectedCourseOption.instructor_rank || ''} ${selectedCourseOption.instructor_name}`
+                        : 'Assigned Academic Staff'}
+                    </strong>
+                    <small className="text-muted">
+                      <i className="bi bi-door-open me-1"></i>
+                      Classroom: {selectedCourseOption?.classroom_name || 'Unassigned'}
+                    </small>
+                  </div>
+                  <div className="col-md-4">
+                    <span className="text-muted d-block small text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Duration & Academic Timeline</span>
+                    <small className="fw-semibold text-dark d-block">
+                      {selectedCourseOption?.duration_weeks ? `${selectedCourseOption.duration_weeks} Weeks` : 'Course Schedule'}
+                      {selectedCourseOption?.intake_capacity ? ` (Cap: ${selectedCourseOption.intake_capacity})` : ''}
+                    </small>
+                    <small className="text-muted">
+                      {formatDate(selectedCourseOption?.start_date)} &mdash; {formatDate(selectedCourseOption?.end_date)}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              !showCourseSelector && (
+                <div className="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-2">
+                  <span className="text-muted"><i className="bi bi-info-circle me-1"></i> No course assigned yet. Trainee will be registered without a course.</span>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowCourseSelector(true)}>
+                    Select Course & Batch
+                  </button>
+                </div>
+              )
+            )}
+
+            {/* Course & Batch Selection Table */}
+            {showCourseSelector && (
+              <div className="mt-2">
+                <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
+                  <div className="input-group input-group-sm" style={{ maxWidth: '400px' }}>
+                    <span className="input-group-text bg-white"><i className="bi bi-search text-muted"></i></span>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Search Course (e.g. 2/2026, Account Assistant)..." 
+                      value={courseSearch}
+                      onChange={(e) => setCourseSearch(e.target.value)}
+                    />
+                    {courseSearch && (
+                      <button className="btn btn-outline-secondary" type="button" onClick={() => setCourseSearch('')}>
+                        <i className="bi bi-x"></i>
+                      </button>
+                    )}
+                  </div>
+                  <small className="text-muted">
+                    {filteredEnrollmentOptions.length} available course/batch {filteredEnrollmentOptions.length === 1 ? 'option' : 'options'}
+                  </small>
+                </div>
+
+                {enrollmentOptions.length === 0 ? (
+                  <div className="alert alert-warning d-flex align-items-center gap-2 py-3 px-3 mb-0">
+                    <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div>
+                      <strong>No active courses/batches are currently available for enrollment.</strong>
+                      <div className="small text-muted mt-0.5">
+                        Courses and batches must be created first by an authorized instructor through the <strong>Academic Activity</strong> module.
+                      </div>
+                    </div>
+                  </div>
+                ) : filteredEnrollmentOptions.length === 0 ? (
+                  <div className="text-center py-4 text-muted bg-white border rounded">
+                    <i className="bi bi-search fs-4 d-block mb-1"></i>
+                    No active course/batch matching "{courseSearch}".
+                  </div>
+                ) : (
+                  <div className="table-responsive bg-white border rounded" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                    <table className="table table-hover table-sm align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                      <thead className="table-light sticky-top">
+                        <tr>
+                          <th>Course</th>
+                          <th>Trade</th>
+                          <th>Batch</th>
+                          <th>Instructor</th>
+                          <th>Classroom</th>
+                          <th>Start Date</th>
+                          <th>End Date</th>
+                          <th>Status</th>
+                          <th className="text-end">Enrollment</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredEnrollmentOptions.map((opt, idx) => {
+                          const isSelected = formData.course_id === opt.course_id && (formData.batch === opt.batch_name || !opt.batch_id)
+                          return (
+                            <tr key={`${opt.course_id}-${opt.batch_id || idx}`} className={isSelected ? 'table-primary' : ''}>
+                              <td>
+                                <strong className="text-primary d-block">{opt.course_code} {opt.course_name}</strong>
+                                <small className="text-muted">{opt.course_type} &bull; {opt.duration_weeks} Weeks</small>
+                              </td>
+                              <td><span className="badge bg-secondary-subtle text-dark border">{opt.trade_name}</span></td>
+                              <td><span className="badge bg-primary-subtle text-primary border fw-semibold">{opt.batch_name}</span></td>
+                              <td>
+                                <small className="fw-semibold text-dark d-block">{opt.instructor_name}</small>
+                                <small className="text-muted">{opt.instructor_rank || ''}</small>
+                              </td>
+                              <td><small className="text-muted">{opt.classroom_name}</small></td>
+                              <td><small>{formatDate(opt.start_date)}</small></td>
+                              <td><small>{formatDate(opt.end_date)}</small></td>
+                              <td>
+                                <span className={`badge bg-${opt.status === 'Active' ? 'success' : 'secondary'}-subtle text-${opt.status === 'Active' ? 'success' : 'secondary'} border`}>
+                                  {opt.status}
+                                </span>
+                              </td>
+                              <td className="text-end">
+                                {isSelected ? (
+                                  <span className="badge bg-primary py-1.5 px-2">
+                                    <i className="bi bi-check2 me-1"></i> Selected
+                                  </span>
+                                ) : (
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline-primary btn-sm py-0.5 px-2 fw-semibold"
+                                    onClick={() => handleSelectCourseOption(opt)}
+                                  >
+                                    Enroll
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
 
           {/* Section 2: Personal details */}
           <h5 className="mb-3 display-font text-primary border-bottom pb-2">2. Personal & Contact Particulars</h5>

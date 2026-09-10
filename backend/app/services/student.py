@@ -21,6 +21,19 @@ class StudentService:
             if student_repo.get_by_nic(db, student_in.nic.strip()):
                 raise HTTPException(status_code=400, detail=f"Student with NIC '{student_in.nic}' already exists")
 
+        # Validate Course and Batch if course_id is provided
+        from app.models.academic import Course, Batch
+        batch_value = student_in.batch
+        if student_in.course_id:
+            course = db.query(Course).filter(Course.id == student_in.course_id, Course.deleted_at == None).first()
+            if not course:
+                raise HTTPException(status_code=400, detail="Selected course does not exist in Academic Activity master records.")
+            if not course.is_active:
+                raise HTTPException(status_code=400, detail="Selected course is inactive and unavailable for trainee enrollment.")
+            if not batch_value or not batch_value.strip():
+                active_batch = db.query(Batch).filter(Batch.course_id == course.id, Batch.status == 'Active').first()
+                batch_value = active_batch.name if active_batch else course.code
+
         # Generate QR code representation
         qr_base64 = self.generate_student_qr(student_in.service_number)
 
@@ -34,7 +47,7 @@ class StudentService:
             rank=student_in.rank or "Aircraftman",
             trade=student_in.trade or "Airframe",
             course_id=student_in.course_id,
-            batch=student_in.batch or "Intake 171",
+            batch=batch_value or "Intake 171",
             joining_date=student_in.joining_date or date.today(),
             passing_out_date=student_in.passing_out_date,
             status=student_in.status or "Active",
@@ -79,6 +92,15 @@ class StudentService:
         if student_in.nic and student_in.nic != student.nic:
             if student_repo.get_by_nic(db, student_in.nic):
                 raise HTTPException(status_code=400, detail=f"Another student with NIC '{student_in.nic}' already exists")
+
+        # Course validation on update
+        if student_in.course_id is not None and student_in.course_id != "":
+            from app.models.academic import Course
+            course = db.query(Course).filter(Course.id == student_in.course_id, Course.deleted_at == None).first()
+            if not course:
+                raise HTTPException(status_code=400, detail="Selected course does not exist in Academic Activity master records.")
+            if not course.is_active:
+                raise HTTPException(status_code=400, detail="Selected course is inactive and unavailable for trainee enrollment.")
 
         # Status changes trigger audits
         status_change = ""
