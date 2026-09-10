@@ -27,6 +27,19 @@ class StudentBase(BaseModel):
     permanent_address: Optional[str] = None
     temporary_address: Optional[str] = None
 
+    @field_validator(
+        'dob', 'joining_date', 'passing_out_date', 'course_id', 'batch', 'nic', 
+        'phone', 'email', 'emergency_contact_name', 'emergency_contact_phone', 
+        'permanent_address', 'temporary_address', 'initials', 'medical_category',
+        'religion', 'nationality', 'gender', 'rank', 'trade', 'status', 'blood_group',
+        mode='before'
+    )
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 class StudentCreate(StudentBase):
     pass
 
@@ -44,7 +57,7 @@ class StudentUpdate(BaseModel):
     passing_out_date: Optional[date] = None
     status: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
     blood_group: Optional[str] = None
@@ -54,6 +67,20 @@ class StudentUpdate(BaseModel):
     permanent_address: Optional[str] = None
     temporary_address: Optional[str] = None
     profile_photo_path: Optional[str] = None
+
+    @field_validator(
+        'dob', 'joining_date', 'passing_out_date', 'course_id', 'batch', 'nic', 
+        'phone', 'email', 'emergency_contact_name', 'emergency_contact_phone', 
+        'permanent_address', 'temporary_address', 'initials', 'medical_category',
+        'religion', 'nationality', 'gender', 'rank', 'trade', 'status', 'blood_group',
+        'profile_photo_path', mode='before'
+    )
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
 
 class StudentShortResponse(BaseModel):
     id: str

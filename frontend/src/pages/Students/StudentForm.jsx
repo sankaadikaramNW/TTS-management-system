@@ -206,17 +206,37 @@ export const StudentForm = () => {
 
   const handleSubmit = async (e, explicitMode = null) => {
     if (e && e.preventDefault) e.preventDefault()
+
+    // Client-side mandatory validation
+    if (!formData.service_number || !formData.service_number.trim()) {
+      toast.warning('Please enter a valid Service Number')
+      return
+    }
+    if (!formData.full_name || !formData.full_name.trim()) {
+      toast.warning('Please enter the Trainee Full Name')
+      return
+    }
+
     const currentMode = explicitMode || submitMode
     setSubmitMode(currentMode)
     setLoading(true)
     try {
       let savedStudent = null
       
-      // Sanitize payload: convert empty strings back to null so they validate correctly in FastAPI/Pydantic
+      // Sanitize payload: trim strings, convert empty strings back to null
       const payload = {}
       Object.keys(formData).forEach(key => {
-        payload[key] = (formData[key] === '' || formData[key] === null) ? null : formData[key]
+        const val = formData[key]
+        if (typeof val === 'string') {
+          const trimmed = val.trim()
+          payload[key] = trimmed === '' ? null : trimmed
+        } else {
+          payload[key] = (val === '' || val === null) ? null : val
+        }
       })
+      // Guarantee required non-null fields
+      payload.service_number = formData.service_number.trim()
+      payload.full_name = formData.full_name.trim()
 
       if (isEdit) {
         const res = await axios.put(`/api/v1/students/${id}`, payload)
@@ -254,7 +274,17 @@ export const StudentForm = () => {
         navigate(`/students/${savedStudent.id}`)
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'An error occurred during submission')
+      console.error('Submission error:', err)
+      const detail = err.response?.data?.detail
+      let errorMsg = 'An error occurred during submission'
+      if (Array.isArray(detail)) {
+        errorMsg = detail.map(d => `${d.loc ? d.loc[d.loc.length - 1] + ': ' : ''}${d.msg}`).join(' | ')
+      } else if (typeof detail === 'string') {
+        errorMsg = detail
+      } else if (err.message) {
+        errorMsg = err.message
+      }
+      toast.error(errorMsg, { autoClose: 7000 })
     } finally {
       setLoading(false)
     }
