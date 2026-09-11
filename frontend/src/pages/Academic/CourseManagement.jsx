@@ -240,62 +240,75 @@ export const CourseManagement = () => {
       </div>
 
       {/* Course Table */}
-      <div className="card slaf-card p-0 shadow-sm">
+      <div className="card slaf-card p-0 shadow-sm border-0">
         <div className="table-responsive">
           <table className="table slaf-table align-middle mb-0">
             <thead>
-              <tr>
-                <th>Course No</th>
-                <th>Course Name</th>
-                <th>Trade</th>
-                <th>Type</th>
-                <th>Duration</th>
-                <th>Capacity</th>
-                <th>Batches</th>
-                <th>Status</th>
-                <th className="text-end">Actions</th>
+              <tr className="bg-light">
+                <th style={{ minWidth: '100px' }}>Course No</th>
+                <th style={{ minWidth: '220px' }}>Course Name</th>
+                <th style={{ minWidth: '150px' }}>Trade</th>
+                <th style={{ minWidth: '90px' }}>Type</th>
+                <th style={{ minWidth: '160px' }}>Duration &amp; Schedule</th>
+                <th style={{ minWidth: '100px' }}>Capacity</th>
+                <th style={{ minWidth: '90px' }}>Batches</th>
+                <th style={{ minWidth: '160px' }} className="text-end pe-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="9" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
+                <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
               ) : filteredCourses.length === 0 ? (
-                <tr><td colSpan="9" className="text-center py-5 text-muted">No course records found.</td></tr>
+                <tr><td colSpan="8" className="text-center py-5 text-muted">No course records found.</td></tr>
               ) : (
                 filteredCourses.map(c => (
                   <tr key={c.id}>
                     <td>
-                      <button 
-                        className="btn btn-link p-0 fw-bold text-decoration-none" 
-                        onClick={() => handleViewCourseStudents(c)}
-                        title="Click to view enrolled trainees list"
-                      >
+                      <div className="d-flex align-items-center gap-1">
                         <span className="badge bg-primary-subtle text-primary border fw-bold">{c.code}</span>
-                      </button>
+                      </div>
                     </td>
                     <td>
-                      <button 
-                        className="btn btn-link p-0 text-start fw-bold text-decoration-none" 
-                        onClick={() => handleViewCourseStudents(c)}
-                        title="Click to view enrolled trainees list"
-                      >
-                        <strong className="text-primary text-decoration-underline">{c.name}</strong>
-                      </button>
+                      <div className="d-flex align-items-center justify-content-between gap-2">
+                        <div>
+                          <strong 
+                            className="text-primary d-block hover-underline cursor-pointer" 
+                            onClick={() => handleOpenEdit(c)}
+                            title="Click to edit course details"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {c.name}
+                          </strong>
+                          <div className="d-flex align-items-center gap-1 mt-0.5">
+                            <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                              {c.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            {c.date_status && (
+                              <span className={`badge bg-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                                {c.date_status}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td><span className="badge bg-secondary-subtle text-dark border">{c.trade_name || 'General'}</span></td>
                     <td><span className="badge bg-info-subtle text-info border">{c.course_type || 'Basic'}</span></td>
                     <td>
-                      <small className="fw-semibold text-dark d-block">
+                      <small className="fw-bold text-dark d-block">
                         <i className="bi bi-clock-history me-1 text-primary"></i>
                         {c.duration_formatted || `${c.duration_weeks} Weeks`}
                       </small>
-                      {c.start_date && c.end_date && (
-                        <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                      {c.start_date && c.end_date ? (
+                        <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>
+                          <i className="bi bi-calendar-range me-1 text-secondary"></i>
                           {formatDate(c.start_date)} - {formatDate(c.end_date)}
                         </small>
+                      ) : (
+                        <small className="text-muted" style={{ fontSize: '0.72rem' }}>No schedule set</small>
                       )}
                     </td>
-                    <td><small className="text-muted">{c.intake_capacity} Trainees</small></td>
+                    <td><small className="text-dark fw-semibold">{c.intake_capacity} Trainees</small></td>
                     <td>
                       <button 
                         className="btn btn-link p-0 text-decoration-none" 
@@ -305,18 +318,23 @@ export const CourseManagement = () => {
                         <span className="badge bg-success-subtle text-success border">{c.batches_count || 0} Batches</span>
                       </button>
                     </td>
-                    <td>
-                      <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-2 py-0.5`}>
-                        {c.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="text-end">
-                      <button className="btn btn-outline-primary btn-sm me-1" onClick={() => handleViewCourseStudents(c)} title="View Enrolled Trainees">
-                        <i className="bi bi-people me-1"></i> Trainees
-                      </button>
-                      <button className="btn btn-outline-secondary btn-sm" onClick={() => handleOpenEdit(c)}>
-                        <i className="bi bi-pencil me-1"></i> Edit
-                      </button>
+                    <td className="text-end pe-3">
+                      <div className="btn-group btn-group-sm">
+                        <button 
+                          className="btn btn-primary btn-sm px-2.5 py-1 fw-semibold shadow-sm" 
+                          onClick={() => handleOpenEdit(c)} 
+                          title="Edit Course Details, Schedule & Duration"
+                        >
+                          <i className="bi bi-pencil-square me-1"></i> Edit
+                        </button>
+                        <button 
+                          className="btn btn-outline-secondary btn-sm px-2 py-1" 
+                          onClick={() => handleViewCourseStudents(c)} 
+                          title="View Enrolled Trainees"
+                        >
+                          <i className="bi bi-people me-1"></i> Trainees
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

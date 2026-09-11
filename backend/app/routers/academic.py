@@ -205,12 +205,14 @@ def get_course_enrollment_options(
 @router.post("/courses", response_model=CourseResponse)
 def create_course(
     course_data: CourseCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
     from app.models.academic import Course
     from app.models.student import Trade
     from app.schemas.academic import calculate_duration_from_dates
+    from app.repositories.user import audit_repo
 
     if course_data.start_date and course_data.end_date:
         if course_data.end_date < course_data.start_date:
@@ -237,17 +239,32 @@ def create_course(
         _, created.duration_formatted = calculate_duration_from_dates(created.start_date, created.end_date)
     else:
         created.duration_formatted = f"{created.duration_weeks} Weeks" if created.duration_weeks else "N/A"
+
+    ip = request.client.host if request and request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown") if request else "unknown"
+    audit_repo.create_log(
+        db=db,
+        user_id=current_user.id,
+        action="CREATE_COURSE",
+        ip_address=ip,
+        user_agent=ua,
+        module="Academic Management",
+        details=f"Created course '{created.name}' ({created.code}). Duration: {created.duration_weeks} Weeks ({created.duration_formatted}). Period: {created.start_date} to {created.end_date}"
+    )
+
     return created
 
 @router.put("/courses/{course_id}", response_model=CourseResponse)
 def update_course(
     course_id: str,
     course_in: CourseUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
     from app.models.academic import Course, CourseCalendar, Timetable, Exam
     from app.schemas.academic import calculate_duration_from_dates
+    from app.repositories.user import audit_repo
     c = course_repo.get(db, course_id)
     if not c or c.deleted_at:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -309,6 +326,19 @@ def update_course(
         _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
     else:
         c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
+
+    ip = request.client.host if request and request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown") if request else "unknown"
+    audit_repo.create_log(
+        db=db,
+        user_id=current_user.id,
+        action="UPDATE_COURSE",
+        ip_address=ip,
+        user_agent=ua,
+        module="Academic Management",
+        details=f"Updated course '{c.name}' ({c.code}). Duration: {c.duration_weeks} Weeks ({c.duration_formatted}). Period: {c.start_date} to {c.end_date}. Status: {'Active' if c.is_active else 'Inactive'}"
+    )
+
     return c
 
 
