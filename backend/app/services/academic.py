@@ -11,6 +11,20 @@ from app.schemas.academic import TimetableCreate, TimetableAttendanceUpdateReque
 
 class AcademicService:
     def create_timetable_entry(self, db: Session, tt_in: TimetableCreate, user_id: str, ip: str, ua: str) -> Timetable:
+        # Check if course exists and date is within configured course start and end dates
+        course = db.query(Course).filter(Course.id == tt_in.course_id).first()
+        if course:
+            if course.start_date and tt_in.date < course.start_date:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Timetable date ({tt_in.date.strftime('%d.%m.%Y')}) cannot be earlier than course start date ({course.start_date.strftime('%d.%m.%Y')})."
+                )
+            if course.end_date and tt_in.date > course.end_date:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Timetable date ({tt_in.date.strftime('%d.%m.%Y')}) cannot be later than course end date ({course.end_date.strftime('%d.%m.%Y')})."
+                )
+
         # Check if period is already booked for this course on this date
         existing = db.query(Timetable).filter(
             Timetable.course_id == tt_in.course_id,

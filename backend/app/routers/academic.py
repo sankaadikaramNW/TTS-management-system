@@ -210,6 +210,13 @@ def create_course(
 ):
     from app.models.academic import Course
     from app.models.student import Trade
+    from app.schemas.academic import calculate_duration_from_dates
+
+    if course_data.start_date and course_data.end_date:
+        if course_data.end_date < course_data.start_date:
+            raise HTTPException(status_code=400, detail="End date cannot be earlier than the start date.")
+        weeks, _ = calculate_duration_from_dates(course_data.start_date, course_data.end_date)
+        course_data.duration_weeks = weeks
 
     if course_data.trade_id:
         trade = db.query(Trade).filter(Trade.id == course_data.trade_id).first()
@@ -222,8 +229,15 @@ def create_course(
     if existing:
         raise HTTPException(status_code=400, detail=f"Course code/number '{course_data.code}' already exists")
     
-    db_course = Course(**course_data.model_dump())
-    return course_repo.create(db, obj_in=db_course)
+    dump_data = course_data.model_dump()
+    dump_data.pop('duration_formatted', None)
+    db_course = Course(**dump_data)
+    created = course_repo.create(db, obj_in=db_course)
+    if created.start_date and created.end_date:
+        _, created.duration_formatted = calculate_duration_from_dates(created.start_date, created.end_date)
+    else:
+        created.duration_formatted = f"{created.duration_weeks} Weeks" if created.duration_weeks else "N/A"
+    return created
 
 @router.put("/courses/{course_id}", response_model=CourseResponse)
 def update_course(
@@ -232,17 +246,69 @@ def update_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
-    from app.models.academic import Course
+    from app.models.academic import Course, CourseCalendar, Timetable, Exam
+    from app.schemas.academic import calculate_duration_from_dates
     c = course_repo.get(db, course_id)
     if not c or c.deleted_at:
         raise HTTPException(status_code=404, detail="Course not found")
     
     update_data = course_in.model_dump(exclude_unset=True)
+    update_data.pop('duration_formatted', None)
+
+    new_start = update_data.get('start_date', c.start_date)
+    new_end = update_data.get('end_date', c.end_date)
+    if new_start and new_end:
+        if new_end < new_start:
+            raise HTTPException(status_code=400, detail="End date cannot be earlier than the start date.")
+        weeks, _ = calculate_duration_from_dates(new_start, new_end)
+        update_data['duration_weeks'] = weeks
+
+        # Validate that existing active CourseCalendar entries remain within the new date range
+        cal_conflicts = db.query(CourseCalendar).filter(
+            CourseCalendar.course_id == course_id,
+            CourseCalendar.status == 'Active',
+            (CourseCalendar.commencement_date < new_start) | (CourseCalendar.completion_date > new_end)
+        ).all()
+        if cal_conflicts:
+            conflict_details = ", ".join([f"'{entry.phase_name}' ({entry.commencement_date.strftime('%d.%m.%Y')} to {entry.completion_date.strftime('%d.%m.%Y')})" for entry in cal_conflicts[:3]])
+            if len(cal_conflicts) > 3:
+                conflict_details += f" and {len(cal_conflicts) - 3} more"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot change course dates: {len(cal_conflicts)} calendar activity/phase record(s) fall outside the new date range ({new_start.strftime('%d.%m.%Y')} to {new_end.strftime('%d.%m.%Y')}) [{conflict_details}]. Please adjust or remove these calendar entries first."
+            )
+
+        # Validate that existing Timetable sessions remain within the new date range
+        tt_conflicts = db.query(Timetable).filter(
+            Timetable.course_id == course_id,
+            (Timetable.date < new_start) | (Timetable.date > new_end)
+        ).all()
+        if tt_conflicts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot change course dates: {len(tt_conflicts)} scheduled timetable session(s) fall outside the new date range ({new_start.strftime('%d.%m.%Y')} to {new_end.strftime('%d.%m.%Y')}). Please adjust or remove these timetable entries first."
+            )
+
+        # Validate that existing Exams remain within the new date range
+        exam_conflicts = db.query(Exam).filter(
+            Exam.course_id == course_id,
+            (Exam.date < new_start) | (Exam.date > new_end)
+        ).all()
+        if exam_conflicts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot change course dates: {len(exam_conflicts)} examination(s) fall outside the new date range ({new_start.strftime('%d.%m.%Y')} to {new_end.strftime('%d.%m.%Y')}). Please adjust or reschedule these exams first."
+            )
+
     for field, val in update_data.items():
         setattr(c, field, val)
 
     db.commit()
     db.refresh(c)
+    if c.start_date and c.end_date:
+        _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
+    else:
+        c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
     return c
 
 
@@ -307,17 +373,31 @@ def create_batch(
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
     from app.models.academic import Batch, Course, Classroom
+    from app.schemas.academic import calculate_duration_from_dates
     course = db.query(Course).filter(Course.id == batch_in.course_id).first()
     if not course:
         raise HTTPException(status_code=400, detail="Selected course does not exist")
     
+    if batch_in.intake_date and batch_in.passing_out_date:
+        if batch_in.passing_out_date < batch_in.intake_date:
+            raise HTTPException(status_code=400, detail="End date cannot be earlier than the start date.")
+
     if batch_in.classroom_id:
         classroom = db.query(Classroom).filter(Classroom.id == batch_in.classroom_id).first()
         if not classroom or not classroom.is_active:
             raise HTTPException(status_code=400, detail="Assigned classroom is not active or invalid")
 
-    db_batch = Batch(**batch_in.model_dump())
-    return batch_repo.create(db, obj_in=db_batch)
+    dump_data = batch_in.model_dump()
+    dump_data.pop('duration_formatted', None)
+    db_batch = Batch(**dump_data)
+    created = batch_repo.create(db, obj_in=db_batch)
+    if created.intake_date and created.passing_out_date:
+        _, created.duration_formatted = calculate_duration_from_dates(created.intake_date, created.passing_out_date)
+    elif course and course.start_date and course.end_date:
+        _, created.duration_formatted = calculate_duration_from_dates(course.start_date, course.end_date)
+    else:
+        created.duration_formatted = f"{course.duration_weeks} Weeks" if course and course.duration_weeks else "N/A"
+    return created
 
 @router.put("/batches/{batch_id}", response_model=BatchResponse)
 def update_batch(
@@ -326,17 +406,31 @@ def update_batch(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
-    from app.models.academic import Batch
+    from app.models.academic import Batch, Course
+    from app.schemas.academic import calculate_duration_from_dates
     b = batch_repo.get(db, batch_id)
     if not b:
         raise HTTPException(status_code=404, detail="Batch not found")
 
     update_data = batch_in.model_dump(exclude_unset=True)
+    update_data.pop('duration_formatted', None)
+
+    new_intake = update_data.get('intake_date', b.intake_date)
+    new_passing = update_data.get('passing_out_date', b.passing_out_date)
+    if new_intake and new_passing:
+        if new_passing < new_intake:
+            raise HTTPException(status_code=400, detail="End date cannot be earlier than the start date.")
+
     for field, val in update_data.items():
         setattr(b, field, val)
 
     db.commit()
     db.refresh(b)
+    if b.intake_date and b.passing_out_date:
+        _, b.duration_formatted = calculate_duration_from_dates(b.intake_date, b.passing_out_date)
+    else:
+        course = db.query(Course).filter(Course.id == b.course_id).first() if b.course_id else None
+        b.duration_formatted = f"{course.duration_weeks} Weeks" if course and course.duration_weeks else "N/A"
     return b
 
 
@@ -551,7 +645,20 @@ def create_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:write"))
 ):
-    from app.models.academic import Exam
+    from app.models.academic import Exam, Course
+    course = db.query(Course).filter(Course.id == exam_data.course_id).first()
+    if course:
+        if course.start_date and exam_data.date < course.start_date:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Exam date ({exam_data.date.strftime('%d.%m.%Y')}) cannot be earlier than course start date ({course.start_date.strftime('%d.%m.%Y')})."
+            )
+        if course.end_date and exam_data.date > course.end_date:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Exam date ({exam_data.date.strftime('%d.%m.%Y')}) cannot be later than course end date ({course.end_date.strftime('%d.%m.%Y')})."
+            )
+
     db_exam = Exam(**exam_data.model_dump())
     return exam_repo.create(db, obj_in=db_exam)
 

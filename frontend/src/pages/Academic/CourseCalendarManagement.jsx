@@ -235,6 +235,14 @@ export const CourseCalendarManagement = () => {
       toast.error('Completion date cannot be earlier than commencement date.')
       return
     }
+    if (selectedCourse?.start_date && formData.commencement_date < selectedCourse.start_date) {
+      toast.error(`The selected calendar date must be within the configured course/batch start and end dates (${selectedCourse.start_date} to ${selectedCourse.end_date}).`)
+      return
+    }
+    if (selectedCourse?.end_date && formData.completion_date > selectedCourse.end_date) {
+      toast.error(`The selected calendar date must be within the configured course/batch start and end dates (${selectedCourse.start_date} to ${selectedCourse.end_date}).`)
+      return
+    }
     if (formData.instructor_selection === 'NOT_ASSIGNED' && !formData.remarks.trim()) {
       toast.warning('Remarks are mandatory when Instructor is NOT ASSIGNED (Record nomination status & responsible person).')
       return
@@ -709,11 +717,18 @@ export const CourseCalendarManagement = () => {
               <form onSubmit={handleSubmitForm}>
                 <div className="modal-body p-4">
                   {/* Selected Course Indicator */}
-                  <div className="alert alert-primary py-2 px-3 mb-3 small d-flex align-items-center">
-                    <i className="bi bi-info-circle-fill me-2 fs-5"></i>
+                  <div className="alert alert-primary py-2 px-3 mb-3 small d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div>
+                      <i className="bi bi-info-circle-fill me-2 fs-5 align-middle"></i>
                       <strong>Course:</strong> {selectedCourse?.name} ({selectedCourse?.code})
                     </div>
+                    {selectedCourse?.start_date && selectedCourse?.end_date && (
+                      <div className="badge bg-white text-primary fs-7 border border-primary-subtle py-1.5 px-2.5">
+                        <i className="bi bi-calendar-range me-1"></i>
+                        Configured Schedule: <strong>{selectedCourse.start_date}</strong> to <strong>{selectedCourse.end_date}</strong>
+                        {selectedCourse.duration_formatted ? ` (${selectedCourse.duration_formatted})` : ''}
+                      </div>
+                    )}
                   </div>
 
                   <div className="row g-3">
@@ -823,10 +838,17 @@ export const CourseCalendarManagement = () => {
                       <input
                         type="date"
                         className="form-control"
+                        min={selectedCourse?.start_date || undefined}
+                        max={selectedCourse?.end_date || undefined}
                         value={formData.commencement_date}
                         onChange={(e) => setFormData({ ...formData, commencement_date: e.target.value })}
                         required
                       />
+                      {selectedCourse?.start_date && (
+                        <div className="form-text extra-small text-muted">
+                          Earliest allowed: {selectedCourse.start_date}
+                        </div>
+                      )}
                     </div>
 
                     {/* Completion Date */}
@@ -837,10 +859,17 @@ export const CourseCalendarManagement = () => {
                       <input
                         type="date"
                         className="form-control"
+                        min={formData.commencement_date || selectedCourse?.start_date || undefined}
+                        max={selectedCourse?.end_date || undefined}
                         value={formData.completion_date}
                         onChange={(e) => setFormData({ ...formData, completion_date: e.target.value })}
                         required
                       />
+                      {selectedCourse?.end_date && (
+                        <div className="form-text extra-small text-muted">
+                          Latest allowed: {selectedCourse.end_date}
+                        </div>
+                      )}
                     </div>
 
                     {/* Instructor Selection */}

@@ -1,6 +1,48 @@
 from datetime import date, datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+# --- Helper Function for Automatic Course Duration Calculation ---
+def calculate_duration_from_dates(start_date: Optional[date], end_date: Optional[date]) -> tuple[int, str]:
+    """
+    Calculates duration in weeks (integer) and formatted string (e.g. '11 Weeks 5 Days')
+    from start_date and end_date (inclusive calendar days).
+    """
+    if not start_date or not end_date:
+        return 0, ""
+    if end_date < start_date:
+        return 0, ""
+    total_days = (end_date - start_date).days + 1
+    if total_days <= 0:
+        return 0, "0 Days"
+    weeks = total_days // 7
+    days = total_days % 7
+    parts = []
+    if weeks > 0:
+        parts.append(f"{weeks} Week{'s' if weeks > 1 else ''}")
+    if days > 0:
+        parts.append(f"{days} Day{'s' if days > 1 else ''}")
+    formatted = " ".join(parts) if parts else "0 Days"
+    duration_weeks = max(1, (total_days + 6) // 7)
+    return duration_weeks, formatted
+
+def get_date_aware_status(start_date: Optional[date], end_date: Optional[date], default_status: str = "Active") -> str:
+    """
+    Computes date-aware course/batch status based on start_date and end_date:
+    - Current Date < Start Date -> UPCOMING
+    - Start Date <= Current Date <= End Date -> ONGOING
+    - Current Date > End Date -> COMPLETED
+    """
+    if not start_date or not end_date:
+        return default_status.upper() if default_status else "ACTIVE"
+    today = date.today()
+    if today < start_date:
+        return "UPCOMING"
+    elif start_date <= today <= end_date:
+        return "ONGOING"
+    else:
+        return "COMPLETED"
+
 
 # --- Trade Schemas ---
 class TradeBase(BaseModel):
@@ -33,6 +75,7 @@ class CourseBase(BaseModel):
     trade_id: Optional[str] = None
     course_type: Optional[str] = "Basic"  # Basic, Advance, Special
     duration_weeks: int = 24
+    duration_formatted: Optional[str] = None
     intake_capacity: Optional[int] = 30
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -47,7 +90,15 @@ class CourseBase(BaseModel):
         return v
 
 class CourseCreate(CourseBase):
-    pass
+    @model_validator(mode='after')
+    def validate_dates_and_calculate_duration(self):
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValueError("End date cannot be earlier than the start date.")
+            weeks, formatted = calculate_duration_from_dates(self.start_date, self.end_date)
+            self.duration_weeks = weeks
+            self.duration_formatted = formatted
+        return self
 
 class CourseUpdate(BaseModel):
     code: Optional[str] = None
@@ -55,6 +106,7 @@ class CourseUpdate(BaseModel):
     trade_id: Optional[str] = None
     course_type: Optional[str] = None
     duration_weeks: Optional[int] = None
+    duration_formatted: Optional[str] = None
     intake_capacity: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -68,10 +120,21 @@ class CourseUpdate(BaseModel):
             return None
         return v
 
+    @model_validator(mode='after')
+    def validate_dates(self):
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValueError("End date cannot be earlier than the start date.")
+            weeks, formatted = calculate_duration_from_dates(self.start_date, self.end_date)
+            self.duration_weeks = weeks
+            self.duration_formatted = formatted
+        return self
+
 class CourseResponse(CourseBase):
     id: str
     trade_name: Optional[str] = None
     batches_count: Optional[int] = 0
+    date_status: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -86,6 +149,7 @@ class CourseEnrollmentOptionResponse(BaseModel):
     trade_name: Optional[str] = None
     course_type: Optional[str] = "Basic"
     duration_weeks: int = 24
+    duration_formatted: Optional[str] = None
     intake_capacity: Optional[int] = 30
     batch_id: Optional[str] = None
     batch_name: Optional[str] = None
@@ -98,6 +162,7 @@ class CourseEnrollmentOptionResponse(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     status: str = "Active"
+    date_status: Optional[str] = None
     is_active: bool = True
     enrolled_count: int = 0
 
@@ -143,6 +208,7 @@ class BatchBase(BaseModel):
     trade_id: Optional[str] = None
     intake_date: Optional[date] = None
     passing_out_date: Optional[date] = None
+    duration_formatted: Optional[str] = None
     capacity: int = 30
     classroom_id: Optional[str] = None
     instructor_id: Optional[str] = None
@@ -156,7 +222,14 @@ class BatchBase(BaseModel):
         return v
 
 class BatchCreate(BatchBase):
-    pass
+    @model_validator(mode='after')
+    def validate_dates(self):
+        if self.intake_date and self.passing_out_date:
+            if self.passing_out_date < self.intake_date:
+                raise ValueError("End date cannot be earlier than the start date.")
+            _, formatted = calculate_duration_from_dates(self.intake_date, self.passing_out_date)
+            self.duration_formatted = formatted
+        return self
 
 class BatchUpdate(BaseModel):
     name: Optional[str] = None
@@ -164,6 +237,7 @@ class BatchUpdate(BaseModel):
     trade_id: Optional[str] = None
     intake_date: Optional[date] = None
     passing_out_date: Optional[date] = None
+    duration_formatted: Optional[str] = None
     capacity: Optional[int] = None
     classroom_id: Optional[str] = None
     instructor_id: Optional[str] = None
@@ -176,6 +250,15 @@ class BatchUpdate(BaseModel):
             return None
         return v
 
+    @model_validator(mode='after')
+    def validate_dates(self):
+        if self.intake_date and self.passing_out_date:
+            if self.passing_out_date < self.intake_date:
+                raise ValueError("End date cannot be earlier than the start date.")
+            _, formatted = calculate_duration_from_dates(self.intake_date, self.passing_out_date)
+            self.duration_formatted = formatted
+        return self
+
 class BatchResponse(BatchBase):
     id: str
     course_name: Optional[str] = None
@@ -184,6 +267,7 @@ class BatchResponse(BatchBase):
     instructor_name: Optional[str] = None
     instructor_service_number: Optional[str] = None
     instructor_rank: Optional[str] = None
+    date_status: Optional[str] = None
     student_count: Optional[int] = 0
     created_at: datetime
 

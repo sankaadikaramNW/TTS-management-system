@@ -38,22 +38,35 @@ class ClassroomRepository(BaseRepository[Classroom]):
 
 class CourseRepository(BaseRepository[Course]):
     def get_all(self, db: Session) -> List[Course]:
+        from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         results = db.query(Course).filter(Course.deleted_at == None).all()
         for c in results:
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
             c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+            if c.start_date and c.end_date:
+                _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
+            else:
+                c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
         return results
 
     def get_by_id(self, db: Session, id: str) -> Optional[Course]:
+        from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         c = db.query(Course).filter(Course.id == id, Course.deleted_at == None).first()
         if c:
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
             c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+            if c.start_date and c.end_date:
+                _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
+            else:
+                c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
         return c
 
     def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
+        from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         trade_obj = db.query(Trade).filter(
             (Trade.id == trade_id) | (Trade.code == trade_id) | (Trade.label == trade_id)
         ).first()
@@ -72,6 +85,11 @@ class CourseRepository(BaseRepository[Course]):
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
             c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+            if c.start_date and c.end_date:
+                _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
+            else:
+                c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
         return results
 
     def get_enrollment_options(self, db: Session) -> List[Dict[str, Any]]:
@@ -79,6 +97,7 @@ class CourseRepository(BaseRepository[Course]):
         Retrieves active courses and batches for Student Registration -> Course Enrollment.
         Guarantees single source of truth from Academic Activity master records.
         """
+        from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         active_courses = db.query(Course).filter(
             Course.is_active == True,
             Course.deleted_at == None
@@ -107,6 +126,16 @@ class CourseRepository(BaseRepository[Course]):
                         Student.deleted_at == None
                     ).count()
 
+                    start_d = b.intake_date or c.start_date
+                    end_d = b.passing_out_date or c.end_date
+
+                    if b.intake_date and b.passing_out_date:
+                        _, dur_fmt = calculate_duration_from_dates(b.intake_date, b.passing_out_date)
+                    elif c.start_date and c.end_date:
+                        _, dur_fmt = calculate_duration_from_dates(c.start_date, c.end_date)
+                    else:
+                        dur_fmt = f"{c.duration_weeks or 24} Weeks"
+
                     options.append({
                         "course_id": c.id,
                         "course_code": c.code,
@@ -116,6 +145,7 @@ class CourseRepository(BaseRepository[Course]):
                         "trade_name": b_trade.label if b_trade else trade_name,
                         "course_type": c.course_type or "Basic",
                         "duration_weeks": c.duration_weeks or 24,
+                        "duration_formatted": dur_fmt,
                         "intake_capacity": b.capacity or c.intake_capacity or 30,
                         "batch_id": b.id,
                         "batch_name": b.name,
@@ -125,9 +155,10 @@ class CourseRepository(BaseRepository[Course]):
                         "instructor_name": b_instructor.full_name if b_instructor else "Unassigned",
                         "instructor_rank": b_instructor.rank if b_instructor else None,
                         "instructor_service_number": b_instructor.service_number if b_instructor else None,
-                        "start_date": b.intake_date or c.start_date,
-                        "end_date": b.passing_out_date or c.end_date,
+                        "start_date": start_d,
+                        "end_date": end_d,
                         "status": b.status or "Active",
+                        "date_status": get_date_aware_status(start_d, end_d, b.status or "Active"),
                         "is_active": True,
                         "enrolled_count": enrolled_count
                     })
@@ -138,6 +169,11 @@ class CourseRepository(BaseRepository[Course]):
                     Student.deleted_at == None
                 ).count()
 
+                if c.start_date and c.end_date:
+                    _, dur_fmt = calculate_duration_from_dates(c.start_date, c.end_date)
+                else:
+                    dur_fmt = f"{c.duration_weeks or 24} Weeks"
+
                 options.append({
                     "course_id": c.id,
                     "course_code": c.code,
@@ -147,6 +183,7 @@ class CourseRepository(BaseRepository[Course]):
                     "trade_name": trade_name,
                     "course_type": c.course_type or "Basic",
                     "duration_weeks": c.duration_weeks or 24,
+                    "duration_formatted": dur_fmt,
                     "intake_capacity": c.intake_capacity or 30,
                     "batch_id": None,
                     "batch_name": c.code,
@@ -159,6 +196,7 @@ class CourseRepository(BaseRepository[Course]):
                     "start_date": c.start_date,
                     "end_date": c.end_date,
                     "status": "Active",
+                    "date_status": get_date_aware_status(c.start_date, c.end_date, "Active"),
                     "is_active": True,
                     "enrolled_count": enrolled_count
                 })
@@ -168,6 +206,7 @@ class CourseRepository(BaseRepository[Course]):
 
 class BatchRepository(BaseRepository[Batch]):
     def get_all(self, db: Session) -> List[Batch]:
+        from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         results = db.query(Batch).order_by(Batch.created_at.desc()).all()
         for b in results:
             course = db.query(Course).filter(Course.id == b.course_id).first()
@@ -182,6 +221,20 @@ class BatchRepository(BaseRepository[Batch]):
             b.instructor_service_number = instructor.service_number if instructor else None
             b.instructor_rank = instructor.rank if instructor else None
             b.student_count = db.query(Student).filter(Student.course_id == b.course_id).count()
+
+            start_d = b.intake_date or (course.start_date if course else None)
+            end_d = b.passing_out_date or (course.end_date if course else None)
+
+            if b.intake_date and b.passing_out_date:
+                _, b.duration_formatted = calculate_duration_from_dates(b.intake_date, b.passing_out_date)
+            elif course and course.start_date and course.end_date:
+                _, b.duration_formatted = calculate_duration_from_dates(course.start_date, course.end_date)
+            elif course and course.duration_weeks:
+                b.duration_formatted = f"{course.duration_weeks} Weeks"
+            else:
+                b.duration_formatted = "N/A"
+
+            b.date_status = get_date_aware_status(start_d, end_d, b.status or "Active")
         return results
 
     def get_by_course_and_batch(self, db: Session, course_id: Optional[str] = None,

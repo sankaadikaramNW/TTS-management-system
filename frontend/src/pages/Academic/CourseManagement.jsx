@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import PersonalOccurrenceReporting from '../Students/PersonalOccurrenceReporting'
+import { calculateCourseDuration } from './BatchManagement'
 
 
 export const CourseManagement = () => {
@@ -38,6 +39,11 @@ export const CourseManagement = () => {
     description: '',
     is_active: true
   })
+
+  // Auto-calculated duration
+  const dateValidation = useMemo(() => {
+    return calculateCourseDuration(form.start_date, form.end_date)
+  }, [form.start_date, form.end_date])
 
   const fetchTrades = async () => {
     try {
@@ -143,8 +149,14 @@ export const CourseManagement = () => {
       return
     }
 
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      toast.error('End date cannot be earlier than the start date.')
+      return
+    }
+
     const payload = {
       ...form,
+      duration_weeks: dateValidation.weeks || form.duration_weeks || 24,
       trade_id: form.trade_id ? form.trade_id : null,
       start_date: form.start_date ? form.start_date : null,
       end_date: form.end_date ? form.end_date : null,
@@ -272,7 +284,17 @@ export const CourseManagement = () => {
                     </td>
                     <td><span className="badge bg-secondary-subtle text-dark border">{c.trade_name || 'General'}</span></td>
                     <td><span className="badge bg-info-subtle text-info border">{c.course_type || 'Basic'}</span></td>
-                    <td><small className="fw-semibold text-dark">{c.duration_weeks} Weeks</small></td>
+                    <td>
+                      <small className="fw-semibold text-dark d-block">
+                        <i className="bi bi-clock-history me-1 text-primary"></i>
+                        {c.duration_formatted || `${c.duration_weeks} Weeks`}
+                      </small>
+                      {c.start_date && c.end_date && (
+                        <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                          {formatDate(c.start_date)} - {formatDate(c.end_date)}
+                        </small>
+                      )}
+                    </td>
                     <td><small className="text-muted">{c.intake_capacity} Trainees</small></td>
                     <td>
                       <button 
@@ -670,18 +692,67 @@ export const CourseManagement = () => {
                       />
                     </div>
 
+                    {/* Course Start Date */}
                     <div className="col-md-4">
-                      <label className="form-label fw-semibold small text-muted">Duration (Weeks)</label>
+                      <label className="form-label fw-semibold small text-muted">
+                        Course Start Date <span className="text-danger">*</span>
+                      </label>
                       <input 
-                        type="number" 
+                        type="date" 
                         className="form-control" 
-                        value={form.duration_weeks}
-                        onChange={(e) => setForm({ ...form, duration_weeks: parseInt(e.target.value) || 0 })}
-                        min="1"
+                        value={form.start_date}
+                        onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                        required
                       />
+                      <small className="text-muted" style={{ fontSize: '0.72rem' }}>Course Commencement Date</small>
                     </div>
 
+                    {/* Course End Date */}
                     <div className="col-md-4">
+                      <label className="form-label fw-semibold small text-muted">
+                        Course End Date <span className="text-danger">*</span>
+                      </label>
+                      <input 
+                        type="date" 
+                        className={`form-control ${dateValidation.error ? 'is-invalid' : ''}`}
+                        value={form.end_date}
+                        onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                        required
+                      />
+                      <small className="text-muted" style={{ fontSize: '0.72rem' }}>Course Completion Date</small>
+                      {dateValidation.error && (
+                        <div className="invalid-feedback fw-semibold d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                          <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                          {dateValidation.error}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Course Duration (Read-only) */}
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold small text-muted">Course Duration</label>
+                      <div className="input-group">
+                        <span className="input-group-text bg-white text-primary">
+                          <i className="bi bi-clock-history"></i>
+                        </span>
+                        <input 
+                          type="text" 
+                          className="form-control bg-light fw-bold text-primary" 
+                          value={dateValidation.durationText || (form.duration_weeks ? `${form.duration_weeks} Weeks` : 'Select dates to calculate')}
+                          readOnly
+                          disabled
+                          placeholder="Auto Calculated"
+                        />
+                        <span className="input-group-text bg-secondary-subtle text-dark fw-bold" style={{ fontSize: '0.675rem' }}>
+                          READ ONLY
+                        </span>
+                      </div>
+                      <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                        Auto-calculated from Start &amp; End Dates
+                      </small>
+                    </div>
+
+                    <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Intake Capacity</label>
                       <input 
                         type="number" 
@@ -692,7 +763,7 @@ export const CourseManagement = () => {
                       />
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Status</label>
                       <div className="form-check form-switch mt-2">
                         <input 
@@ -719,7 +790,13 @@ export const CourseManagement = () => {
                 </div>
                 <div className="modal-footer border-top">
                   <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">Save Course</button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary btn-sm fw-semibold"
+                    disabled={!dateValidation.isValid || !form.start_date || !form.end_date}
+                  >
+                    Save Course
+                  </button>
                 </div>
               </form>
             </div>

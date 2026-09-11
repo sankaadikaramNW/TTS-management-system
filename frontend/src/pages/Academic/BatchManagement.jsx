@@ -1,6 +1,49 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+
+export const calculateCourseDuration = (startDateStr, endDateStr) => {
+  if (!startDateStr || !endDateStr) {
+    return { isValid: true, durationText: '', weeks: 0, days: 0, totalDays: 0, error: '' }
+  }
+
+  const start = new Date(startDateStr)
+  const end = new Date(endDateStr)
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return { isValid: false, durationText: '', weeks: 0, days: 0, totalDays: 0, error: 'Invalid date format' }
+  }
+
+  if (endDateStr < startDateStr) {
+    return {
+      isValid: false,
+      durationText: '',
+      weeks: 0,
+      days: 0,
+      totalDays: 0,
+      error: 'End date cannot be earlier than the start date.'
+    }
+  }
+
+  const diffTime = end.getTime() - start.getTime()
+  const totalDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1
+  const weeks = Math.floor(totalDays / 7)
+  const days = totalDays % 7
+
+  const parts = []
+  if (weeks > 0) parts.push(`${weeks} Week${weeks > 1 ? 's' : ''}`)
+  if (days > 0) parts.push(`${days} Day${days > 1 ? 's' : ''}`)
+  const durationText = parts.length > 0 ? parts.join(' ') : '0 Days'
+
+  return {
+    isValid: true,
+    durationText,
+    weeks: Math.max(1, Math.ceil(totalDays / 7)),
+    days,
+    totalDays,
+    error: ''
+  }
+}
 
 export const BatchManagement = () => {
   const [batches, setBatches] = useState([])
@@ -57,6 +100,11 @@ export const BatchManagement = () => {
     ? courses.filter(c => c.trade_id === form.trade_id)
     : courses
 
+  // Auto-calculated duration
+  const dateValidation = useMemo(() => {
+    return calculateCourseDuration(form.intake_date, form.passing_out_date)
+  }, [form.intake_date, form.passing_out_date])
+
   const handleOpenCreate = () => {
     setEditingBatch(null)
     const initialTradeId = trades.length > 0 ? trades[0].id : ''
@@ -98,6 +146,16 @@ export const BatchManagement = () => {
       return
     }
 
+    if (!form.intake_date || !form.passing_out_date) {
+      toast.error('Course Start Date and Course End Date are required')
+      return
+    }
+
+    if (form.passing_out_date < form.intake_date) {
+      toast.error('End date cannot be earlier than the start date.')
+      return
+    }
+
     try {
       if (editingBatch) {
         await axios.put(`/api/v1/academic/batches/${editingBatch.id}`, form)
@@ -111,6 +169,13 @@ export const BatchManagement = () => {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to save batch')
     }
+  }
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A'
+    const parts = dateStr.split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+    return dateStr
   }
 
   return (
@@ -135,8 +200,8 @@ export const BatchManagement = () => {
                 <th>Trade & Course</th>
                 <th>Assigned Classroom</th>
                 <th>Assigned Instructor</th>
-                <th>Intake Date</th>
-                <th>Passing Out Date</th>
+                <th>Course Schedule</th>
+                <th>Course Duration</th>
                 <th>Status</th>
                 <th className="text-end">Actions</th>
               </tr>
@@ -166,12 +231,29 @@ export const BatchManagement = () => {
                         <small className="text-muted">{b.instructor_rank ? `${b.instructor_rank} • ${b.instructor_service_number || ''}` : 'Instructor'}</small>
                       </div>
                     </td>
-                    <td><small className="text-muted">{b.intake_date || 'N/A'}</small></td>
-                    <td><small className="text-muted">{b.passing_out_date || 'N/A'}</small></td>
                     <td>
-                      <span className={`badge bg-${b.status === 'Active' ? 'success' : 'secondary'}-subtle text-${b.status === 'Active' ? 'success' : 'secondary'} border px-2 py-0.5`}>
-                        {b.status}
+                      <div className="small">
+                        <span className="text-dark fw-semibold d-block"><i className="bi bi-calendar-event me-1 text-primary"></i>{formatDate(b.intake_date)}</span>
+                        <span className="text-muted"><i className="bi bi-calendar-check me-1 text-secondary"></i>{formatDate(b.passing_out_date)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="badge bg-info-subtle text-dark border fw-semibold px-2.5 py-1">
+                        <i className="bi bi-clock-history me-1 text-info"></i>
+                        {b.duration_formatted || (b.intake_date && b.passing_out_date ? calculateCourseDuration(b.intake_date, b.passing_out_date).durationText : 'N/A')}
                       </span>
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column gap-1">
+                        <span className={`badge bg-${b.status === 'Active' ? 'success' : 'secondary'}-subtle text-${b.status === 'Active' ? 'success' : 'secondary'} border px-2 py-0.5`}>
+                          {b.status}
+                        </span>
+                        {b.date_status && (
+                          <span className={`badge bg-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-2 py-0.5`} style={{ fontSize: '0.68rem' }}>
+                            {b.date_status}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="text-end">
                       <button className="btn btn-outline-secondary btn-sm" onClick={() => handleOpenEdit(b)}>
@@ -203,7 +285,7 @@ export const BatchManagement = () => {
                   <div className="alert alert-primary py-2 px-3 mb-3 d-flex align-items-center gap-2 small">
                     <i className="bi bi-diagram-3-fill fs-5"></i>
                     <div>
-                      <strong>Batch Configuration Workflow:</strong> Select Trade → Select Course → Assign Classroom → Assign Instructor → Save
+                      <strong>Batch Configuration Workflow:</strong> Select Trade → Select Course → Assign Classroom → Assign Instructor → Select Start &amp; End Dates → Auto-Calculate Duration → Save
                     </div>
                   </div>
 
@@ -309,31 +391,94 @@ export const BatchManagement = () => {
                       </small>
                     </div>
 
-                    {/* Dates */}
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold small text-muted">Intake Date</label>
-                      <input 
-                        type="date" 
-                        className="form-control" 
-                        value={form.intake_date}
-                        onChange={(e) => setForm({ ...form, intake_date: e.target.value })}
-                      />
+                    {/* Step 6: Dates & Automatic Course Duration Calculation */}
+                    <div className="col-12">
+                      <div className="card bg-light border-primary-subtle p-3 rounded-3 shadow-none">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                          <h6 className="fw-bold text-dark mb-0 small">
+                            <i className="bi bi-calendar3 me-1.5 text-primary"></i>
+                            Course Batch Schedule &amp; Duration Calculation
+                          </h6>
+                          <span className="badge bg-primary text-white border px-2 py-0.5" style={{ fontSize: '0.725rem' }}>
+                            <i className="bi bi-cpu me-1"></i>Automatic Duration
+                          </span>
+                        </div>
+
+                        <div className="row g-3">
+                          {/* Course Start Date */}
+                          <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-muted">
+                              Course Start Date <span className="text-danger">*</span>
+                            </label>
+                            <input 
+                              type="date" 
+                              className="form-control bg-white" 
+                              value={form.intake_date}
+                              onChange={(e) => setForm({ ...form, intake_date: e.target.value })}
+                              required
+                            />
+                            <small className="text-muted" style={{ fontSize: '0.72rem' }}>Batch Intake / Commencement Date</small>
+                          </div>
+
+                          {/* Course End Date */}
+                          <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-muted">
+                              Course End Date <span className="text-danger">*</span>
+                            </label>
+                            <input 
+                              type="date" 
+                              className={`form-control bg-white ${dateValidation.error ? 'is-invalid' : ''}`}
+                              value={form.passing_out_date}
+                              onChange={(e) => setForm({ ...form, passing_out_date: e.target.value })}
+                              required
+                            />
+                            <small className="text-muted" style={{ fontSize: '0.72rem' }}>Passing Out / Completion Date</small>
+                            {dateValidation.error && (
+                              <div className="invalid-feedback fw-semibold d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                                <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                {dateValidation.error}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Course Duration (Read Only) */}
+                          <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-muted">Course Duration</label>
+                            <div className="input-group">
+                              <span className="input-group-text bg-white text-primary">
+                                <i className="bi bi-clock-history"></i>
+                              </span>
+                              <input 
+                                type="text" 
+                                className="form-control bg-white fw-bold text-primary" 
+                                value={dateValidation.durationText || 'Select dates to calculate'}
+                                readOnly
+                                disabled
+                                placeholder="Auto Calculated"
+                              />
+                              <span className="input-group-text bg-secondary-subtle text-dark fw-bold" style={{ fontSize: '0.675rem' }}>
+                                READ ONLY
+                              </span>
+                            </div>
+                            <small className="text-muted" style={{ fontSize: '0.72rem' }}>
+                              Auto-calculated from Start &amp; End Dates
+                            </small>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold small text-muted">Passing Out Date</label>
-                      <input 
-                        type="date" 
-                        className="form-control" 
-                        value={form.passing_out_date}
-                        onChange={(e) => setForm({ ...form, passing_out_date: e.target.value })}
-                      />
-                    </div>
                   </div>
                 </div>
                 <div className="modal-footer border-top">
                   <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">Save & Assign Batch</button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary btn-sm fw-semibold"
+                    disabled={!dateValidation.isValid || !form.intake_date || !form.passing_out_date}
+                  >
+                    Save &amp; Assign Batch
+                  </button>
                 </div>
               </form>
             </div>
@@ -343,3 +488,4 @@ export const BatchManagement = () => {
     </div>
   )
 }
+

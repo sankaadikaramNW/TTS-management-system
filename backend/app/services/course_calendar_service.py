@@ -37,6 +37,28 @@ class CourseCalendarService:
         if working_days < 0:
             raise HTTPException(status_code=400, detail="Working days cannot be negative.")
 
+    def validate_course_bounds(
+        self,
+        course: Course,
+        commencement_date: date,
+        completion_date: date
+    ) -> None:
+        """
+        Validates that the calendar phase commencement and completion dates are strictly within
+        the course/batch configured start_date and end_date.
+        """
+        if course.start_date and commencement_date < course.start_date:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The selected calendar date must be within the configured course/batch start and end dates. Phase start ({commencement_date.strftime('%d.%m.%Y')}) is before course start ({course.start_date.strftime('%d.%m.%Y')})."
+            )
+        if course.end_date and completion_date > course.end_date:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The selected calendar date must be within the configured course/batch start and end dates. Phase end ({completion_date.strftime('%d.%m.%Y')}) is after course end ({course.end_date.strftime('%d.%m.%Y')})."
+            )
+
+
     def check_date_overlap(
         self,
         db: Session,
@@ -172,15 +194,18 @@ class CourseCalendarService:
         # 2. Validate dates and periods
         self.validate_dates_and_periods(commencement_date, completion_date, theory_periods, practical_periods, working_days)
 
-        # 3. Prevent duplicate and overlapping dates for the SAME course (HTTP 409)
+        # 3. Validate that dates are within course/batch configured start_date and end_date
+        self.validate_course_bounds(course, commencement_date, completion_date)
+
+        # 4. Prevent duplicate and overlapping dates for the SAME course (HTTP 409)
         self.check_date_overlap(db, course_id, commencement_date, completion_date)
 
-        # 4. Validate instructor assignment & remarks
+        # 5. Validate instructor assignment & remarks
         final_inst_id, final_inst_status, final_remarks = self.validate_instructor_assignment(
             db, instructor_id, instructor_status, remarks
         )
 
-        # 5. Determine serial number
+        # 6. Determine serial number
         if serial_number is None or serial_number <= 0:
             serial_number = course_calendar_repo.get_next_serial_number(db, course_id)
 
@@ -261,6 +286,11 @@ class CourseCalendarService:
 
         # Validate updated fields
         self.validate_dates_and_periods(new_commencement, new_completion, new_theory, new_practical, new_working_days)
+
+        # Validate that updated dates remain within course start_date and end_date
+        course = course_repo.get_by_id(db, entry.course_id)
+        if course:
+            self.validate_course_bounds(course, new_commencement, new_completion)
 
         # Check date overlap (exclude current entry)
         self.check_date_overlap(db, entry.course_id, new_commencement, new_completion, exclude_id=calendar_id)
