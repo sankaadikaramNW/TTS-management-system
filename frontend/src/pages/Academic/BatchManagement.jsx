@@ -52,6 +52,7 @@ export const BatchManagement = () => {
   const [classrooms, setClassrooms] = useState([])
   const [instructors, setInstructors] = useState([])
   const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('ALL')
 
   const [showModal, setShowModal] = useState(false)
   const [editingBatch, setEditingBatch] = useState(null)
@@ -72,12 +73,16 @@ export const BatchManagement = () => {
   const loadAllMasterData = async () => {
     setLoading(true)
     try {
+      const bParams = {}
+      if (statusFilter && statusFilter !== 'ALL') {
+        bParams.status = statusFilter
+      }
       const [tRes, cRes, clRes, iRes, bRes] = await Promise.all([
         axios.get('/api/v1/academic/trades'),
         axios.get('/api/v1/academic/courses'),
         axios.get('/api/v1/academic/classrooms'),
         axios.get('/api/v1/academic/instructors'),
-        axios.get('/api/v1/academic/batches')
+        axios.get('/api/v1/academic/batches', { params: bParams })
       ])
       setTrades(tRes.data)
       setCourses(cRes.data)
@@ -93,7 +98,7 @@ export const BatchManagement = () => {
 
   useEffect(() => {
     loadAllMasterData()
-  }, [])
+  }, [statusFilter])
 
   // Filter courses by selected trade in form
   const availableCourses = form.trade_id 
@@ -190,12 +195,37 @@ export const BatchManagement = () => {
         </button>
       </div>
 
+      {/* Status Filter Tabs */}
+      <div className="card slaf-card p-3 mb-3 shadow-sm">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div className="nav nav-pills gap-1">
+            {[
+              { key: 'ALL', label: 'All Batches', icon: 'bi-grid' },
+              { key: 'Active', label: 'Active / Ongoing', icon: 'bi-play-circle text-primary' },
+              { key: 'PASSED OUT', label: 'Passed Out / History', icon: 'bi-mortarboard text-secondary' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                className={`btn btn-sm ${statusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5`}
+                onClick={() => setStatusFilter(tab.key)}
+              >
+                <i className={`bi ${tab.icon}`}></i>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-muted small">
+            Total Batches: <strong>{batches.length}</strong>
+          </div>
+        </div>
+      </div>
+
       {/* Batch Cards / Table */}
-      <div className="card slaf-card p-0 shadow-sm">
+      <div className="card slaf-card p-0 shadow-sm border-0">
         <div className="table-responsive">
           <table className="table slaf-table align-middle mb-0">
             <thead>
-              <tr>
+              <tr className="bg-light">
                 <th>Batch Name</th>
                 <th>Trade & Course</th>
                 <th>Assigned Classroom</th>
@@ -210,10 +240,12 @@ export const BatchManagement = () => {
               {loading ? (
                 <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
               ) : batches.length === 0 ? (
-                <tr><td colSpan="8" className="text-center py-5 text-muted">No training batches configured.</td></tr>
+                <tr><td colSpan="8" className="text-center py-5 text-muted">No training batches found matching filter.</td></tr>
               ) : (
-                batches.map(b => (
-                  <tr key={b.id}>
+                batches.map(b => {
+                  const isPassedOut = b.status === 'PASSED OUT' || b.date_status === 'PASSED OUT' || b.status === 'Completed';
+                  return (
+                  <tr key={b.id} className={isPassedOut ? 'table-light opacity-75' : ''}>
                     <td>
                       <strong className="text-dark d-block">{b.name}</strong>
                       <small className="text-muted">Capacity: {b.capacity} Trainees</small>
@@ -245,13 +277,21 @@ export const BatchManagement = () => {
                     </td>
                     <td>
                       <div className="d-flex flex-column gap-1">
-                        <span className={`badge bg-${b.status === 'Active' ? 'success' : 'secondary'}-subtle text-${b.status === 'Active' ? 'success' : 'secondary'} border px-2 py-0.5`}>
-                          {b.status}
-                        </span>
-                        {b.date_status && (
-                          <span className={`badge bg-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-2 py-0.5`} style={{ fontSize: '0.68rem' }}>
-                            {b.date_status}
+                        {isPassedOut ? (
+                          <span className="badge bg-secondary text-white border px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
+                            <i className="bi bi-mortarboard me-1"></i>PASSED OUT
                           </span>
+                        ) : (
+                          <>
+                            <span className={`badge bg-${b.status === 'Active' ? 'success' : 'secondary'}-subtle text-${b.status === 'Active' ? 'success' : 'secondary'} border px-2 py-0.5`}>
+                              {b.status}
+                            </span>
+                            {b.date_status && (
+                              <span className={`badge bg-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${b.date_status === 'ONGOING' ? 'primary' : b.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-2 py-0.5`} style={{ fontSize: '0.68rem' }}>
+                                {b.date_status}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -261,7 +301,7 @@ export const BatchManagement = () => {
                       </button>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>

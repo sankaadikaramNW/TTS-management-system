@@ -10,7 +10,9 @@ export const CourseManagement = () => {
   const [trades, setTrades] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedTradeFilter, setSelectedTradeFilter] = useState('')
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL') // ALL, ONGOING, UPCOMING, PASSED OUT
   const [query, setQuery] = useState('')
+  const [isProcessingAutoClose, setIsProcessingAutoClose] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [editingCourse, setEditingCourse] = useState(null)
@@ -37,6 +39,7 @@ export const CourseManagement = () => {
     start_date: '',
     end_date: '',
     description: '',
+    status: 'ONGOING',
     is_active: true
   })
 
@@ -61,6 +64,9 @@ export const CourseManagement = () => {
       if (selectedTradeFilter && selectedTradeFilter.trim()) {
         params.trade_id = selectedTradeFilter.trim()
       }
+      if (selectedStatusFilter && selectedStatusFilter !== 'ALL') {
+        params.status = selectedStatusFilter
+      }
       const res = await axios.get('/api/v1/academic/courses', { params })
       setCourses(res.data)
     } catch (err) {
@@ -70,13 +76,27 @@ export const CourseManagement = () => {
     }
   }
 
+  const handleRunAutoClose = async () => {
+    setIsProcessingAutoClose(true)
+    try {
+      const res = await axios.post('/api/v1/academic/courses/auto-close')
+      toast.success(res.data.message || 'Automatic batch closure check executed successfully')
+      fetchCourses()
+    } catch (err) {
+      console.error(err)
+      toast.error(err.response?.data?.detail || 'Failed to execute auto-close process')
+    } finally {
+      setIsProcessingAutoClose(false)
+    }
+  }
+
   useEffect(() => {
     fetchTrades()
   }, [])
 
   useEffect(() => {
     fetchCourses()
-  }, [selectedTradeFilter])
+  }, [selectedTradeFilter, selectedStatusFilter])
 
   const handleOpenCreate = () => {
     setEditingCourse(null)
@@ -178,6 +198,28 @@ export const CourseManagement = () => {
     }
   }
 
+  const exportCourseStudentsCSV = () => {
+    if (!filteredStudents.length) return
+    const headers = ['#', 'Service Number', 'Rank', 'Full Name', 'Trade', 'Batch', 'Status']
+    const rows = filteredStudents.map((s, idx) => [
+      idx + 1,
+      s.service_number,
+      s.rank || '',
+      s.full_name || '',
+      s.trade || '',
+      s.batch || '',
+      s.status || ''
+    ])
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `${selectedCourseForStudents?.code || 'Course'}_Enrolled_Trainees.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const filteredCourses = courses.filter(c => 
     c.code.toLowerCase().includes(query.toLowerCase()) ||
     c.name.toLowerCase().includes(query.toLowerCase())
@@ -199,18 +241,58 @@ export const CourseManagement = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 className="fw-bold text-dark mb-0 display-font">Course Management Master Data</h5>
-          <small className="text-muted">Manage training courses linked to Trades (Basic, Advance, Special)</small>
+          <small className="text-muted">Manage training courses linked to Trades (Basic, Advance, Special) with automated batch lifecycle</small>
         </div>
-        <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
-          <i className="bi bi-plus-lg me-1"></i> Add New Course
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <button 
+            className="btn btn-outline-secondary btn-sm fw-semibold" 
+            onClick={handleRunAutoClose}
+            disabled={isProcessingAutoClose}
+            title="Scan active courses and automatically transition expired batches to PASSED OUT state"
+          >
+            {isProcessingAutoClose ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1"></span>
+                Checking Expirations...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-clock-history me-1 text-primary"></i>
+                Auto-Close Expired Batches
+              </>
+            )}
+          </button>
+          <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
+            <i className="bi bi-plus-lg me-1"></i> Add New Course
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Status Tabs */}
       <div className="card slaf-card p-3 mb-3 shadow-sm">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-2 border-bottom">
+          <div className="nav nav-pills gap-1">
+            {[
+              { key: 'ALL', label: 'All Courses', icon: 'bi-grid' },
+              { key: 'ONGOING', label: 'Ongoing / Active', icon: 'bi-play-circle text-primary' },
+              { key: 'UPCOMING', label: 'Upcoming', icon: 'bi-calendar-event text-info' },
+              { key: 'PASSED OUT', label: 'Passed Out / History', icon: 'bi-mortarboard text-secondary' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                className={`btn btn-sm ${selectedStatusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5`}
+                onClick={() => setSelectedStatusFilter(tab.key)}
+              >
+                <i className={`bi ${tab.icon}`}></i>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="row g-2">
           <div className="col-md-4">
             <select 
@@ -259,34 +341,44 @@ export const CourseManagement = () => {
               {loading ? (
                 <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
               ) : filteredCourses.length === 0 ? (
-                <tr><td colSpan="8" className="text-center py-5 text-muted">No course records found.</td></tr>
+                <tr><td colSpan="8" className="text-center py-5 text-muted">No course records found matching the criteria.</td></tr>
               ) : (
-                filteredCourses.map(c => (
-                  <tr key={c.id}>
+                filteredCourses.map(c => {
+                  const isPassedOut = c.status === 'PASSED OUT' || c.date_status === 'PASSED OUT' || (!c.is_active && c.date_status === 'PASSED OUT');
+                  return (
+                  <tr key={c.id} className={isPassedOut ? 'table-light opacity-75' : ''}>
                     <td>
                       <div className="d-flex align-items-center gap-1">
-                        <span className="badge bg-primary-subtle text-primary border fw-bold">{c.code}</span>
+                        <span className={`badge ${isPassedOut ? 'bg-secondary-subtle text-secondary border' : 'bg-primary-subtle text-primary border'} fw-bold`}>{c.code}</span>
                       </div>
                     </td>
                     <td>
                       <div className="d-flex align-items-center justify-content-between gap-2">
                         <div>
                           <strong 
-                            className="text-primary d-block hover-underline cursor-pointer" 
-                            onClick={() => handleOpenEdit(c)}
-                            title="Click to edit course details"
+                            className="text-primary d-block cursor-pointer text-decoration-underline" 
+                            onClick={() => handleViewCourseStudents(c)}
+                            title="Click to view enrolled student details list"
                             style={{ cursor: 'pointer' }}
                           >
                             {c.name}
                           </strong>
                           <div className="d-flex align-items-center gap-1 mt-0.5">
-                            <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
-                              {c.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                            {c.date_status && (
-                              <span className={`badge bg-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
-                                {c.date_status}
+                            {isPassedOut ? (
+                              <span className="badge bg-secondary text-white border px-1.5 py-0" style={{ fontSize: '0.675rem' }}>
+                                <i className="bi bi-mortarboard me-1"></i>PASSED OUT
                               </span>
+                            ) : (
+                              <>
+                                <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                                  {c.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                                {c.date_status && (
+                                  <span className={`badge bg-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                                    {c.date_status}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -308,7 +400,15 @@ export const CourseManagement = () => {
                         <small className="text-muted" style={{ fontSize: '0.72rem' }}>No schedule set</small>
                       )}
                     </td>
-                    <td><small className="text-dark fw-semibold">{c.intake_capacity} Trainees</small></td>
+                    <td>
+                      <button 
+                        className="btn btn-link p-0 text-decoration-none" 
+                        onClick={() => handleViewCourseStudents(c)}
+                        title="Click to view enrolled trainees list"
+                      >
+                        <small className="text-dark fw-semibold text-decoration-underline">{c.intake_capacity} Trainees</small>
+                      </button>
+                    </td>
                     <td>
                       <button 
                         className="btn btn-link p-0 text-decoration-none" 
@@ -328,16 +428,17 @@ export const CourseManagement = () => {
                           <i className="bi bi-pencil-square me-1"></i> Edit
                         </button>
                         <button 
-                          className="btn btn-outline-secondary btn-sm px-2 py-1" 
+                          className="btn btn-outline-primary btn-sm px-2 py-1" 
                           onClick={() => handleViewCourseStudents(c)} 
-                          title="View Enrolled Trainees"
+                          title="View Course Student Details List"
                         >
                           <i className="bi bi-people me-1"></i> Trainees
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -355,7 +456,7 @@ export const CourseManagement = () => {
                     <i className="bi bi-mortarboard-fill fs-6"></i>
                   </div>
                   <div>
-                    <h5 className="modal-title fw-bold mb-0">Enrolled Trainees List</h5>
+                    <h5 className="modal-title fw-bold mb-0">Course Student Details List</h5>
                     <small className="text-white-50">{selectedCourseForStudents.code} - {selectedCourseForStudents.name} ({selectedCourseForStudents.trade_name || 'General'})</small>
                   </div>
                 </div>
@@ -377,10 +478,15 @@ export const CourseManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="col-md-6 text-md-end">
+                  <div className="col-md-6 text-md-end d-flex align-items-center justify-content-md-end gap-2">
                     <span className="badge bg-primary-subtle text-primary border px-3 py-2 fw-bold">
                       Total Enrolled Trainees: {filteredStudents.length}
                     </span>
+                    {filteredStudents.length > 0 && (
+                      <button className="btn btn-outline-success btn-sm fw-semibold" onClick={exportCourseStudentsCSV}>
+                        <i className="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                      </button>
+                    )}
                   </div>
                 </div>
 

@@ -14,6 +14,7 @@ from app.repositories.academic import (
 from app.services.academic import academic_service
 from app.services.lesson_plan_service import lesson_plan_service
 from app.services.course_calendar_service import course_calendar_service
+from app.services.batch_closing_service import batch_closing_service
 from app.schemas.academic import (
     TradeResponse, TradeCreate, TradeUpdate,
     CourseResponse, CourseCreate, CourseUpdate, CourseEnrollmentOptionResponse,
@@ -28,7 +29,8 @@ from app.schemas.academic import (
     LessonPlanDocumentResponse, LessonPlanDocumentUpdate,
     CourseCalendarCreate, CourseCalendarUpdate, CourseCalendarResponse,
     CourseCalendarSummaryResponse, ReorderCalendarEntriesRequest,
-    AcademicCalendarEventItem, AcademicDashboardCalendarResponse
+    AcademicCalendarEventItem, AcademicDashboardCalendarResponse,
+    BatchClosingSummaryResponse
 )
 
 router = APIRouter(prefix="/academic", tags=["Academic Activities Management Module"])
@@ -183,12 +185,51 @@ def update_trade(
 @router.get("/courses", response_model=List[CourseResponse])
 def get_courses(
     trade_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
     if trade_id and trade_id.strip():
-        return course_repo.get_by_trade(db, trade_id.strip())
-    return course_repo.get_all(db)
+        return course_repo.get_by_trade(db, trade_id.strip(), status=status)
+    return course_repo.get_all(db, status=status)
+
+@router.get("/courses/passed-out")
+def get_passed_out_courses(
+    trade_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """
+    Paginated retrieval of historical and passed-out courses.
+    """
+    return course_repo.get_passed_out_courses(db, trade_id=trade_id, search_query=search, skip=skip, limit=limit)
+
+@router.post("/courses/auto-close", response_model=BatchClosingSummaryResponse)
+@router.post("/batches/auto-close", response_model=BatchClosingSummaryResponse)
+def trigger_batch_auto_close(
+    request: Request,
+    target_date: Optional[date] = Query(None),
+    chunk_size: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:write"))
+):
+    """
+    Triggers the high-performance automated batch closure process for expired courses.
+    Authoritative date trigger: Course End Date < Current Date -> 'PASSED OUT'.
+    """
+    ip = request.client.host if request and request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown") if request else "unknown"
+    return batch_closing_service.close_expired_batches(
+        db=db,
+        target_date=target_date,
+        user_id=current_user.id,
+        chunk_size=chunk_size,
+        ip=ip,
+        ua=ua
+    )
 
 @router.get("/courses/enrollment-options", response_model=List[CourseEnrollmentOptionResponse])
 def get_course_enrollment_options(
@@ -198,6 +239,7 @@ def get_course_enrollment_options(
     """
     Retrieves all active courses and configured batches for Student Registration -> Course Enrollment.
     Provides Single Source of Truth linking Course Number, Course Name, Trade, Batch, Classroom, Instructor, and Dates.
+    Excludes passed-out courses.
     """
     return course_repo.get_enrollment_options(db)
 
@@ -391,10 +433,11 @@ def update_classroom(
 # --- 5. Batch Management ---
 @router.get("/batches", response_model=List[BatchResponse])
 def get_batches(
+    status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
-    return batch_repo.get_all(db)
+    return batch_repo.get_all(db, status=status)
 
 @router.post("/batches", response_model=BatchResponse)
 def create_batch(

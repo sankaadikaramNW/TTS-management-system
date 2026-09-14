@@ -45,19 +45,30 @@ class StudentRepository(BaseRepository[Student]):
         if trade:
             query = query.filter(Student.trade == trade)
         if course_id:
-            query = query.filter(Student.course_id == course_id)
+            from app.models.academic import Batch
+            batch_names = [b.name for b in db.query(Batch).filter(Batch.course_id == course_id, Batch.deleted_at == None).all() if b.name]
+            if batch_names:
+                query = query.filter(or_(Student.course_id == course_id, Student.batch.in_(batch_names)))
+            else:
+                query = query.filter(Student.course_id == course_id)
         if status:
             query = query.filter(Student.status == status)
 
         total = query.count()
         results = query.offset(skip).limit(limit).all()
         
-        # Load course details for response output matching
+        # Batch load course details to eliminate N+1 queries
+        course_ids = {s.course_id for s in results if s.course_id}
+        course_map = {}
+        if course_ids:
+            courses = db.query(Course.id, Course.code, Course.name).filter(Course.id.in_(course_ids)).all()
+            course_map = {c.id: (c.code, f"{c.code} - {c.name}") for c in courses}
+
         for student in results:
-            if student.course_id:
-                course = db.query(Course).filter(Course.id == student.course_id).first()
-                student.course_name = f"{course.code} - {course.name}" if course else None
-                student.course_code = course.code if course else None
+            if student.course_id and student.course_id in course_map:
+                code, full_name = course_map[student.course_id]
+                student.course_code = code
+                student.course_name = full_name
             else:
                 student.course_name = None
                 student.course_code = None

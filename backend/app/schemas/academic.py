@@ -31,17 +31,19 @@ def get_date_aware_status(start_date: Optional[date], end_date: Optional[date], 
     Computes date-aware course/batch status based on start_date and end_date:
     - Current Date < Start Date -> UPCOMING
     - Start Date <= Current Date <= End Date -> ONGOING
-    - Current Date > End Date -> COMPLETED
+    - Current Date > End Date -> PASSED OUT
     """
+    if default_status and default_status.upper() in ["PASSED OUT", "PASSED_OUT", "COMPLETED", "ARCHIVED", "INACTIVE"]:
+        return "PASSED OUT" if default_status.upper() in ["PASSED OUT", "PASSED_OUT", "COMPLETED"] else default_status.upper()
     if not start_date or not end_date:
-        return default_status.upper() if default_status else "ACTIVE"
+        return default_status.upper() if default_status else "ONGOING"
     today = date.today()
     if today < start_date:
         return "UPCOMING"
     elif start_date <= today <= end_date:
         return "ONGOING"
     else:
-        return "COMPLETED"
+        return "PASSED OUT"
 
 
 # --- Trade Schemas ---
@@ -80,6 +82,7 @@ class CourseBase(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     description: Optional[str] = None
+    status: Optional[str] = "ONGOING" # UPCOMING, ONGOING, PASSED OUT
     is_active: bool = True
 
     @field_validator('start_date', 'end_date', 'trade_id', 'description', mode='before')
@@ -98,6 +101,7 @@ class CourseCreate(CourseBase):
             weeks, formatted = calculate_duration_from_dates(self.start_date, self.end_date)
             self.duration_weeks = weeks
             self.duration_formatted = formatted
+            self.status = get_date_aware_status(self.start_date, self.end_date, self.status or "ONGOING")
         return self
 
 class CourseUpdate(BaseModel):
@@ -111,6 +115,7 @@ class CourseUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     description: Optional[str] = None
+    status: Optional[str] = None
     is_active: Optional[bool] = None
 
     @field_validator('start_date', 'end_date', 'trade_id', 'description', mode='before')
@@ -128,6 +133,8 @@ class CourseUpdate(BaseModel):
             weeks, formatted = calculate_duration_from_dates(self.start_date, self.end_date)
             self.duration_weeks = weeks
             self.duration_formatted = formatted
+            if not self.status:
+                self.status = get_date_aware_status(self.start_date, self.end_date, "ONGOING")
         return self
 
 class CourseResponse(CourseBase):
@@ -139,6 +146,16 @@ class CourseResponse(CourseBase):
 
     class Config:
         from_attributes = True
+
+class BatchClosingSummaryResponse(BaseModel):
+    message: str
+    target_date: date
+    closed_courses_count: int
+    closed_batches_count: int
+    affected_students_count: int
+    vacated_allocations_count: int
+    closed_course_codes: List[str] = []
+    closed_batch_names: List[str] = []
 
 class CourseEnrollmentOptionResponse(BaseModel):
     course_id: str

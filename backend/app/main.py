@@ -52,6 +52,7 @@ def run_lightweight_migrations():
             ("courses", "intake_capacity", "INT DEFAULT 30"),
             ("courses", "start_date", "DATE NULL"),
             ("courses", "end_date", "DATE NULL"),
+            ("courses", "status", "VARCHAR(30) DEFAULT 'ONGOING'"),
             ("courses", "is_active", "BOOLEAN DEFAULT 1"),
             ("accommodation_billets", "block", "VARCHAR(50) NULL"),
             ("accommodation_billets", "location", "VARCHAR(100) NULL"),
@@ -256,7 +257,20 @@ def run_lightweight_migrations():
             "UPDATE parade_status_types SET can_sit_exam = 0 WHERE code IN ('SICK_REPORT', 'HOSPITAL', 'LEAVE', 'COURSE_VISIT', 'DETACHED_DUTY', 'AWOL')",
             "ALTER TABLE students DROP COLUMN squadron",
             "ALTER TABLE students DROP COLUMN unit",
-            "ALTER TABLE students DROP COLUMN posting"
+            "ALTER TABLE students DROP COLUMN posting",
+            "CREATE INDEX idx_courses_status_end_date ON courses (status, end_date)",
+            "CREATE INDEX idx_courses_is_active_end_date ON courses (is_active, end_date)",
+            "CREATE INDEX idx_courses_trade_status ON courses (trade_id, status)",
+            "CREATE INDEX idx_batches_status_passing_out_date ON batches (status, passing_out_date)",
+            "CREATE INDEX idx_batches_course_status ON batches (course_id, status)",
+            "CREATE INDEX idx_batches_classroom_status ON batches (classroom_id, status)",
+            "CREATE INDEX idx_batches_instructor_status ON batches (instructor_id, status)",
+            "CREATE INDEX idx_students_course_status ON students (course_id, status)",
+            "CREATE INDEX idx_students_batch_status ON students (batch, status)",
+            "CREATE INDEX idx_students_status_deleted ON students (status, deleted_at)",
+            "CREATE INDEX idx_parade_student_date ON parade_states (student_id, date)",
+            "CREATE INDEX idx_parade_submission_status ON parade_states (submission_id, status)",
+            "CREATE INDEX idx_alloc_student_status ON accommodation_allocations (student_id, status)"
         ]
         for m_sql in modify_sqls:
             try:
@@ -589,6 +603,16 @@ app.include_router(reports.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(public.router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Application startup: initialize periodic batch closing scheduler
+    and run initial expiration check (handles downtime recovery).
+    """
+    from app.services.batch_closing_service import run_batch_closing_scheduler
+    asyncio.create_task(run_batch_closing_scheduler(interval_seconds=86400))
 
 
 @app.get("/")

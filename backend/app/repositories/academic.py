@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.models.base import generate_uuid
 from app.models.academic import Classroom, Course, Batch, Subject, Lesson, LessonPlan, Timetable, AcademicAttendance, Exam, ExamMark, LessonPlanDocument, CourseCalendar
 from app.models.student import Student, Trade, ParadeState, ParadeSubmission
@@ -37,9 +37,24 @@ class ClassroomRepository(BaseRepository[Classroom]):
         return db.query(Classroom).filter(Classroom.code == code).first()
 
 class CourseRepository(BaseRepository[Course]):
-    def get_all(self, db: Session) -> List[Course]:
+    def get_all(self, db: Session, status: Optional[str] = None) -> List[Course]:
         from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
-        results = db.query(Course).filter(Course.deleted_at == None).all()
+        query = db.query(Course).filter(Course.deleted_at == None)
+        if status and status.upper() != "ALL":
+            st = status.upper()
+            if st in ["PASSED OUT", "PASSED_OUT", "COMPLETED"]:
+                query = query.filter(Course.status.in_(['PASSED OUT', 'PASSED_OUT', 'COMPLETED']))
+            elif st in ["ONGOING", "ACTIVE"]:
+                query = query.filter(
+                    Course.is_active == True,
+                    Course.status.in_(['ONGOING', 'Active', 'ACTIVE', None])
+                )
+            elif st == "UPCOMING":
+                query = query.filter(Course.status == 'UPCOMING')
+            else:
+                query = query.filter(Course.status == status)
+
+        results = query.order_by(Course.created_at.desc()).all()
         for c in results:
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
@@ -48,7 +63,7 @@ class CourseRepository(BaseRepository[Course]):
                 _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
             else:
                 c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
-            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, c.status or ("Active" if c.is_active else "Inactive"))
         return results
 
     def get_by_id(self, db: Session, id: str) -> Optional[Course]:
@@ -62,10 +77,10 @@ class CourseRepository(BaseRepository[Course]):
                 _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
             else:
                 c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
-            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, c.status or ("Active" if c.is_active else "Inactive"))
         return c
 
-    def get_by_trade(self, db: Session, trade_id: str) -> List[Course]:
+    def get_by_trade(self, db: Session, trade_id: str, status: Optional[str] = None) -> List[Course]:
         from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
         trade_obj = db.query(Trade).filter(
             (Trade.id == trade_id) | (Trade.code == trade_id) | (Trade.label == trade_id)
@@ -77,10 +92,23 @@ class CourseRepository(BaseRepository[Course]):
             if trade_obj.code:
                 target_ids.add(trade_obj.code)
 
-        results = db.query(Course).filter(
+        query = db.query(Course).filter(
             Course.trade_id.in_(list(target_ids)),
             Course.deleted_at == None
-        ).all()
+        )
+        if status and status.upper() != "ALL":
+            st = status.upper()
+            if st in ["PASSED OUT", "PASSED_OUT", "COMPLETED"]:
+                query = query.filter(Course.status.in_(['PASSED OUT', 'PASSED_OUT', 'COMPLETED']))
+            elif st in ["ONGOING", "ACTIVE"]:
+                query = query.filter(
+                    Course.is_active == True,
+                    Course.status.in_(['ONGOING', 'Active', 'ACTIVE', None])
+                )
+            elif st == "UPCOMING":
+                query = query.filter(Course.status == 'UPCOMING')
+
+        results = query.order_by(Course.created_at.desc()).all()
         for c in results:
             trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
             c.trade_name = trade.label if trade else "General"
@@ -89,18 +117,63 @@ class CourseRepository(BaseRepository[Course]):
                 _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
             else:
                 c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
-            c.date_status = get_date_aware_status(c.start_date, c.end_date, "Active" if c.is_active else "Inactive")
+            c.date_status = get_date_aware_status(c.start_date, c.end_date, c.status or ("Active" if c.is_active else "Inactive"))
         return results
+
+    def get_passed_out_courses(
+        self,
+        db: Session,
+        trade_id: Optional[str] = None,
+        search_query: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Server-side paginated retrieval of historical / passed-out courses.
+        """
+        from app.schemas.academic import calculate_duration_from_dates
+        query = db.query(Course).filter(
+            Course.deleted_at == None,
+            Course.status.in_(['PASSED OUT', 'PASSED_OUT', 'COMPLETED'])
+        )
+        if trade_id:
+            query = query.filter(Course.trade_id == trade_id)
+        if search_query:
+            pattern = f"%{search_query}%"
+            query = query.filter(
+                or_(
+                    Course.code.like(pattern),
+                    Course.name.like(pattern)
+                )
+            )
+
+        total = query.count()
+        results = query.order_by(Course.end_date.desc()).offset(skip).limit(limit).all()
+        for c in results:
+            trade = db.query(Trade).filter(Trade.id == c.trade_id).first() if c.trade_id else None
+            c.trade_name = trade.label if trade else "General"
+            c.batches_count = db.query(Batch).filter(Batch.course_id == c.id).count()
+            if c.start_date and c.end_date:
+                _, c.duration_formatted = calculate_duration_from_dates(c.start_date, c.end_date)
+            else:
+                c.duration_formatted = f"{c.duration_weeks} Weeks" if c.duration_weeks else "N/A"
+            c.date_status = "PASSED OUT"
+
+        return {"total": total, "items": results, "skip": skip, "limit": limit}
 
     def get_enrollment_options(self, db: Session) -> List[Dict[str, Any]]:
         """
         Retrieves active courses and batches for Student Registration -> Course Enrollment.
         Guarantees single source of truth from Academic Activity master records.
+        Strictly excludes completed / passed-out courses from active enrollment.
         """
         from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
+        today = date.today()
         active_courses = db.query(Course).filter(
             Course.is_active == True,
-            Course.deleted_at == None
+            Course.deleted_at == None,
+            Course.status != 'PASSED OUT',
+            or_(Course.end_date == None, Course.end_date >= today)
         ).order_by(Course.created_at.desc()).all()
 
         options = []
@@ -111,7 +184,8 @@ class CourseRepository(BaseRepository[Course]):
             # Query active batches for this course
             active_batches = db.query(Batch).filter(
                 Batch.course_id == c.id,
-                Batch.status == 'Active'
+                Batch.status.in_(['Active', 'ONGOING', 'ACTIVE']),
+                or_(Batch.passing_out_date == None, Batch.passing_out_date >= today)
             ).order_by(Batch.created_at.desc()).all()
 
             if active_batches:
@@ -205,9 +279,19 @@ class CourseRepository(BaseRepository[Course]):
 
 
 class BatchRepository(BaseRepository[Batch]):
-    def get_all(self, db: Session) -> List[Batch]:
+    def get_all(self, db: Session, status: Optional[str] = None) -> List[Batch]:
         from app.schemas.academic import calculate_duration_from_dates, get_date_aware_status
-        results = db.query(Batch).order_by(Batch.created_at.desc()).all()
+        query = db.query(Batch).filter(Batch.deleted_at == None)
+        if status and status.upper() != "ALL":
+            st = status.upper()
+            if st in ["PASSED OUT", "PASSED_OUT", "COMPLETED"]:
+                query = query.filter(Batch.status.in_(['PASSED OUT', 'PASSED_OUT', 'COMPLETED']))
+            elif st in ["ACTIVE", "ONGOING"]:
+                query = query.filter(Batch.status.in_(['Active', 'ACTIVE', 'ONGOING']))
+            else:
+                query = query.filter(Batch.status == status)
+
+        results = query.order_by(Batch.created_at.desc()).all()
         for b in results:
             course = db.query(Course).filter(Course.id == b.course_id).first()
             trade = db.query(Trade).filter(Trade.id == b.trade_id).first() if b.trade_id else None

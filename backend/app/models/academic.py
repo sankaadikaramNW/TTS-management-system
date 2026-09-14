@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, Integer, Double, Date, DateTime, ForeignKey, Text, Boolean, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
@@ -32,7 +32,14 @@ class Course(Base, TimeStampedModelMixin):
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     description = Column(Text, nullable=True)
+    status = Column(String(30), default='ONGOING', index=True) # UPCOMING, ONGOING, PASSED OUT
     is_active = Column(Boolean, default=True)
+
+    __table_args__ = (
+        Index('idx_courses_status_end_date', 'status', 'end_date'),
+        Index('idx_courses_is_active_end_date', 'is_active', 'end_date'),
+        Index('idx_courses_trade_status', 'trade_id', 'status'),
+    )
 
     # Relationships
     trade = relationship("Trade")
@@ -56,7 +63,14 @@ class Batch(Base, TimeStampedModelMixin):
     capacity = Column(Integer, default=30)
     classroom_id = Column(String(36), ForeignKey('classrooms.id', ondelete='SET NULL'), nullable=True)
     instructor_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    status = Column(String(30), default='Active') # Active, Completed, Archived
+    status = Column(String(30), default='Active', index=True) # Active, Completed, Archived, PASSED OUT
+
+    __table_args__ = (
+        Index('idx_batches_status_passing_out_date', 'status', 'passing_out_date'),
+        Index('idx_batches_course_status', 'course_id', 'status'),
+        Index('idx_batches_classroom_status', 'classroom_id', 'status'),
+        Index('idx_batches_instructor_status', 'instructor_id', 'status'),
+    )
 
     # Relationships
     course = relationship("Course", back_populates="batches")

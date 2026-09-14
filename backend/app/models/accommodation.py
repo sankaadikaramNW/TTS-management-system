@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import generate_uuid, TimeStampedModelMixin
@@ -85,9 +85,13 @@ class AccommodationAllocation(Base):
     vacated_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     vacate_reason = Column(String(100), nullable=True)
     remarks = Column(Text, nullable=True)
-    status = Column(String(20), default='Active')  # Active, History
+    status = Column(String(20), default='Active', index=True)  # Active, History
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_alloc_student_status', 'student_id', 'status'),
+    )
 
     # Relationships
     student = relationship("Student", back_populates="allocations")

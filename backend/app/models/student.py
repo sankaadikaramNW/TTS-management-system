@@ -34,6 +34,12 @@ class Student(Base, TimeStampedModelMixin):
     profile_photo_path = Column(String(255), nullable=True)
     qr_code_data = Column(Text, nullable=True)
 
+    __table_args__ = (
+        Index('idx_students_course_status', 'course_id', 'status'),
+        Index('idx_students_batch_status', 'batch', 'status'),
+        Index('idx_students_status_deleted', 'status', 'deleted_at'),
+    )
+
     # Relationships
     course = relationship("Course", back_populates="students")
     parade_states = relationship("ParadeState", back_populates="student", cascade="all, delete-orphan")
@@ -54,6 +60,11 @@ class ParadeState(Base):
     submission_id = Column(String(36), ForeignKey('parade_submissions.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_parade_student_date', 'student_id', 'date'),
+        Index('idx_parade_submission_status', 'submission_id', 'status'),
+    )
 
     # Relationships
     student = relationship("Student", back_populates="parade_states")
