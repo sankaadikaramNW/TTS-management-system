@@ -14,7 +14,7 @@ class Student(Base, TimeStampedModelMixin):
     nic = Column(String(20), unique=True, nullable=True)
     dob = Column(Date, nullable=True)
     gender = Column(String(10), nullable=True, default='Male')
-    rank = Column(String(50), nullable=True, default='Aircraftman')
+    rank = Column(String(50), nullable=True, default='AC')
     trade = Column(String(50), nullable=True, default='Airframe')
     course_id = Column(String(36), ForeignKey('courses.id', ondelete='SET NULL'), nullable=True)
     batch = Column(String(30), nullable=True, default='N/A')

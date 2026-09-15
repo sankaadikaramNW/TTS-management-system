@@ -289,7 +289,7 @@ def auto_seed_database():
         from app.models.user import Role, Permission, User
         from app.models.academic import Course, Subject
         from app.models.accommodation import AccommodationBuilding, AccommodationBillet, AccommodationBed
-        from app.models.student import ParadeStatusType, StudentStatusType, Rank, Trade, OfficerInCharge, ParadeSubmission
+        from app.models.student import ParadeStatusType, StudentStatusType, Rank, Trade, OfficerInCharge, ParadeSubmission, Student
         
         # 1. Seed Roles
         if db.query(Role).count() == 0:
@@ -537,18 +537,63 @@ def auto_seed_database():
             db.bulk_save_objects(student_statuses)
             db.commit()
 
-        # 9. Seed Ranks
-        if db.query(Rank).count() == 0:
-            ranks = [
-                Rank(id='rank-ac', code='AC', label='Aircraftman'),
-                Rank(id='rank-lac', code='LAC', label='Leading Aircraftman'),
-                Rank(id='rank-cpl', code='CPL', label='Corporal'),
-                Rank(id='rank-sgt', code='SGT', label='Sergeant'),
-                Rank(id='rank-fsgt', code='FSGT', label='Flight Sergeant'),
-                Rank(id='rank-wo', code='WO', label='Warrant Officer')
-            ]
-            db.bulk_save_objects(ranks)
-            db.commit()
+        # 9. Seed & Standardize SLAF Short-Form Ranks
+        short_ranks = [
+            # Airmen Ranks
+            ('rank-ac', 'AC', 'AC'),
+            ('rank-lac', 'LAC', 'LAC'),
+            ('rank-cpl', 'CPL', 'CPL'),
+            ('rank-sgt', 'SGT', 'SGT'),
+            ('rank-fsgt', 'FSGT', 'FSGT'),
+            ('rank-wo', 'WO', 'WO'),
+            ('rank-mwo', 'MWO', 'MWO'),
+            # Officer Ranks
+            ('rank-ocdt', 'O/CADET', 'O/CADET'),
+            ('rank-pltoff', 'PLTOFF', 'PLTOFF'),
+            ('rank-fgoff', 'FGOFF', 'FGOFF'),
+            ('rank-fltlt', 'FLTLT', 'FLTLT'),
+            ('rank-sqnldr', 'SQNLDR', 'SQNLDR'),
+            ('rank-wgcdr', 'WG CDR', 'WG CDR'),
+            ('rank-gpcapt', 'GP CAPT', 'GP CAPT'),
+            ('rank-aircdre', 'AIRCDRE', 'AIRCDRE'),
+            ('rank-avm', 'AVM', 'AVM'),
+            ('rank-am', 'AM', 'AM'),
+            ('rank-acm', 'ACM', 'ACM'),
+        ]
+        for r_id, code, label in short_ranks:
+            existing_rank = db.query(Rank).filter((Rank.id == r_id) | (Rank.code == code)).first()
+            if not existing_rank:
+                db.add(Rank(id=r_id, code=code, label=label, is_active=True))
+            else:
+                existing_rank.label = label
+                existing_rank.code = code
+        db.commit()
+
+        # Standardize existing student and user long rank names to short forms
+        rank_replacements = {
+            'Aircraftman': 'AC',
+            'Leading Aircraftman': 'LAC',
+            'Corporal': 'CPL',
+            'Sergeant': 'SGT',
+            'Flight Sergeant': 'FSGT',
+            'Warrant Officer': 'WO',
+            'Master Warrant Officer': 'MWO',
+            'Officer Cadet': 'O/CADET',
+            'Pilot Officer': 'PLTOFF',
+            'Flying Officer': 'FGOFF',
+            'Flight Lieutenant': 'FLTLT',
+            'Squadron Leader': 'SQNLDR',
+            'Wing Commander': 'WG CDR',
+            'Group Captain': 'GP CAPT',
+            'Air Commodore': 'AIRCDRE',
+            'Air Vice Marshal': 'AVM',
+            'Air Marshal': 'AM',
+            'Air Chief Marshal': 'ACM'
+        }
+        for long_name, short_code in rank_replacements.items():
+            db.query(Student).filter(Student.rank == long_name).update({Student.rank: short_code}, synchronize_session=False)
+            db.query(User).filter(User.rank == long_name).update({User.rank: short_code}, synchronize_session=False)
+        db.commit()
 
         # 10. Seed Trades
         if db.query(Trade).count() == 0:

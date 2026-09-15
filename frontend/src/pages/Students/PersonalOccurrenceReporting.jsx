@@ -527,7 +527,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                             </div>
                             <div className="col-md-4 col-6">
                               <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Rank:</span>
-                              <strong className="text-dark">{retrievedPerson.rank || 'Aircraftman'}</strong>
+                              <strong className="text-dark">{retrievedPerson.rank || 'AC'}</strong>
                             </div>
                             <div className="col-md-4 col-12">
                               <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Name:</span>

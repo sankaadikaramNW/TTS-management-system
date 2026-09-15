@@ -10,7 +10,7 @@ const INITIAL_FORM_DATA = {
   nic: '',
   dob: '',
   gender: 'Male',
-  rank: 'Aircraftman',
+  rank: 'AC',
   trade: 'Airframe',
   course_id: '',
   batch: '',
@@ -370,15 +370,17 @@ export const StudentForm = () => {
                 {ranks.length > 0 ? (
                   ranks.map(r => (
                     <option key={r.id} value={r.label}>
-                      {r.label} ({r.code})
+                      {r.label}
                     </option>
                   ))
                 ) : (
                   <>
-                    <option value="Aircraftman">Aircraftman (AC)</option>
-                    <option value="Leading Aircraftman">Leading Aircraftman (LAC)</option>
-                    <option value="Corporal">Corporal (Cpl)</option>
-                    <option value="Sergeant">Sergeant (Sgt)</option>
+                    <option value="AC">AC</option>
+                    <option value="LAC">LAC</option>
+                    <option value="CPL">CPL</option>
+                    <option value="SGT">SGT</option>
+                    <option value="FSGT">FSGT</option>
+                    <option value="WO">WO</option>
                   </>
                 )}
               </select>

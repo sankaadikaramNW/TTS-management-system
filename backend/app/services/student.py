@@ -44,7 +44,7 @@ class StudentService:
             nic=student_in.nic.strip() if (student_in.nic and student_in.nic.strip()) else None,
             dob=student_in.dob or date(2000, 1, 1),
             gender=student_in.gender or "Male",
-            rank=student_in.rank or "Aircraftman",
+            rank=student_in.rank or "AC",
             trade=student_in.trade or "Airframe",
             course_id=student_in.course_id,
             batch=batch_value or "Intake 171",

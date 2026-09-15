@@ -30,7 +30,7 @@ export const UserManagement = () => {
     username: '',
     email: '',
     service_number: '',
-    rank: 'Aircraftman',
+    rank: 'AC',
     full_name: '',
     mobile_number: '',
     department: 'Discipline Section',
@@ -536,16 +536,20 @@ export const UserManagement = () => {
               <div className="col-md-2">
                 <select className="form-select form-select-sm" value={userRankFilter} onChange={e => setUserRankFilter(e.target.value)}>
                   <option value="">All Ranks</option>
-                  <option value="Wing Commander">Wing Commander</option>
-                  <option value="Squadron Leader">Squadron Leader</option>
-                  <option value="Flight Lieutenant">Flight Lieutenant</option>
-                  <option value="Flying Officer">Flying Officer</option>
-                  <option value="Warrant Officer">Warrant Officer</option>
-                  <option value="Flight Sergeant">Flight Sergeant</option>
-                  <option value="Sergeant">Sergeant</option>
-                  <option value="Corporal">Corporal</option>
-                  <option value="Leading Aircraftman">Leading Aircraftman</option>
-                  <option value="Aircraftman">Aircraftman</option>
+                  <option value="AIRCDRE">AIRCDRE</option>
+                  <option value="GP CAPT">GP CAPT</option>
+                  <option value="WG CDR">WG CDR</option>
+                  <option value="SQNLDR">SQNLDR</option>
+                  <option value="FLTLT">FLTLT</option>
+                  <option value="FGOFF">FGOFF</option>
+                  <option value="PLTOFF">PLTOFF</option>
+                  <option value="MWO">MWO</option>
+                  <option value="WO">WO</option>
+                  <option value="FSGT">FSGT</option>
+                  <option value="SGT">SGT</option>
+                  <option value="CPL">CPL</option>
+                  <option value="LAC">LAC</option>
+                  <option value="AC">AC</option>
                 </select>
               </div>
               <div className="col-md-2">
@@ -1026,16 +1030,20 @@ export const UserManagement = () => {
                     <div className="col-md-6">
                       <label className="form-label fw-semibold">Rank *</label>
                       <select className="form-select form-select-sm" value={userForm.rank} onChange={e => setUserForm({ ...userForm, rank: e.target.value })}>
-                        <option value="Wing Commander">Wing Commander</option>
-                        <option value="Squadron Leader">Squadron Leader</option>
-                        <option value="Flight Lieutenant">Flight Lieutenant</option>
-                        <option value="Flying Officer">Flying Officer</option>
-                        <option value="Warrant Officer">Warrant Officer</option>
-                        <option value="Flight Sergeant">Flight Sergeant</option>
-                        <option value="Sergeant">Sergeant</option>
-                        <option value="Corporal">Corporal</option>
-                        <option value="Leading Aircraftman">Leading Aircraftman</option>
-                        <option value="Aircraftman">Aircraftman</option>
+                        <option value="AIRCDRE">AIRCDRE (Air Commodore)</option>
+                        <option value="GP CAPT">GP CAPT (Group Captain)</option>
+                        <option value="WG CDR">WG CDR (Wing Commander)</option>
+                        <option value="SQNLDR">SQNLDR (Squadron Leader)</option>
+                        <option value="FLTLT">FLTLT (Flight Lieutenant)</option>
+                        <option value="FGOFF">FGOFF (Flying Officer)</option>
+                        <option value="PLTOFF">PLTOFF (Pilot Officer)</option>
+                        <option value="MWO">MWO (Master Warrant Officer)</option>
+                        <option value="WO">WO (Warrant Officer)</option>
+                        <option value="FSGT">FSGT (Flight Sergeant)</option>
+                        <option value="SGT">SGT (Sergeant)</option>
+                        <option value="CPL">CPL (Corporal)</option>
+                        <option value="LAC">LAC (Leading Aircraftman)</option>
+                        <option value="AC">AC (Aircraftman)</option>
                       </select>
                     </div>
 

@@ -9,7 +9,7 @@ class StudentBase(BaseModel):
     nic: Optional[str] = None
     dob: Optional[date] = None
     gender: Optional[str] = "Male"
-    rank: Optional[str] = "Aircraftman"
+    rank: Optional[str] = "AC"
     trade: Optional[str] = "Airframe"
     course_id: Optional[str] = None
     batch: Optional[str] = "Intake 171"

@@ -739,7 +739,7 @@ class ReportRepository:
             "trades": [{"value": t.label, "label": f"{t.label} ({t.code})"} for t in trades],
             "courses": [{"value": c.id, "label": f"{c.name} ({c.code})"} for c in courses],
             "batches": [{"value": b.name, "label": b.name} for b in batches],
-            "ranks": [{"value": r.code, "label": f"{r.label} ({r.code})"} for r in ranks],
+            "ranks": [{"value": r.label, "label": r.label} for r in ranks],
             "student_statuses": [{"value": s.label, "label": s.label} for s in student_statuses],
             "parade_statuses": [{"value": p.label, "label": p.label} for p in parade_statuses],
             "billets": [{"value": b.id, "label": b.name} for b in billets],
