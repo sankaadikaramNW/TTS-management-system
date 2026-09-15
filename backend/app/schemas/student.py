@@ -166,7 +166,8 @@ class RankUpdate(BaseModel):
 
 
 class PersonalOccurrenceCreate(BaseModel):
-    trainee_id: str = Field(..., description="Target trainee student ID")
+    trainee_id: Optional[str] = Field(None, description="Target trainee student ID")
+    service_number: Optional[str] = Field(None, description="Target trainee service number")
     occurrence_type: str = Field(..., description="ACHIEVEMENT or MISCONDUCT_OFFENSE")
     occurrence_date: date = Field(..., description="Date of occurrence")
     title: str = Field(..., min_length=1, max_length=255, description="Short summary title")
@@ -181,7 +182,7 @@ class PersonalOccurrenceCreate(BaseModel):
             raise ValueError("Occurrence type must be strictly 'ACHIEVEMENT' or 'MISCONDUCT_OFFENSE'")
         return upper_v
 
-    @field_validator('title', 'description', 'remarks', mode='before')
+    @field_validator('title', 'description', 'remarks', 'trainee_id', 'service_number', mode='before')
     @classmethod
     def empty_str_to_none(cls, v):
         if isinstance(v, str) and not v.strip():

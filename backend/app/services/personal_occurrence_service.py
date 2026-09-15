@@ -18,10 +18,24 @@ class PersonalOccurrenceService:
         ua: Optional[str] = None
     ) -> PersonalOccurrence:
         """Create a new personal occurrence record for a trainee."""
-        # 1. Validate Trainee Existence
-        trainee = student_repo.get(db, payload.trainee_id)
-        if not trainee or trainee.deleted_at:
-            raise HTTPException(status_code=404, detail="Trainee record not found.")
+        # 1. Validate Trainee Existence by service_number or trainee_id
+        trainee = None
+        if payload.service_number and payload.service_number.strip():
+            trainee = student_repo.get_by_service_number(db, payload.service_number.strip())
+            if not trainee or trainee.deleted_at:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No service person found for the entered Service Number. Please verify the Service Number."
+                )
+        elif payload.trainee_id and payload.trainee_id.strip():
+            trainee = student_repo.get(db, payload.trainee_id.strip())
+            if not trainee or trainee.deleted_at:
+                raise HTTPException(status_code=404, detail="Trainee record not found.")
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="A valid Service Number or Trainee ID is required to create a personal occurrence record."
+            )
 
         # 2. Validate Occurrence Type
         occ_type = payload.occurrence_type.upper().strip()
@@ -33,7 +47,7 @@ class PersonalOccurrenceService:
 
         try:
             occurrence = PersonalOccurrence(
-                trainee_id=payload.trainee_id,
+                trainee_id=trainee.id,
                 occurrence_type=occ_type,
                 occurrence_date=payload.occurrence_date,
                 title=payload.title.strip(),

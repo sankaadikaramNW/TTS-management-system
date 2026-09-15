@@ -226,6 +226,56 @@ def delete_student_trade(
     return {"message": "Trade deleted successfully"}
 
 
+@router.get("/lookup/{service_number}", response_model=StudentResponse)
+def lookup_student_by_service_number(
+    service_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Search student/personnel record by exact Service Number.
+    Optimized, indexed exact-match lookup returning single record.
+    """
+    from app.models.user import Permission
+    allowed_codes = {"student:read", "personal_occurrence:read", "personal_occurrence:write"}
+    has_perm = False
+    if (current_user.role and current_user.role.name in ["Super Administrator", "System Administrator"]) or current_user.role_id in ["role-super-admin", "role-sys-admin"]:
+        has_perm = True
+    elif current_user.direct_permissions and any(p.code in allowed_codes for p in current_user.direct_permissions):
+        has_perm = True
+    elif current_user.role and current_user.role.permissions and any(p.code in allowed_codes for p in current_user.role.permissions):
+        has_perm = True
+    else:
+        perms = (
+            db.query(Permission)
+            .join(Permission.roles)
+            .filter(Permission.code.in_(allowed_codes))
+            .all()
+        )
+        user_role_ids = {r.id for p in perms for r in p.roles}
+        if current_user.role_id in user_role_ids:
+            has_perm = True
+
+    if not has_perm:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to lookup trainee records."
+        )
+
+    clean_sn = service_number.strip()
+    student = student_repo.get_by_service_number(db, clean_sn)
+    if not student or student.deleted_at:
+        raise HTTPException(
+            status_code=404,
+            detail="No service person found for the entered Service Number. Please verify the Service Number."
+        )
+
+    if student.course:
+        student.course_name = f"{student.course.code} - {student.course.name}"
+        student.course_code = student.course.code
+    return student
+
+
 @router.get("/{student_id}", response_model=StudentResponse)
 def get_student_details(
     student_id: str,
@@ -347,6 +397,19 @@ def add_trainee_occurrence(
 # --- Standalone Personal Occurrence Reporting Endpoints ---
 
 occ_router = APIRouter(prefix="/personal-occurrences", tags=["Personal Occurrence Reporting"])
+
+@occ_router.post("", response_model=PersonalOccurrenceResponse)
+def create_personal_occurrence(
+    payload: PersonalOccurrenceCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("personal_occurrence:write"))
+):
+    """Record a new personal occurrence (Achievement or Misconduct) using Service Number or Trainee ID."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return personal_occurrence_service.create_occurrence(db, payload, current_user.id, ip, ua)
+
 
 @occ_router.get("", response_model=PersonalOccurrenceListResponse)
 def list_personal_occurrences(

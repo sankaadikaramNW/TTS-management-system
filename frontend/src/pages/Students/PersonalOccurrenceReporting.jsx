@@ -10,8 +10,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  // Master Trainees List for Selection
-  const [trainees, setTrainees] = useState([])
+  // Trainee Filter State
   const [selectedTraineeId, setSelectedTraineeId] = useState(initialTraineeId || searchParams.get('trainee_id') || '')
 
   // Occurrences Data State
@@ -29,6 +28,13 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   const [editingOccurrence, setEditingOccurrence] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Service Number Search State inside Modal
+  const [searchServiceNumber, setSearchServiceNumber] = useState('')
+  const [searchingPerson, setSearchingPerson] = useState(false)
+  const [searchError, setSearchError] = useState('')
+  const [retrievedPerson, setRetrievedPerson] = useState(null)
+  const [lastSearchedSN, setLastSearchedSN] = useState('')
+
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
@@ -45,20 +51,6 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
     remarks: ''
   }
   const [form, setForm] = useState(defaultForm)
-
-  // Fetch Trainees list for dropdown
-  useEffect(() => {
-    fetchTrainees()
-  }, [])
-
-  const fetchTrainees = async () => {
-    try {
-      const res = await axios.get('/api/v1/students', { params: { limit: 500 } })
-      setTrainees(res.data.items || [])
-    } catch (err) {
-      console.error('Failed to load trainees list', err)
-    }
-  }
 
   // Fetch Occurrences
   const fetchOccurrences = async () => {
@@ -89,19 +81,89 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
     fetchOccurrences()
   }, [selectedTraineeId, filterType, dateFrom, dateTo])
 
+  // Service Number lookup handler
+  const handleSearchPerson = async (snOverride) => {
+    const querySN = (snOverride !== undefined ? snOverride : searchServiceNumber).trim()
+    if (!querySN) {
+      setSearchError('Please enter a Service Number to search.')
+      return
+    }
+
+    if (querySN.toUpperCase() === lastSearchedSN.toUpperCase() && retrievedPerson) {
+      return // Avoid repeated identical request
+    }
+
+    setSearchingPerson(true)
+    setSearchError('')
+    try {
+      const res = await axios.get(`/api/v1/students/lookup/${encodeURIComponent(querySN)}`)
+      const person = res.data
+      setRetrievedPerson(person)
+      setLastSearchedSN(querySN)
+      setForm(prev => ({ ...prev, trainee_id: person.id }))
+      setSearchError('')
+    } catch (err) {
+      console.error('Service number lookup error', err)
+      setRetrievedPerson(null)
+      setForm(prev => ({ ...prev, trainee_id: '' }))
+      if (err.response?.status === 404) {
+        setSearchError('No service person found for the entered Service Number. Please verify the Service Number.')
+      } else if (err.response?.data?.detail) {
+        setSearchError(err.response.data.detail)
+      } else {
+        setSearchError('Failed to search service person. Please verify connection and try again.')
+      }
+    } finally {
+      setSearchingPerson(false)
+    }
+  }
+
   // Open Create Modal
-  const handleOpenCreate = () => {
+  const handleOpenCreate = async () => {
     setEditingOccurrence(null)
-    setForm({
-      ...defaultForm,
-      trainee_id: selectedTraineeId || (trainees.length > 0 ? trainees[0].id : '')
-    })
+    setSearchError('')
+    setLastSearchedSN('')
+    
+    // If opened from a specific student page (initialTraineeId or selectedTraineeId)
+    const targetStudentId = initialTraineeId || selectedTraineeId
+    if (targetStudentId) {
+      try {
+        const res = await axios.get(`/api/v1/students/${targetStudentId}`)
+        const person = res.data
+        setRetrievedPerson(person)
+        setSearchServiceNumber(person.service_number || '')
+        setLastSearchedSN(person.service_number || '')
+        setForm({
+          ...defaultForm,
+          trainee_id: person.id
+        })
+      } catch (err) {
+        setRetrievedPerson(null)
+        setSearchServiceNumber('')
+        setForm(defaultForm)
+      }
+    } else {
+      setRetrievedPerson(null)
+      setSearchServiceNumber('')
+      setForm(defaultForm)
+    }
+    
     setShowModal(true)
   }
 
   // Open Edit Modal
   const handleOpenEdit = (occ) => {
     setEditingOccurrence(occ)
+    setSearchError('')
+    setSearchServiceNumber(occ.trainee_service_number || '')
+    setRetrievedPerson({
+      id: occ.trainee_id,
+      service_number: occ.trainee_service_number,
+      rank: occ.trainee_rank,
+      full_name: occ.trainee_full_name,
+      trade: occ.trainee_trade,
+      batch: occ.trainee_batch
+    })
     setForm({
       trainee_id: occ.trainee_id,
       occurrence_type: occ.occurrence_type,
@@ -117,7 +179,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.trainee_id) {
-      toast.warning('Please select a target trainee.')
+      toast.warning('Please enter and verify a valid Service Number first.')
       return
     }
     if (!form.title.trim()) {
@@ -144,7 +206,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
         await axios.put(`/api/v1/personal-occurrences/${editingOccurrence.id}`, payload)
         toast.success('Personal occurrence record updated successfully!')
       } else {
-        await axios.post(`/api/v1/students/${form.trainee_id}/occurrences`, payload)
+        await axios.post(`/api/v1/personal-occurrences`, payload)
         toast.success('Personal occurrence recorded successfully!')
       }
 
@@ -218,25 +280,8 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
       {/* Filter Toolbar */}
       <div className="card slaf-card p-3 mb-4 shadow-sm">
         <div className="row g-2 align-items-end">
-          {/* Trainee Dropdown Filter */}
-          <div className="col-md-3">
-            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>TARGET TRAINEE</label>
-            <select
-              className="form-select form-select-sm"
-              value={selectedTraineeId}
-              onChange={(e) => setSelectedTraineeId(e.target.value)}
-            >
-              <option value="">All Trainees</option>
-              {trainees.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.service_number} - {t.rank} {t.full_name} ({t.trade})
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Occurrence Type Filter */}
-          <div className="col-md-2.5 col-lg-2">
+          <div className="col-md-3 col-lg-2">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>OCCURRENCE TYPE</label>
             <select
               className="form-select form-select-sm"
@@ -272,17 +317,18 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
           </div>
 
           {/* Search Box */}
-          <div className="col-md-2.5 col-lg-2">
+          <div className="col-md-4 col-lg-4">
+            <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>SEARCH BY SERVICE NO / TITLE / NAME</label>
             <div className="input-group input-group-sm">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search title/text..."
+                placeholder="Search Service No, Name, Title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchOccurrences()}
               />
-              <button className="btn btn-outline-secondary" type="button" onClick={fetchOccurrences}>
+              <button className="btn btn-outline-secondary" type="button" onClick={fetchOccurrences} title="Search">
                 <i className="bi bi-search"></i>
               </button>
             </div>
@@ -408,33 +454,123 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
               <form onSubmit={handleSubmit}>
                 <div className="modal-body p-4">
                   <div className="row g-3">
-                    {/* Trainee Selection */}
-                    <div className="col-md-7">
-                      <label className="form-label fw-bold small text-muted">SELECT TRAINEE*</label>
-                      <select
-                        className="form-select"
-                        value={form.trainee_id}
-                        onChange={(e) => setForm({ ...form, trainee_id: e.target.value })}
-                        required
-                        disabled={Boolean(editingOccurrence)}
-                      >
-                        <option value="">-- Select Trainee --</option>
-                        {trainees.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.service_number} - {t.rank} {t.full_name} ({t.trade})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Service Number Search Section (When creating new occurrence) */}
+                    {!editingOccurrence && (
+                      <div className="col-12">
+                        <label className="form-label fw-bold small text-muted">
+                          SERVICE NUMBER*
+                        </label>
+                        <div className="input-group">
+                          <span className="input-group-text bg-light fw-bold text-secondary">
+                            <i className="bi bi-person-vcard me-1"></i> Service No:
+                          </span>
+                          <input
+                            type="text"
+                            className={`form-control ${searchError ? 'is-invalid' : retrievedPerson ? 'is-valid' : ''}`}
+                            placeholder="Enter Service Number (e.g. 51837)..."
+                            value={searchServiceNumber}
+                            onChange={(e) => {
+                              setSearchServiceNumber(e.target.value)
+                              setSearchError('')
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleSearchPerson()
+                              }
+                            }}
+                            disabled={searchingPerson}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-primary fw-bold px-3 d-flex align-items-center gap-1.5"
+                            onClick={() => handleSearchPerson()}
+                            disabled={searchingPerson || !searchServiceNumber.trim()}
+                          >
+                            {searchingPerson ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm" role="status"></span>
+                                <span>Searching...</span>
+                              </>
+                            ) : (
+                              <>
+                                <i className="bi bi-search"></i>
+                                <span>Search / Find Person</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        {searchError && (
+                          <div className="alert alert-danger d-flex align-items-center gap-2 mt-2 py-2 px-3 small mb-0">
+                            <i className="bi bi-exclamation-triangle-fill flex-shrink-0 fs-6"></i>
+                            <div>{searchError}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Verified Service Person Details (Read-Only) */}
+                    {retrievedPerson && (
+                      <div className="col-12">
+                        <div className="card bg-primary-subtle border-primary-subtle p-3 rounded-3 shadow-xs">
+                          <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-primary-subtle">
+                            <span className="fw-bold text-primary small text-uppercase">
+                              <i className="bi bi-check-circle-fill text-success me-1"></i> Service Person Details (Read-Only)
+                            </span>
+                            <span className="badge bg-primary text-white">{retrievedPerson.status || 'Active'}</span>
+                          </div>
+                          <div className="row g-2 small">
+                            <div className="col-md-4 col-6">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Service Number:</span>
+                              <strong className="text-dark fs-6">{retrievedPerson.service_number}</strong>
+                            </div>
+                            <div className="col-md-4 col-6">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Rank:</span>
+                              <strong className="text-dark">{retrievedPerson.rank || 'Aircraftman'}</strong>
+                            </div>
+                            <div className="col-md-4 col-12">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Name:</span>
+                              <strong className="text-dark">{retrievedPerson.full_name || retrievedPerson.initials || 'N/A'}</strong>
+                            </div>
+                            <div className="col-md-4 col-6">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Trade:</span>
+                              <span className="text-dark fw-semibold">{retrievedPerson.trade || 'N/A'}</span>
+                            </div>
+                            <div className="col-md-4 col-6">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Batch / Intake:</span>
+                              <span className="text-dark fw-semibold">{retrievedPerson.batch || 'N/A'}</span>
+                            </div>
+                            <div className="col-md-4 col-12">
+                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Course:</span>
+                              <span className="text-dark fw-semibold">{retrievedPerson.course_name || 'Unassigned'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Instruction when no person is selected yet */}
+                    {!retrievedPerson && !editingOccurrence && (
+                      <div className="col-12">
+                        <div className="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0">
+                          <i className="bi bi-info-circle-fill fs-6 flex-shrink-0"></i>
+                          <div>
+                            Please enter the <strong>Service Number</strong> above and click <strong>Search / Find Person</strong>. The occurrence details form below will be activated once a valid service person is retrieved.
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Occurrence Type Select */}
-                    <div className="col-md-5">
+                    <div className="col-md-6">
                       <label className="form-label fw-bold small text-muted">OCCURRENCE CATEGORY*</label>
                       <select
                         className="form-select"
                         value={form.occurrence_type}
                         onChange={(e) => setForm({ ...form, occurrence_type: e.target.value })}
                         required
+                        disabled={!form.trainee_id || submitting}
                       >
                         <option value="ACHIEVEMENT">🟢 Achievements</option>
                         <option value="MISCONDUCT_OFFENSE">🔴 Misconduct / Offenses</option>
@@ -442,7 +578,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                     </div>
 
                     {/* Occurrence Date */}
-                    <div className="col-md-5">
+                    <div className="col-md-6">
                       <label className="form-label fw-bold small text-muted">OCCURRENCE DATE*</label>
                       <input
                         type="date"
@@ -450,11 +586,12 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                         value={form.occurrence_date}
                         onChange={(e) => setForm({ ...form, occurrence_date: e.target.value })}
                         required
+                        disabled={!form.trainee_id || submitting}
                       />
                     </div>
 
                     {/* Title */}
-                    <div className="col-md-7">
+                    <div className="col-12">
                       <label className="form-label fw-bold small text-muted">OCCURRENCE TITLE / SUBJECT*</label>
                       <input
                         type="text"
@@ -463,6 +600,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                         value={form.title}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
                         required
+                        disabled={!form.trainee_id || submitting}
                       />
                     </div>
 
@@ -476,6 +614,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                         value={form.description}
                         onChange={(e) => setForm({ ...form, description: e.target.value })}
                         required
+                        disabled={!form.trainee_id || submitting}
                       ></textarea>
                     </div>
 
@@ -488,6 +627,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                         placeholder="Optional supervisory remarks, award details, or disciplinary action..."
                         value={form.remarks}
                         onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                        disabled={!form.trainee_id || submitting}
                       ></textarea>
                     </div>
                   </div>
@@ -497,7 +637,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
                   <button type="button" className="btn btn-secondary btn-sm fw-semibold" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-bold shadow-sm" disabled={submitting}>
+                  <button type="submit" className="btn btn-primary btn-sm fw-bold shadow-sm" disabled={!form.trainee_id || submitting}>
                     {submitting ? 'Saving...' : 'Save Occurrence'}
                   </button>
                 </div>
