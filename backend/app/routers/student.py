@@ -9,12 +9,14 @@ from app.database import get_db
 from app.dependencies import get_current_user, PermissionChecker
 from app.models.user import User
 from app.repositories.student import student_repo, personal_occurrence_repo
+from app.repositories.academic import exam_repo
 from app.services.student import student_service
 from app.services.personal_occurrence_service import personal_occurrence_service
 from app.schemas.student import (
     StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentStatusTypeResponse,
     RankResponse, TradeResponse, TradeCreate, TradeUpdate, RankCreate, RankUpdate,
-    PersonalOccurrenceCreate, PersonalOccurrenceUpdate, PersonalOccurrenceResponse, PersonalOccurrenceListResponse
+    PersonalOccurrenceCreate, PersonalOccurrenceUpdate, PersonalOccurrenceResponse, PersonalOccurrenceListResponse,
+    AcademicProgressResponse
 )
 from app.models.student import Student, StudentStatusType, Rank, Trade, PersonalOccurrence
 
@@ -291,6 +293,22 @@ def get_student_details(
         student.course_name = f"{student.course.code} - {student.course.name}"
         student.course_code = student.course.code
     return student
+
+
+@router.get("/{student_id}/academic-progress", response_model=AcademicProgressResponse)
+def get_student_academic_progress(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("student:read"))
+):
+    """
+    Fetch comprehensive Phase Test academic performance progression for a trainee.
+    Returns ordered phase results, percentage calculations, grades, and summary KPI metrics.
+    """
+    progress = exam_repo.get_student_academic_progress(db, student_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="Trainee academic profile not found")
+    return progress
 
 @router.post("", response_model=StudentResponse)
 def add_new_student(

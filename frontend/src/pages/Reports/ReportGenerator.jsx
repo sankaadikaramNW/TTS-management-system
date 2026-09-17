@@ -230,16 +230,16 @@ export const ReportGenerator = () => {
   return (
     <div className="fade-in-slide">
       {/* Top Application Header Bar */}
-      <div className="d-flex justify-content-between align-items-center mb-3 no-print">
-        <div>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
+        <div style={{ minWidth: '220px' }}>
           <h4 className="fw-bold text-primary mb-0 display-font">
             <i className="bi bi-file-earmark-text-fill me-2"></i>Institutional & Academic Reporting System
           </h4>
           <small className="text-muted">Formal, Database-Compiled Official SLAF Registers & Statistical Tables</small>
         </div>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
           {/* Orientation Toggle */}
-          <div className="btn-group btn-group-sm me-2 shadow-xs" role="group">
+          <div className="btn-group btn-group-sm shadow-xs" role="group">
             <button 
               type="button" 
               className={`btn ${orientation === 'portrait' ? 'btn-secondary fw-bold' : 'btn-outline-secondary'}`}

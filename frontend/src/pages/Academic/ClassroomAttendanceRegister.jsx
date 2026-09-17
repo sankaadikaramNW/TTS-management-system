@@ -251,7 +251,7 @@ export const ClassroomAttendanceRegister = () => {
               Record period-by-period class attendance synchronized with approved Daily Parade States.
             </p>
           </div>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <button
               className={`btn btn-sm ${activeMode === 'register' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
               onClick={() => setActiveMode('register')}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { AcademicProgress } from './AcademicProgress'
 import { PersonalOccurrenceReporting } from './PersonalOccurrenceReporting'
 import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 import { useAuth } from '../../context/AuthContext'
@@ -73,7 +74,7 @@ export const StudentDetail = () => {
     <div className="fade-in-slide">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-0 text-primary display-font">Trainee Profile</h2>
+          <h2 className="mb-0 text-primary display-font">Trainee Personal Academic Profile</h2>
           <p className="text-muted mb-0">Master record for service number {student.service_number}</p>
         </div>
         <div className="d-flex gap-2 flex-wrap">
@@ -196,8 +197,13 @@ export const StudentDetail = () => {
           </div>
         </div>
 
-        {/* Personal Occurrence Reporting Section */}
+        {/* Academic Progress Section */}
         <div className="col-12 mt-4">
+          <AcademicProgress studentId={id} />
+        </div>
+
+        {/* Personal Occurrence Reporting Section */}
+        <div className="col-12 mt-2">
           <PersonalOccurrenceReporting initialTraineeId={id} />
         </div>
       </div>

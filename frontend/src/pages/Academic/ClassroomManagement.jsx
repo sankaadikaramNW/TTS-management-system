@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const ClassroomManagement = () => {
   const [classrooms, setClassrooms] = useState([])
@@ -8,6 +9,7 @@ export const ClassroomManagement = () => {
   const [query, setQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingClassroom, setEditingClassroom] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   const [form, setForm] = useState({
     code: '',
@@ -93,14 +95,23 @@ export const ClassroomManagement = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 className="fw-bold text-dark mb-0 display-font">Classroom Master Management</h5>
           <small className="text-muted">Maintain SLAF TTS lecture halls, technical laboratories, and exam halls</small>
         </div>
-        <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
-          <i className="bi bi-plus-lg me-1"></i> Add Classroom
-        </button>
+        <div className="d-flex gap-2 flex-wrap">
+          <button 
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
+            onClick={() => setShowReportModal(true)}
+            title="Print Official Classroom & Laboratory Facilities Register"
+          >
+            <i className="bi bi-printer me-1 text-primary"></i> Print Facility Register
+          </button>
+          <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
+            <i className="bi bi-plus-lg me-1"></i> Add Classroom
+          </button>
+        </div>
       </div>
 
       <div className="card slaf-card p-3 mb-3 shadow-sm">
@@ -263,6 +274,18 @@ export const ClassroomManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Classroom Facility Register Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL CLASSROOM & LABORATORY FACILITIES REGISTER"
+        endpoint="/api/v1/reports/attendance"
+        params={{}}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
+
+export default ClassroomManagement

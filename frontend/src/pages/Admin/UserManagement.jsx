@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const UserManagement = () => {
   const { user: currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState('users') // users, roles, permissions, login-history, audit-logs, locked-accounts
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Data states
   const [users, setUsers] = useState([])
@@ -413,7 +415,10 @@ export const UserManagement = () => {
           <h2 className="mb-0 text-primary display-font fs-3">User & Security Administration</h2>
           <p className="text-muted mb-0 small">Enterprise RBAC control, account governance, audit trails, and security settings</p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap">
+          <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs d-flex align-items-center gap-1.5" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-printer text-primary"></i> Print User Directory
+          </button>
           <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5" onClick={() => refreshAllData()}>
             <i className="bi bi-arrow-clockwise"></i> Refresh Data
           </button>
@@ -1327,6 +1332,16 @@ export const UserManagement = () => {
           </div>
         </div>
       )}
+
+      {/* User Directory & System Security Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL USER DIRECTORY & SYSTEM ACCESS REGISTER"
+        endpoint="/api/v1/reports/students"
+        params={{}}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }

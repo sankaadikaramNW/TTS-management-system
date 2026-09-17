@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const calculateCourseDuration = (startDateStr, endDateStr) => {
   if (!startDateStr || !endDateStr) {
@@ -53,6 +54,7 @@ export const BatchManagement = () => {
   const [instructors, setInstructors] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [showReportModal, setShowReportModal] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [editingBatch, setEditingBatch] = useState(null)
@@ -185,14 +187,23 @@ export const BatchManagement = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 className="fw-bold text-dark mb-0 display-font">Training Batch Management</h5>
           <small className="text-muted">Configure & Assign Batches with Classrooms and SSOT Instructors</small>
         </div>
-        <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
-          <i className="bi bi-layers-plus me-1.5"></i> Configure New Batch
-        </button>
+        <div className="d-flex gap-2 flex-wrap">
+          <button 
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
+            onClick={() => setShowReportModal(true)}
+            title="Print Official Training Batches & Schedules Register"
+          >
+            <i className="bi bi-printer me-1 text-primary"></i> Print Batch Schedule
+          </button>
+          <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
+            <i className="bi bi-layers-plus me-1.5"></i> Configure New Batch
+          </button>
+        </div>
       </div>
 
       {/* Status Filter Tabs */}
@@ -525,7 +536,21 @@ export const BatchManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Classical Batch Schedule Register Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL TRAINING BATCHES & SCHEDULES REGISTER"
+        endpoint="/api/v1/reports/course-calendar"
+        params={{
+          status: statusFilter !== 'ALL' ? statusFilter : ''
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
+
+export default BatchManagement
 

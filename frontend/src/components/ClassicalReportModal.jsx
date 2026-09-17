@@ -141,111 +141,143 @@ export const ClassicalReportModal = ({
     : rows
 
   return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 1060 }}>
-      <div className={`modal-dialog modal-dialog-scrollable modal-dialog-centered ${orientation === 'landscape' ? 'modal-xl' : 'modal-lg'}`} style={{ maxWidth: orientation === 'landscape' ? '96vw' : '88vw' }}>
+    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 1060, overflowY: 'auto' }}>
+      <div
+        className={`modal-dialog modal-dialog-scrollable modal-dialog-centered ${orientation === 'landscape' ? 'modal-xl' : 'modal-lg'}`}
+        style={{
+          maxWidth: orientation === 'landscape' ? 'min(96vw, 1400px)' : 'min(94vw, 1050px)',
+          width: '100%',
+          margin: '0.75rem auto'
+        }}
+      >
         <div className="modal-content border-0 shadow-lg" style={{ maxHeight: '94vh' }}>
           {/* Modal Header Toolbar (Hidden during print) */}
-          <div className="modal-header bg-dark text-white p-3 no-print d-flex justify-content-between align-items-center">
-            <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-file-earmark-ruled-fill text-info fs-5"></i>
-              <div>
-                <h6 className="modal-title fw-bold mb-0">
+          <div className="modal-header bg-dark text-white px-3 py-2.5 no-print d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom border-secondary">
+            {/* Left: Brand & Report Title */}
+            <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: '200px', maxWidth: '100%' }}>
+              <div className="bg-info bg-opacity-25 text-info rounded p-1.5 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+                <i className="bi bi-file-earmark-ruled-fill fs-5"></i>
+              </div>
+              <div className="overflow-hidden">
+                <h6 className="modal-title fw-bold mb-0 text-truncate text-white" style={{ fontSize: '0.95rem' }} title={reportData?.header?.title || title || 'Official Institutional System Report'}>
                   {reportData?.header?.title || title || 'Official Institutional System Report'}
                 </h6>
-                <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                <small className="text-white-50 d-block text-truncate" style={{ fontSize: '0.72rem' }}>
                   Sri Lanka Air Force • Trade Training School Ekala
                 </small>
               </div>
             </div>
 
-            <div className="d-flex align-items-center gap-2">
+            {/* Right: Controls & Actions + Close Button */}
+            <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
               {/* Orientation Switcher */}
-              <div className="btn-group btn-group-sm me-2" role="group">
+              <div className="btn-group btn-group-sm shadow-xs" role="group">
                 <button
                   type="button"
-                  className={`btn ${orientation === 'portrait' ? 'btn-secondary fw-bold' : 'btn-outline-light'}`}
+                  className={`btn ${orientation === 'portrait' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
                   onClick={() => setOrientation('portrait')}
                   title="A4 Portrait (210mm x 297mm)"
                 >
-                  <i className="bi bi-file-earmark me-1"></i> Portrait
+                  <i className="bi bi-file-earmark me-1"></i>
+                  <span className="d-none d-sm-inline">Portrait</span>
                 </button>
                 <button
                   type="button"
-                  className={`btn ${orientation === 'landscape' ? 'btn-secondary fw-bold' : 'btn-outline-light'}`}
+                  className={`btn ${orientation === 'landscape' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
                   onClick={() => setOrientation('landscape')}
                   title="A4 Landscape (297mm x 210mm)"
                 >
-                  <i className="bi bi-file-earmark-landscape me-1"></i> Landscape
+                  <i className="bi bi-file-earmark-landscape me-1"></i>
+                  <span className="d-none d-sm-inline">Landscape</span>
                 </button>
               </div>
 
               {/* Action Buttons */}
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-success fw-semibold"
-                onClick={handleExportExcel}
-                disabled={loading || exportingExcel || !rows.length}
-              >
-                {exportingExcel ? (
-                  <span className="spinner-border spinner-border-sm me-1"></span>
-                ) : (
-                  <i className="bi bi-file-earmark-excel me-1"></i>
-                )}
-                Excel (.xlsx)
-              </button>
+              <div className="d-flex align-items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-success fw-semibold shadow-xs"
+                  onClick={handleExportExcel}
+                  disabled={loading || exportingExcel || !rows.length}
+                  title="Export to Excel Spreadsheet (.xlsx)"
+                >
+                  {exportingExcel ? (
+                    <span className="spinner-border spinner-border-sm me-1"></span>
+                  ) : (
+                    <i className="bi bi-file-earmark-excel me-1"></i>
+                  )}
+                  <span className="d-none d-md-inline">Excel</span>
+                </button>
 
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger fw-semibold"
-                onClick={handleExportPdf}
-                disabled={loading || exportingPdf || !rows.length}
-              >
-                {exportingPdf ? (
-                  <span className="spinner-border spinner-border-sm me-1"></span>
-                ) : (
-                  <i className="bi bi-file-earmark-pdf me-1"></i>
-                )}
-                PDF
-              </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger fw-semibold shadow-xs"
+                  onClick={handleExportPdf}
+                  disabled={loading || exportingPdf || !rows.length}
+                  title="Download Classical PDF Document"
+                >
+                  {exportingPdf ? (
+                    <span className="spinner-border spinner-border-sm me-1"></span>
+                  ) : (
+                    <i className="bi bi-file-earmark-pdf me-1"></i>
+                  )}
+                  <span className="d-none d-md-inline">PDF</span>
+                </button>
 
-              <button
-                type="button"
-                className="btn btn-sm btn-primary fw-semibold"
-                onClick={handlePrint}
-                disabled={loading || !rows.length}
-              >
-                <i className="bi bi-printer-fill me-1"></i> Print Report
-              </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary fw-semibold shadow-xs"
+                  onClick={handlePrint}
+                  disabled={loading || !rows.length}
+                  title="Print Official Institutional Report"
+                >
+                  <i className="bi bi-printer-fill me-1"></i>
+                  <span>Print</span>
+                </button>
+              </div>
 
+              {/* Explicit, Uncrushable Close Button */}
               <button
                 type="button"
-                className="btn-close btn-close-white ms-2"
+                className="btn btn-sm btn-outline-light border-0 ms-1 flex-shrink-0 d-flex align-items-center justify-content-center"
                 onClick={onClose}
                 aria-label="Close"
-              ></button>
+                title="Close Report View"
+                style={{ width: '32px', height: '32px', borderRadius: '6px' }}
+              >
+                <i className="bi bi-x-lg fs-6"></i>
+              </button>
             </div>
           </div>
 
           {/* Modal Body Container */}
-          <div className="modal-body p-3 p-md-4 bg-light" style={{ overflowY: 'auto' }}>
+          <div className="modal-body p-2 p-sm-3 p-md-4 bg-light" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
             {/* Quick Search inside Modal (Hidden during print) */}
-            <div className="d-flex justify-content-between align-items-center mb-3 no-print">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
               <small className="text-muted">
                 Showing <strong>{filteredRows.length}</strong> of <strong>{rows.length}</strong> compiled database records
               </small>
-              <div style={{ width: '260px' }}>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  placeholder="Filter records in view..."
-                  value={filterSearch}
-                  onChange={(e) => setFilterSearch(e.target.value)}
-                />
+              <div style={{ minWidth: '200px', maxWidth: '300px', flex: '1 1 auto' }} className="ms-auto">
+                <div className="input-group input-group-sm shadow-xs">
+                  <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
+                  <input
+                    type="text"
+                    className="form-control border-start-0"
+                    placeholder="Filter records in view..."
+                    value={filterSearch}
+                    onChange={(e) => setFilterSearch(e.target.value)}
+                  />
+                  {filterSearch && (
+                    <button className="btn btn-outline-secondary border-start-0 bg-white" type="button" onClick={() => setFilterSearch('')}>
+                      <i className="bi bi-x"></i>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Classical Formal Paper Document Container */}
-            <div className={`report-paper-classical ${orientation === 'landscape' ? 'orientation-landscape' : 'orientation-portrait'} p-4 p-md-5 bg-white`}>
+            <div className={`report-paper-classical ${orientation === 'landscape' ? 'orientation-landscape' : 'orientation-portrait'} p-3 p-sm-4 p-md-5 bg-white`}>
               {loading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-dark" role="status"></div>
@@ -286,35 +318,37 @@ export const ClassicalReportModal = ({
 
                   {/* 2. Section 1: Report Information & Parameters */}
                   <div className="report-section-header">1. REPORT INFORMATION & PARAMETERS</div>
-                  <table className="report-formal-table mb-3">
-                    <tbody>
-                      <tr>
-                        <td style={{ width: '18%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Organization:</td>
-                        <td style={{ width: '32%' }}>Sri Lanka Air Force (TTS Ekala)</td>
-                        <td style={{ width: '20%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Generated Date/Time:</td>
-                        <td style={{ width: '30%' }}>{reportData.header?.generated_at}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Security Classification:</td>
-                        <td>RESTRICTED / OFFICIAL USE ONLY</td>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Authorized Officer:</td>
-                        <td>{reportData.header?.generated_by}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Applied Parameters:</td>
-                        <td>
-                          {reportData.header?.parameters && Object.keys(reportData.header.parameters).length > 0 ? (
-                            Object.entries(reportData.header.parameters)
-                              .filter(([_, v]) => v)
-                              .map(([k, v]) => `${k.replace('_', ' ').toUpperCase()}: ${v}`)
-                              .join(' | ') || 'All Master Records'
-                          ) : 'All Master Records'}
-                        </td>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Total Records Compiled:</td>
-                        <td><strong>{reportData.total_records || rows.length} Records</strong></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div className="table-responsive">
+                    <table className="report-formal-table mb-3">
+                      <tbody>
+                        <tr>
+                          <td style={{ width: '18%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Organization:</td>
+                          <td style={{ width: '32%' }}>Sri Lanka Air Force (TTS Ekala)</td>
+                          <td style={{ width: '20%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Generated Date/Time:</td>
+                          <td style={{ width: '30%' }}>{reportData.header?.generated_at}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Security Classification:</td>
+                          <td>RESTRICTED / OFFICIAL USE ONLY</td>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Authorized Officer:</td>
+                          <td>{reportData.header?.generated_by}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Applied Parameters:</td>
+                          <td>
+                            {reportData.header?.parameters && Object.keys(reportData.header.parameters).length > 0 ? (
+                              Object.entries(reportData.header.parameters)
+                                .filter(([_, v]) => v)
+                                .map(([k, v]) => `${k.replace('_', ' ').toUpperCase()}: ${v}`)
+                                .join(' | ') || 'All Master Records'
+                            ) : 'All Master Records'}
+                          </td>
+                          <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Total Records Compiled:</td>
+                          <td><strong>{reportData.total_records || rows.length} Records</strong></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
                   {/* 3. Section 2: Statistical Summary Table */}
                   {reportData.summary_stats && reportData.summary_stats.length > 0 && (
@@ -323,34 +357,36 @@ export const ClassicalReportModal = ({
                       <div className="text-muted small mb-1" style={{ fontSize: '0.75rem' }}>
                         <em>Table 1: Aggregated Performance & Strength Metrics</em>
                       </div>
-                      <table className="report-formal-table mb-3">
-                        <thead>
-                          <tr>
-                            <th style={{ width: '35%', textAlign: 'left' }}>Metric / Parameter</th>
-                            <th style={{ width: '15%', textAlign: 'right' }}>Value</th>
-                            <th style={{ width: '35%', textAlign: 'left' }}>Metric / Parameter</th>
-                            <th style={{ width: '15%', textAlign: 'right' }}>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.from({ length: Math.ceil(reportData.summary_stats.length / 2) }).map((_, rIdx) => {
-                            const item1 = reportData.summary_stats[rIdx * 2]
-                            const item2 = reportData.summary_stats[rIdx * 2 + 1]
-                            return (
-                              <tr key={rIdx}>
-                                <td style={{ fontWeight: '600' }}>{item1.label}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                                  {item1.value} {item1.percentage !== null && item1.percentage !== undefined ? `(${item1.percentage}%)` : ''}
-                                </td>
-                                <td style={{ fontWeight: '600' }}>{item2 ? item2.label : ''}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                                  {item2 ? `${item2.value} ${item2.percentage !== null && item2.percentage !== undefined ? `(${item2.percentage}%)` : ''}` : ''}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
+                      <div className="table-responsive">
+                        <table className="report-formal-table mb-3">
+                          <thead>
+                            <tr>
+                              <th style={{ width: '35%', textAlign: 'left' }}>Metric / Parameter</th>
+                              <th style={{ width: '15%', textAlign: 'right' }}>Value</th>
+                              <th style={{ width: '35%', textAlign: 'left' }}>Metric / Parameter</th>
+                              <th style={{ width: '15%', textAlign: 'right' }}>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.from({ length: Math.ceil(reportData.summary_stats.length / 2) }).map((_, rIdx) => {
+                              const item1 = reportData.summary_stats[rIdx * 2]
+                              const item2 = reportData.summary_stats[rIdx * 2 + 1]
+                              return (
+                                <tr key={rIdx}>
+                                  <td style={{ fontWeight: '600' }}>{item1.label}</td>
+                                  <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                                    {item1.value} {item1.percentage !== null && item1.percentage !== undefined ? `(${item1.percentage}%)` : ''}
+                                  </td>
+                                  <td style={{ fontWeight: '600' }}>{item2 ? item2.label : ''}</td>
+                                  <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                                    {item2 ? `${item2.value} ${item2.percentage !== null && item2.percentage !== undefined ? `(${item2.percentage}%)` : ''}` : ''}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </>
                   )}
 
@@ -411,8 +447,8 @@ export const ClassicalReportModal = ({
                   {/* 5. Section 4: Official Authentication & Certification Block */}
                   <div className="report-signature-block">
                     <div className="report-section-header">OFFICIAL AUTHENTICATION & CERTIFICATION</div>
-                    <div className="d-flex justify-content-between text-center mt-3">
-                      <div className="report-sig-col text-start">
+                    <div className="d-flex flex-wrap justify-content-between gap-3 text-start mt-3">
+                      <div className="report-sig-col flex-grow-1" style={{ minWidth: '220px', maxWidth: '32%' }}>
                         <div className="fw-bold">PREPARED BY:</div>
                         <div className="report-sig-line"></div>
                         <div className="small">Name: ....................................................</div>
@@ -421,7 +457,7 @@ export const ClassicalReportModal = ({
                         <div className="small">Date: .....................................................</div>
                       </div>
 
-                      <div className="report-sig-col text-start">
+                      <div className="report-sig-col flex-grow-1" style={{ minWidth: '220px', maxWidth: '32%' }}>
                         <div className="fw-bold">CHECKED & VERIFIED BY:</div>
                         <div className="report-sig-line"></div>
                         <div className="small">Name: ....................................................</div>
@@ -430,7 +466,7 @@ export const ClassicalReportModal = ({
                         <div className="small">Date: .....................................................</div>
                       </div>
 
-                      <div className="report-sig-col text-start">
+                      <div className="report-sig-col flex-grow-1" style={{ minWidth: '220px', maxWidth: '32%' }}>
                         <div className="fw-bold">APPROVED & AUTHENTICATED BY:</div>
                         <div className="report-sig-line"></div>
                         <div className="small">Name: ....................................................</div>

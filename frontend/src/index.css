@@ -463,15 +463,17 @@ h1, h2, h3, h4, h5, h6, .display-font {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   margin: 0 auto;
   transition: max-width 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .report-paper-classical.orientation-portrait {
-  max-width: 210mm;
+  max-width: min(100%, 210mm);
   min-height: 297mm;
 }
 
 .report-paper-classical.orientation-landscape {
-  max-width: 297mm;
+  max-width: min(100%, 297mm);
   min-height: 210mm;
 }
 
@@ -539,6 +541,7 @@ h1, h2, h3, h4, h5, h6, .display-font {
 
 .report-sig-col {
   width: 32%;
+  min-width: 200px;
   font-size: 0.8rem;
 }
 
@@ -547,6 +550,20 @@ h1, h2, h3, h4, h5, h6, .display-font {
   margin-top: 36px;
   margin-bottom: 4px;
   height: 1px;
+}
+
+@media (max-width: 768px) {
+  .report-paper-classical.orientation-portrait,
+  .report-paper-classical.orientation-landscape {
+    min-height: auto;
+    padding: 1rem !important;
+  }
+  
+  .report-sig-col {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-bottom: 1.25rem;
+  }
 }
 
 @media print {
@@ -637,3 +654,43 @@ h1, h2, h3, h4, h5, h6, .display-font {
   }
 }
 
+/* ==========================================================================
+   ASSESSMENT & MARKS ENTRY ENHANCEMENTS
+   ========================================================================== */
+
+/* Modern clean numeric inputs without ugly stepper arrows */
+input[type="number"].marks-input-modern::-webkit-inner-spin-button,
+input[type="number"].marks-input-modern::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].marks-input-modern {
+  -moz-appearance: textfield;
+  font-family: inherit;
+  font-feature-settings: "tnum";
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.marks-input-modern:focus {
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.2) !important;
+  outline: none !important;
+}
+
+.marks-input-modern.is-invalid-mark {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.marks-row-active:hover {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+}
+
+.marks-row-disabled {
+  background-color: rgba(243, 244, 246, 0.6) !important;
+  opacity: 0.85;
+}

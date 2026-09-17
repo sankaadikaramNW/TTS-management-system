@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import AcademicProgress from '../Students/AcademicProgress'
 import PersonalOccurrenceReporting from '../Students/PersonalOccurrenceReporting'
 import { calculateCourseDuration } from './BatchManagement'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 
 export const CourseManagement = () => {
@@ -16,6 +18,10 @@ export const CourseManagement = () => {
 
   const [showModal, setShowModal] = useState(false)
   const [editingCourse, setEditingCourse] = useState(null)
+
+  // Report Modals State
+  const [showCourseReportModal, setShowCourseReportModal] = useState(false)
+  const [showStudentDossierModal, setShowStudentDossierModal] = useState(false)
 
   // Enrolled Trainees List Modal state
   const [showStudentsModal, setShowStudentsModal] = useState(false)
@@ -246,7 +252,14 @@ export const CourseManagement = () => {
           <h5 className="fw-bold text-dark mb-0 display-font">Course Management Master Data</h5>
           <small className="text-muted">Manage training courses linked to Trades (Basic, Advance, Special) with automated batch lifecycle</small>
         </div>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <button 
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
+            onClick={() => setShowCourseReportModal(true)}
+            title="Print Official Course Directory & Trainee Nominal Roll"
+          >
+            <i className="bi bi-printer me-1 text-primary"></i> Print Trainee Register
+          </button>
           <button 
             className="btn btn-outline-secondary btn-sm fw-semibold" 
             onClick={handleRunAutoClose}
@@ -478,10 +491,17 @@ export const CourseManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="col-md-6 text-md-end d-flex align-items-center justify-content-md-end gap-2">
+                  <div className="col-md-6 text-md-end d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
                     <span className="badge bg-primary-subtle text-primary border px-3 py-2 fw-bold">
-                      Total Enrolled Trainees: {filteredStudents.length}
+                      Total Enrolled: {filteredStudents.length}
                     </span>
+                    <button 
+                      className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" 
+                      onClick={() => setShowCourseReportModal(true)}
+                      title="Print SLAF Nominal Roll Document"
+                    >
+                      <i className="bi bi-printer me-1 text-primary"></i> Print Nominal Roll
+                    </button>
                     {filteredStudents.length > 0 && (
                       <button className="btn btn-outline-success btn-sm fw-semibold" onClick={exportCourseStudentsCSV}>
                         <i className="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
@@ -568,7 +588,7 @@ export const CourseManagement = () => {
       {/* Student Personal Profile Details Modal */}
       {showStudentDetailModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1070 }} tabIndex="-1">
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content shadow-lg border-0">
               <div className="modal-header bg-dark text-white py-3">
                 <div className="d-flex align-items-center gap-2">
@@ -726,6 +746,11 @@ export const CourseManagement = () => {
                         </div>
                       </div>
 
+                      {/* Academic Progress Section */}
+                      <div className="col-12 mt-3">
+                        <AcademicProgress studentId={selectedStudentDetail.id} />
+                      </div>
+
                       {/* Personal Occurrence Reporting Section */}
                       <div className="col-12 mt-3">
                         <PersonalOccurrenceReporting initialTraineeId={selectedStudentDetail.id} />
@@ -736,13 +761,18 @@ export const CourseManagement = () => {
 
               </div>
 
-              <div className="modal-footer bg-light py-2">
-                <button type="button" className="btn btn-outline-secondary btn-sm fw-semibold" onClick={() => setShowStudentDetailModal(false)}>
-                  <i className="bi bi-arrow-left me-1"></i> Back to Trainees List
+              <div className="modal-footer bg-light py-2 d-flex flex-wrap align-items-center justify-content-between">
+                <button type="button" className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowStudentDossierModal(true)}>
+                  <i className="bi bi-printer me-1 text-primary"></i> Print Official Dossier
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm fw-semibold" onClick={() => setShowStudentDetailModal(false)}>
-                  Close
-                </button>
+                <div className="d-flex gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm fw-semibold" onClick={() => setShowStudentDetailModal(false)}>
+                    <i className="bi bi-arrow-left me-1"></i> Back to Trainees List
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-sm fw-semibold" onClick={() => setShowStudentDetailModal(false)}>
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -926,6 +956,34 @@ export const CourseManagement = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Course Nominal Roll Report Modal */}
+      <ClassicalReportModal
+        show={showCourseReportModal}
+        onClose={() => setShowCourseReportModal(false)}
+        title={selectedCourseForStudents ? `OFFICIAL COURSE NOMINAL ROLL — ${selectedCourseForStudents.code} (${selectedCourseForStudents.name})` : "OFFICIAL TRAINING COURSES DIRECTORY & NOMINAL ROLL"}
+        endpoint="/api/v1/reports/students"
+        params={{
+          course_id: selectedCourseForStudents?.id || '',
+          trade: selectedTradeFilter || '',
+          status: selectedStatusFilter !== 'ALL' ? selectedStatusFilter : ''
+        }}
+        defaultOrientation="landscape"
+      />
+
+      {/* Trainee Personal Dossier Report Modal */}
+      {selectedStudentDetail && (
+        <ClassicalReportModal
+          show={showStudentDossierModal}
+          onClose={() => setShowStudentDossierModal(false)}
+          title={`OFFICIAL TRAINEE DOSSIER — ${selectedStudentDetail.service_number} ${selectedStudentDetail.rank} ${selectedStudentDetail.full_name}`}
+          endpoint="/api/v1/reports/students"
+          params={{
+            search: selectedStudentDetail.service_number
+          }}
+          defaultOrientation="portrait"
+        />
       )}
     </div>
   )

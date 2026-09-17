@@ -427,16 +427,21 @@ export const AccommodationPanel = () => {
             Manage billets and their calculated 2-tier bunk bed sleeping capacity
           </p>
         </div>
-        {hasPermission('room:write') && (
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-primary btn-sm" onClick={handleOpenBuildingModal}>
-              <i className="bi bi-building-add me-1" />New Building
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={handleOpenBilletModal}>
-              <i className="bi bi-plus-lg me-1" />Create New Billet
-            </button>
-          </div>
-        )}
+        <div className="d-flex gap-2 flex-wrap">
+          <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-printer me-1 text-primary" />Print Billeting Register
+          </button>
+          {hasPermission('room:write') && (
+            <>
+              <button className="btn btn-outline-primary btn-sm" onClick={handleOpenBuildingModal}>
+                <i className="bi bi-building-add me-1" />New Building
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={handleOpenBilletModal}>
+                <i className="bi bi-plus-lg me-1" />Create New Billet
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="card slaf-card p-0">

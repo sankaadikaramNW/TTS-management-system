@@ -1905,8 +1905,8 @@ export const DailyParade = () => {
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1055 }}>
           <div className="modal-dialog modal-xl modal-dialog-scrollable">
             <div className="modal-content shadow-lg border-0">
-              <div className="modal-header bg-dark text-white">
-                <div>
+              <div className="modal-header bg-dark text-white px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div className="flex-grow-1" style={{ minWidth: '220px' }}>
                   <h5 className="modal-title fw-bold text-white mb-0">
                     <i className="bi bi-shield-check text-warning me-2" />
                     Review & Approve Parade State — {approvalDetail.trade} ({approvalDetail.date})
@@ -1916,9 +1916,13 @@ export const DailyParade = () => {
                   </div>
                 </div>
                 <button
-                  className="btn-close btn-close-white"
+                  type="button"
+                  className="btn btn-sm btn-outline-light border-0 flex-shrink-0 d-flex align-items-center justify-content-center"
                   onClick={() => setShowApprovalModal(false)}
-                />
+                  style={{ width: '32px', height: '32px', borderRadius: '6px' }}
+                >
+                  <i className="bi bi-x-lg fs-6"></i>
+                </button>
               </div>
 
               <div className="modal-body p-4">
@@ -1998,12 +2002,12 @@ export const DailyParade = () => {
                 </div>
               </div>
 
-              <div className="modal-footer bg-light border-top">
-                <button className="btn btn-outline-secondary" onClick={() => setShowApprovalModal(false)}>
+              <div className="modal-footer bg-light border-top d-flex flex-wrap align-items-center justify-content-end gap-2">
+                <button className="btn btn-outline-secondary btn-sm px-3" onClick={() => setShowApprovalModal(false)}>
                   Cancel
                 </button>
                 <button
-                  className="btn btn-danger fw-semibold"
+                  className="btn btn-danger btn-sm fw-semibold px-3"
                   onClick={handleRejectOrReturn}
                   disabled={actionLoading || !rejectionReason.trim()}
                 >
@@ -2011,7 +2015,7 @@ export const DailyParade = () => {
                   Return for Correction
                 </button>
                 <button
-                  className="btn btn-success px-4 fw-semibold"
+                  className="btn btn-success btn-sm px-4 fw-semibold shadow-sm"
                   onClick={handleApprove}
                   disabled={actionLoading}
                 >

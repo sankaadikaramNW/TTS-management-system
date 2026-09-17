@@ -240,4 +240,51 @@ class PersonalOccurrenceListResponse(BaseModel):
     items: List[PersonalOccurrenceResponse]
 
 
+# --- Academic Progress Schemas ---
 
+class PhaseTestProgressItem(BaseModel):
+    exam_id: str
+    phase_test_name: str
+    exam_type: str = "Phase Test"
+    date: date
+    course_id: Optional[str] = None
+    course_name: Optional[str] = None
+    course_code: Optional[str] = None
+    subject_id: Optional[str] = None
+    subject_code: Optional[str] = None
+    subject_name: Optional[str] = None
+    max_marks: float = 100.0
+    pass_marks: float = 50.0
+    marks_obtained: Optional[float] = None
+    percentage: Optional[float] = None
+    grade: Optional[str] = None
+    status: str = "Pending"  # Pass, Fail, Absent, Eligible, etc.
+    remarks: Optional[str] = None
+    is_overridden: bool = False
+    original_parade_status: Optional[str] = None
+
+
+class AcademicProgressSummary(BaseModel):
+    total_tests_count: int = 0
+    completed_tests_count: int = 0
+    passed_tests_count: int = 0
+    failed_tests_count: int = 0
+    average_percentage: Optional[float] = None
+    latest_percentage: Optional[float] = None
+    highest_percentage: Optional[float] = None
+    lowest_percentage: Optional[float] = None
+
+
+class AcademicProgressResponse(BaseModel):
+    student_id: str
+    service_number: str
+    full_name: str
+    initials: Optional[str] = None
+    rank: Optional[str] = None
+    trade: Optional[str] = None
+    course_id: Optional[str] = None
+    course_name: Optional[str] = None
+    course_code: Optional[str] = None
+    batch: Optional[str] = None
+    summary: AcademicProgressSummary
+    phase_tests: List[PhaseTestProgressItem]

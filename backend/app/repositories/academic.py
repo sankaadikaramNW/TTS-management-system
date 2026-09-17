@@ -999,6 +999,136 @@ class ExamRepository(BaseRepository[Exam]):
             'students': student_items
         }
 
+    def get_student_academic_progress(self, db: Session, student_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves Phase Test academic progression for a trainee.
+        Uses existing examination & mark records ordered chronologically.
+        Computes accurate percentages, grades, and summary KPIs.
+        """
+        student = db.query(Student).filter(Student.id == student_id, Student.deleted_at == None).first()
+        if not student:
+            return None
+
+        course = db.query(Course).filter(Course.id == student.course_id).first() if student.course_id else None
+
+        # Query all ExamMark records for this trainee
+        marks_records = (
+            db.query(ExamMark, Exam, Subject, Course)
+            .join(Exam, ExamMark.exam_id == Exam.id)
+            .outerjoin(Subject, Exam.subject_id == Subject.id)
+            .outerjoin(Course, Exam.course_id == Course.id)
+            .filter(
+                ExamMark.student_id == student_id,
+                Exam.deleted_at == None
+            )
+            .order_by(Exam.date.asc(), Exam.created_at.asc())
+            .all()
+        )
+
+        phase_tests = []
+        phase_index = 1
+
+        def calculate_grade(pct: Optional[float], st: str) -> Optional[str]:
+            if pct is None:
+                return None
+            if pct >= 85.0:
+                return "Distinction (A+)"
+            elif pct >= 75.0:
+                return "Distinction (A)"
+            elif pct >= 65.0:
+                return "Credit (B)"
+            elif pct >= 50.0:
+                return "Pass (C)"
+            else:
+                return "Fail (F)"
+
+        for em, exam_obj, subj_obj, crs_obj in marks_records:
+            max_m = float(exam_obj.max_marks) if exam_obj.max_marks else 100.0
+            pass_m = float(exam_obj.pass_marks) if exam_obj.pass_marks else 50.0
+            obtained_m = float(em.marks_obtained) if em.marks_obtained is not None else None
+            
+            pct = None
+            if obtained_m is not None and max_m > 0:
+                pct = round((obtained_m / max_m) * 100.0, 2)
+
+            grade_val = calculate_grade(pct, em.status or "")
+
+            # Phase test title
+            p_name = f"Phase Test {phase_index}"
+            if subj_obj and subj_obj.name:
+                p_name = f"Phase {phase_index} - {subj_obj.name}"
+            elif exam_obj.type:
+                p_name = f"Phase {phase_index} ({exam_obj.type})"
+
+            phase_tests.append({
+                "exam_id": exam_obj.id,
+                "phase_test_name": p_name,
+                "exam_type": exam_obj.type or "Phase Test",
+                "date": exam_obj.date,
+                "course_id": crs_obj.id if crs_obj else exam_obj.course_id,
+                "course_name": crs_obj.name if crs_obj else None,
+                "course_code": crs_obj.code if crs_obj else None,
+                "subject_id": subj_obj.id if subj_obj else exam_obj.subject_id,
+                "subject_code": subj_obj.code if subj_obj else None,
+                "subject_name": subj_obj.name if subj_obj else None,
+                "max_marks": max_m,
+                "pass_marks": pass_m,
+                "marks_obtained": obtained_m,
+                "percentage": pct,
+                "grade": grade_val,
+                "status": em.status or ("Pass" if (obtained_m is not None and obtained_m >= pass_m) else "Fail" if obtained_m is not None else "Pending"),
+                "remarks": em.remarks,
+                "is_overridden": bool(em.is_overridden),
+                "original_parade_status": em.original_parade_status
+            })
+            phase_index += 1
+
+        # Summary statistics calculation
+        total_count = len(phase_tests)
+        completed_tests = [t for t in phase_tests if t["percentage"] is not None and t["status"] not in ["Absent", "Pending"]]
+        completed_count = len(completed_tests)
+        
+        passed_count = sum(
+            1 for t in phase_tests 
+            if (t["marks_obtained"] is not None and t["marks_obtained"] >= t["pass_marks"]) or (t["status"] and t["status"].lower() == "pass")
+        )
+        failed_count = sum(
+            1 for t in phase_tests 
+            if (t["marks_obtained"] is not None and t["marks_obtained"] < t["pass_marks"]) or (t["status"] and t["status"].lower() == "fail")
+        )
+
+        percentages = [t["percentage"] for t in completed_tests if t["percentage"] is not None]
+        avg_pct = round(sum(percentages) / len(percentages), 2) if percentages else None
+        latest_pct = completed_tests[-1]["percentage"] if completed_tests else None
+        highest_pct = max(percentages) if percentages else None
+        lowest_pct = min(percentages) if percentages else None
+
+        summary = {
+            "total_tests_count": total_count,
+            "completed_tests_count": completed_count,
+            "passed_tests_count": passed_count,
+            "failed_tests_count": failed_count,
+            "average_percentage": avg_pct,
+            "latest_percentage": latest_pct,
+            "highest_percentage": highest_pct,
+            "lowest_percentage": lowest_pct
+        }
+
+        return {
+            "student_id": student.id,
+            "service_number": student.service_number,
+            "full_name": student.full_name,
+            "initials": student.initials,
+            "rank": student.rank,
+            "trade": student.trade,
+            "course_id": student.course_id,
+            "course_name": course.name if course else None,
+            "course_code": course.code if course else None,
+            "batch": student.batch,
+            "summary": summary,
+            "phase_tests": phase_tests
+        }
+
 class ExamMarkRepository(BaseRepository[ExamMark]):
     def get_by_exam(self, db: Session, exam_id: str) -> List[ExamMark]:
         results = db.query(ExamMark).filter(ExamMark.exam_id == exam_id).all()

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const TradeManagement = () => {
   const [trades, setTrades] = useState([])
@@ -8,6 +9,7 @@ export const TradeManagement = () => {
   const [query, setQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTrade, setEditingTrade] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
   
   const [form, setForm] = useState({
     code: '',
@@ -79,14 +81,23 @@ export const TradeManagement = () => {
   return (
     <div className="fade-in-slide">
       {/* Header Bar */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 className="fw-bold text-dark mb-0 display-font">Trade Management Master Data</h5>
           <small className="text-muted">Define & maintain SLAF Technical Training Categories</small>
         </div>
-        <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
-          <i className="bi bi-plus-lg me-1"></i> Add New Trade
-        </button>
+        <div className="d-flex gap-2 flex-wrap">
+          <button 
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
+            onClick={() => setShowReportModal(true)}
+            title="Print Official Trade Categories Master Directory"
+          >
+            <i className="bi bi-printer me-1 text-primary"></i> Print Trade Directory
+          </button>
+          <button className="btn btn-primary btn-sm fw-semibold" onClick={handleOpenCreate}>
+            <i className="bi bi-plus-lg me-1"></i> Add New Trade
+          </button>
+        </div>
       </div>
 
       {/* Filter / Search Bar */}
@@ -216,6 +227,18 @@ export const TradeManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Trade Master Directory Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL SLAF TRADE CATEGORIES MASTER DIRECTORY"
+        endpoint="/api/v1/reports/meta/filters"
+        params={{}}
+        defaultOrientation="portrait"
+      />
     </div>
   )
 }
+
+export default TradeManagement

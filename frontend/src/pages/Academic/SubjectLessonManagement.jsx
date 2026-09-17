@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { ClassicalReportModal } from '../../components/ClassicalReportModal'
 
 export const SubjectLessonManagement = () => {
   const [courses, setCourses] = useState([])
@@ -12,6 +13,7 @@ export const SubjectLessonManagement = () => {
   const [savingSubject, setSavingSubject] = useState(false)
   const [savingLesson, setSavingLesson] = useState(false)
   const [subjectSearch, setSubjectSearch] = useState('')
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Subject Modal
   const [showSubModal, setShowSubModal] = useState(false)
@@ -196,7 +198,7 @@ export const SubjectLessonManagement = () => {
   return (
     <div className="fade-in-slide">
       {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h5 className="fw-bold text-dark mb-0 display-font">
             <i className="bi bi-book-half me-2 text-primary"></i>
@@ -204,6 +206,13 @@ export const SubjectLessonManagement = () => {
           </h5>
           <small className="text-muted">Structure course subjects, scheduled periods, and instructional lesson plans</small>
         </div>
+        <button 
+          className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
+          onClick={() => setShowReportModal(true)}
+          title="Print Official Course Syllabus & Curriculum Breakdown"
+        >
+          <i className="bi bi-printer me-1 text-primary"></i> Print Curriculum Register
+        </button>
       </div>
 
       {/* Course Selection Toolbar */}
@@ -680,7 +689,21 @@ export const SubjectLessonManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Subject & Lesson Curriculum Register Report Modal */}
+      <ClassicalReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="OFFICIAL COURSE SYLLABUS & CURRICULUM BREAKDOWN"
+        endpoint="/api/v1/reports/academic-results"
+        params={{
+          course_id: selectedCourseId || ''
+        }}
+        defaultOrientation="landscape"
+      />
     </div>
   )
 }
+
+export default SubjectLessonManagement
 

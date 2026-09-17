@@ -32,6 +32,7 @@ from app.schemas.academic import (
     AcademicCalendarEventItem, AcademicDashboardCalendarResponse,
     BatchClosingSummaryResponse
 )
+from app.schemas.student import AcademicProgressResponse
 
 router = APIRouter(prefix="/academic", tags=["Academic Activities Management Module"])
 
@@ -691,6 +692,19 @@ def get_student_attendance_history(
     current_user: User = Depends(PermissionChecker("academic:read"))
 ):
     return attendance_repo.get_student_attendance_history(db, student_id, start_date, end_date)
+
+@router.get("/students/{student_id}/academic-progress", response_model=AcademicProgressResponse)
+@router.get("/students/{student_id}/progress", response_model=AcademicProgressResponse)
+def get_student_academic_progress(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("academic:read"))
+):
+    """Fetch Phase Test academic progress visualization & table data for a trainee."""
+    progress = exam_repo.get_student_academic_progress(db, student_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="Trainee academic profile not found")
+    return progress
 
 @router.get("/attendance/reports/classroom-wise", response_model=List[ClassroomWiseReportItem])
 def get_classroom_wise_attendance_report(

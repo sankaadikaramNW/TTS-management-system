@@ -243,17 +243,117 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
     return true
   })
 
+  // Dynamic real-time metrics computed live from user mark inputs
+  const liveSummary = useMemo(() => {
+    const total = examMarks.length
+    const eligible = examMarks.filter(m => m.can_sit_exam || m.is_overridden).length
+    const entered = examMarks.filter(m => m.marks_obtained !== '' && m.marks_obtained !== null && !isNaN(parseFloat(m.marks_obtained)))
+    const enteredCount = entered.length
+    const passMarks = selectedExam?.pass_marks || 50
+    const maxMarks = selectedExam?.max_marks || 100
+    
+    let passedCount = 0
+    let failedCount = 0
+    let totalMarksSum = 0
+
+    entered.forEach(m => {
+      const val = parseFloat(m.marks_obtained)
+      totalMarksSum += val
+      if (val >= passMarks) {
+        passedCount++
+      } else {
+        failedCount++
+      }
+    })
+
+    const avgScore = enteredCount > 0 ? (totalMarksSum / enteredCount).toFixed(1) : '0.0'
+    const pendingCount = Math.max(0, eligible - enteredCount)
+    const passRate = enteredCount > 0 ? Math.round((passedCount / enteredCount) * 100) : 0
+    const progressPct = eligible > 0 ? Math.round((enteredCount / eligible) * 100) : 0
+    const ineligibleCount = examMarks.filter(m => !m.can_sit_exam && !m.is_overridden).length
+    const overriddenCount = examMarks.filter(m => m.is_overridden).length
+
+    return {
+      total,
+      eligible,
+      enteredCount,
+      passedCount,
+      failedCount,
+      pendingCount,
+      avgScore,
+      passRate,
+      progressPct,
+      ineligibleCount,
+      overriddenCount
+    }
+  }, [examMarks, selectedExam])
+
+  // Grade classification helper
+  const getGradeInfo = (marks, maxMarks, passMarks) => {
+    if (marks === '' || marks === null || isNaN(parseFloat(marks))) {
+      return null
+    }
+    const num = parseFloat(marks)
+    const pct = maxMarks > 0 ? (num / maxMarks) * 100 : num
+    const isPass = num >= passMarks
+
+    if (!isPass) {
+      return { grade: 'F', label: 'Fail', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', isPass: false }
+    }
+    if (pct >= 85) {
+      return { grade: 'A+', label: 'Distinction', color: '#15803d', bg: '#dcfce7', border: '#bbf7d0', isPass: true }
+    }
+    if (pct >= 75) {
+      return { grade: 'A', label: 'Distinction', color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', isPass: true }
+    }
+    if (pct >= 65) {
+      return { grade: 'B', label: 'Credit', color: '#2563eb', bg: '#dbeafe', border: '#bfdbfe', isPass: true }
+    }
+    return { grade: 'C', label: 'Pass', color: '#4f46e5', bg: '#e0e7ff', border: '#c7d2fe', isPass: true }
+  }
+
+  // Batch helper: Auto-fill blank eligible trainees with pass marks
+  const handleBatchFillPassMarks = () => {
+    if (!selectedExam) return
+    const updated = examMarks.map(m => {
+      if ((m.can_sit_exam || m.is_overridden) && (m.marks_obtained === '' || m.marks_obtained === null)) {
+        return { ...m, marks_obtained: String(selectedExam.pass_marks) }
+      }
+      return m
+    })
+    setExamMarks(updated)
+    toast.info(`Auto-filled eligible blank entries with pass mark (${selectedExam.pass_marks})`)
+  }
+
+  // Batch helper: Clear all entered marks
+  const handleClearAllMarks = () => {
+    if (window.confirm('Are you sure you want to clear all entered marks?')) {
+      const updated = examMarks.map(m => ({ ...m, marks_obtained: '' }))
+      setExamMarks(updated)
+      toast.info('All marks cleared')
+    }
+  }
+
   // Filtered students in modal result sheet
   const filteredModalStudents = useMemo(() => {
     return examMarks.filter(st => {
       // Status filter
-      if (modalFilter === 'ELIGIBLE' && !st.can_sit_exam) return false
-      if (modalFilter === 'INELIGIBLE' && st.can_sit_exam) return false
-      if (modalFilter === 'SAT_EXAM' && (st.marks_obtained === '' || st.marks_obtained === null)) return false
-      if (modalFilter === 'LEAVE' && !st.parade_state_status.toUpperCase().includes('LEAVE')) return false
-      if (modalFilter === 'HOSPITAL' && !st.parade_state_status.toUpperCase().includes('HOSPITAL')) return false
-      if (modalFilter === 'AWOL' && !st.parade_state_status.toUpperCase().includes('AWOL')) return false
-      if (modalFilter === 'COURSE_VISIT' && !st.parade_state_status.toUpperCase().includes('COURSE') && !st.parade_state_status.toUpperCase().includes('VISIT')) return false
+      if (modalFilter === 'ELIGIBLE' && !st.can_sit_exam && !st.is_overridden) return false
+      if (modalFilter === 'INELIGIBLE' && (st.can_sit_exam || st.is_overridden)) return false
+      if (modalFilter === 'ENTERED' && (st.marks_obtained === '' || st.marks_obtained === null)) return false
+      if (modalFilter === 'PENDING' && (st.marks_obtained !== '' && st.marks_obtained !== null || (!st.can_sit_exam && !st.is_overridden))) return false
+      if (modalFilter === 'PASSED') {
+        const num = parseFloat(st.marks_obtained)
+        if (isNaN(num) || num < (selectedExam?.pass_marks || 50)) return false
+      }
+      if (modalFilter === 'FAILED') {
+        const num = parseFloat(st.marks_obtained)
+        if (isNaN(num) || num >= (selectedExam?.pass_marks || 50)) return false
+      }
+      if (modalFilter === 'LEAVE' && !st.parade_state_status?.toUpperCase().includes('LEAVE')) return false
+      if (modalFilter === 'HOSPITAL' && !st.parade_state_status?.toUpperCase().includes('HOSPITAL')) return false
+      if (modalFilter === 'AWOL' && !st.parade_state_status?.toUpperCase().includes('AWOL')) return false
+      if (modalFilter === 'COURSE_VISIT' && !st.parade_state_status?.toUpperCase().includes('COURSE') && !st.parade_state_status?.toUpperCase().includes('VISIT')) return false
       if (modalFilter === 'OVERRIDDEN' && !st.is_overridden) return false
 
       // Search query filter
@@ -267,7 +367,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
       return true
     })
-  }, [examMarks, modalFilter, modalSearch])
+  }, [examMarks, modalFilter, modalSearch, selectedExam])
 
   // Badge helpers
   const getParadeStatusBadge = (status, isApproved) => {
@@ -549,102 +649,112 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
       {/* Comprehensive Result Sheet Modal */}
       {showMarksModal && selectedExam && resultSheetData && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '96vw', width: '96vw', height: '94vh', margin: '3vh auto' }}>
-            <div className="modal-content slaf-card shadow-lg border-0" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 1060, overflowY: 'auto' }}>
+          <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: 'min(98vw, 1500px)', width: '98%', height: '92vh', margin: '4vh auto' }}>
+            <div className="modal-content slaf-card shadow-2xl border-0 overflow-hidden" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               {/* Header */}
-              <div className="modal-header border-bottom bg-light py-2.5 px-4 flex-shrink-0">
-                <div>
-                  <div className="d-flex align-items-center gap-2">
-                    <h5 className="modal-title display-font text-primary fw-bold mb-0">
-                      {resultSheetData.exam_type}: {resultSheetData.subject_name}
-                    </h5>
-                    <span className="badge bg-primary-subtle text-primary border">
-                      {resultSheetData.course_name} ({resultSheetData.course_code || 'COURSE'})
-                    </span>
+              <div className="modal-header bg-dark text-white py-3 px-4 border-bottom border-secondary flex-shrink-0 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div className="d-flex align-items-center gap-3">
+                  <div className="bg-primary bg-opacity-25 text-primary rounded-3 p-2 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px' }}>
+                    <i className="bi bi-journal-check fs-4 text-info"></i>
                   </div>
-                  <div className="d-flex align-items-center gap-3 mt-1 text-muted" style={{ fontSize: '0.8rem' }}>
-                    <span><i className="bi bi-calendar-event text-primary me-1"></i>Exam Date: <strong>{resultSheetData.exam_date}</strong></span>
-                    <span><i className="bi bi-award text-success me-1"></i>Max: <strong>{resultSheetData.max_marks}</strong> | Pass: <strong>{resultSheetData.pass_marks}</strong></span>
-                    <span>
-                      {resultSheetData.is_parade_approved ? (
-                        <span className="badge bg-success-subtle text-success border">
-                          <i className="bi bi-shield-fill-check me-1"></i>Parade State Approved (Official)
-                        </span>
-                      ) : (
-                        <span className="badge bg-warning-subtle text-warning-emphasis border">
-                          <i className="bi bi-exclamation-triangle-fill me-1"></i>Parade State: {resultSheetData.parade_submission_status}
-                        </span>
-                      )}
-                    </span>
+                  <div>
+                    <div className="d-flex align-items-center flex-wrap gap-2">
+                      <h5 className="modal-title fw-bold text-white mb-0" style={{ letterSpacing: '0.2px' }}>
+                        {resultSheetData.exam_type}: {resultSheetData.subject_name}
+                      </h5>
+                      <span className="badge bg-primary text-white border border-primary-subtle px-2.5 py-1">
+                        {resultSheetData.course_name} {resultSheetData.course_code ? `(${resultSheetData.course_code})` : ''}
+                      </span>
+                      <span className="badge bg-secondary text-white border border-secondary px-2.5 py-1">
+                        Batch: {selectedExam.batch_name || 'All'}
+                      </span>
+                    </div>
+                    <div className="d-flex align-items-center flex-wrap gap-3 mt-1 text-white-50" style={{ fontSize: '0.8rem' }}>
+                      <span><i className="bi bi-calendar-event text-info me-1"></i>Exam Date: <strong className="text-light">{resultSheetData.exam_date}</strong></span>
+                      <span><i className="bi bi-award text-warning me-1"></i>Max Marks: <strong className="text-light">{resultSheetData.max_marks}</strong></span>
+                      <span><i className="bi bi-check2-circle text-success me-1"></i>Pass Marks: <strong className="text-light">{resultSheetData.pass_marks}</strong></span>
+                      <span>
+                        {resultSheetData.is_parade_approved ? (
+                          <span className="badge bg-success bg-opacity-25 text-success border border-success px-2 py-0.5">
+                            <i className="bi bi-shield-fill-check me-1"></i>Parade State Approved (SSOT Linked)
+                          </span>
+                        ) : (
+                          <span className="badge bg-warning bg-opacity-25 text-warning border border-warning px-2 py-0.5">
+                            <i className="bi bi-exclamation-triangle-fill me-1"></i>Parade State: {resultSheetData.parade_submission_status}
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handlePrintMarksheet} title="Print Marksheet">
-                    <i className="bi bi-printer me-1"></i> Print
+
+                <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+                  <button type="button" className="btn btn-outline-light btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" onClick={handlePrintMarksheet} title="Print Formal Marksheet">
+                    <i className="bi bi-printer"></i>
+                    <span>Formal Report</span>
                   </button>
-                  <button type="button" className="btn-close" onClick={() => setShowMarksModal(false)}></button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light border-0 ms-1 flex-shrink-0 d-flex align-items-center justify-content-center"
+                    onClick={() => setShowMarksModal(false)}
+                    title="Close Modal"
+                    style={{ width: '34px', height: '34px', borderRadius: '6px' }}
+                  >
+                    <i className="bi bi-x-lg fs-6"></i>
+                  </button>
                 </div>
               </div>
 
-              {/* Summary Metric Strip */}
-              {resultSheetData.summary && (
-                <div className="px-4 py-2.5 bg-light border-bottom flex-shrink-0">
-                  <div className="row g-2 text-center align-items-center">
-                    <div className="col-auto">
-                      <div className="p-1.5 px-3 rounded bg-white border shadow-xs">
-                        <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>TOTAL TRAINEES</small>
-                        <strong className="fs-6 text-dark">{resultSheetData.summary.total_trainees}</strong>
-                      </div>
+              {/* Live Metric Strip */}
+              <div className="px-4 py-2.5 bg-light border-bottom flex-shrink-0">
+                <div className="row g-2 align-items-center text-center">
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-muted d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>TOTAL TRAINEES</small>
+                      <strong className="fs-5 text-dark">{liveSummary.total}</strong>
                     </div>
-                    <div className="col-auto">
-                      <div className="p-1.5 px-3 rounded bg-white border shadow-xs">
-                        <small className="text-success d-block" style={{ fontSize: '0.7rem' }}>ELIGIBLE TO SIT</small>
-                        <strong className="fs-6 text-success">{resultSheetData.summary.eligible_count}</strong>
-                      </div>
+                  </div>
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-success d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>ELIGIBLE TO SIT</small>
+                      <strong className="fs-5 text-success">{liveSummary.eligible}</strong>
                     </div>
-                    <div className="col-auto">
-                      <div className="p-1.5 px-3 rounded bg-white border shadow-xs">
-                        <small className="text-primary d-block" style={{ fontSize: '0.7rem' }}>SAT EXAMINATION</small>
-                        <strong className="fs-6 text-primary">{resultSheetData.summary.sat_exam_count}</strong>
-                      </div>
+                  </div>
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-primary d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>MARKS ENTERED</small>
+                      <strong className="fs-5 text-primary">{liveSummary.enteredCount} <small className="fs-7 text-muted fw-normal">/ {liveSummary.eligible}</small></strong>
                     </div>
-                    <div className="col-auto">
-                      <div className="p-1.5 px-3 rounded bg-white border shadow-xs">
-                        <small className="text-danger d-block" style={{ fontSize: '0.7rem' }}>DID NOT SIT (PARADE)</small>
-                        <strong className="fs-6 text-danger">{resultSheetData.summary.did_not_sit_count}</strong>
-                      </div>
+                  </div>
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-success d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>PASSED</small>
+                      <strong className="fs-5 text-success">{liveSummary.passedCount} <small className="fs-7 text-muted fw-normal">({liveSummary.passRate}%)</small></strong>
                     </div>
-                    <div className="col flex-grow-1 text-end d-flex flex-wrap gap-1.5 justify-content-end align-items-center">
-                      <span className="badge bg-warning-subtle text-warning-emphasis border py-1.5">
-                        Leave: <strong>{resultSheetData.summary.leave_count}</strong>
-                      </span>
-                      <span className="badge bg-danger-subtle text-danger border py-1.5">
-                        Hospital: <strong>{resultSheetData.summary.hospital_count}</strong>
-                      </span>
-                      <span className="badge bg-dark text-white border py-1.5">
-                        AWOL: <strong>{resultSheetData.summary.awol_count}</strong>
-                      </span>
-                      <span className="badge bg-info-subtle text-info-emphasis border py-1.5">
-                        Course Visit: <strong>{resultSheetData.summary.course_visit_count}</strong>
-                      </span>
-                      {resultSheetData.summary.overridden_count > 0 && (
-                        <span className="badge bg-primary text-white border py-1.5">
-                          Overridden: <strong>{resultSheetData.summary.overridden_count}</strong>
-                        </span>
-                      )}
+                  </div>
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-danger d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>FAILED</small>
+                      <strong className="fs-5 text-danger">{liveSummary.failedCount}</strong>
+                    </div>
+                  </div>
+                  <div className="col-6 col-sm-4 col-md-2">
+                    <div className="p-2 rounded bg-white border shadow-xs">
+                      <small className="text-muted d-block fw-semibold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>AVG SCORE</small>
+                      <strong className="fs-5 text-dark">{liveSummary.avgScore}%</strong>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Filter Controls & Search */}
               <div className="px-4 py-2 bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 flex-shrink-0">
-                <div className="d-flex flex-wrap align-items-center gap-1">
-                  <small className="text-muted fw-bold me-1">Filter:</small>
+                <div className="d-flex flex-wrap align-items-center gap-1.5">
+                  <small className="text-muted fw-bold me-1">View:</small>
                   <button 
                     type="button" 
-                    className={`btn btn-xs ${modalFilter === 'ALL' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ALL' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
                     onClick={() => setModalFilter('ALL')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -652,103 +762,121 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </button>
                   <button 
                     type="button" 
-                    className={`btn btn-xs ${modalFilter === 'ELIGIBLE' ? 'btn-success text-white' : 'btn-outline-success'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ELIGIBLE' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
                     onClick={() => setModalFilter('ELIGIBLE')}
                     style={{ fontSize: '0.75rem' }}
                   >
-                    Eligible Only
+                    Eligible ({liveSummary.eligible})
                   </button>
                   <button 
                     type="button" 
-                    className={`btn btn-xs ${modalFilter === 'SAT_EXAM' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setModalFilter('SAT_EXAM')}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ENTERED' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'}`}
+                    onClick={() => setModalFilter('ENTERED')}
                     style={{ fontSize: '0.75rem' }}
                   >
-                    Sat Exam
+                    Entered ({liveSummary.enteredCount})
                   </button>
-                  <button 
-                    type="button" 
-                    className={`btn btn-xs ${modalFilter === 'INELIGIBLE' ? 'btn-danger text-white' : 'btn-outline-danger'}`}
-                    onClick={() => setModalFilter('INELIGIBLE')}
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    Ineligible (Parade)
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`btn btn-xs ${modalFilter === 'LEAVE' ? 'btn-warning text-dark' : 'btn-outline-warning'}`}
-                    onClick={() => setModalFilter('LEAVE')}
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    Leave
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`btn btn-xs ${modalFilter === 'HOSPITAL' ? 'btn-danger' : 'btn-outline-danger'}`}
-                    onClick={() => setModalFilter('HOSPITAL')}
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    In Hospital
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`btn btn-xs ${modalFilter === 'AWOL' ? 'btn-dark' : 'btn-outline-dark'}`}
-                    onClick={() => setModalFilter('AWOL')}
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    AWOL
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`btn btn-xs ${modalFilter === 'COURSE_VISIT' ? 'btn-info text-dark' : 'btn-outline-info'}`}
-                    onClick={() => setModalFilter('COURSE_VISIT')}
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    Course Visit
-                  </button>
-                  {resultSheetData.summary?.overridden_count > 0 && (
+                  {liveSummary.pendingCount > 0 && (
                     <button 
                       type="button" 
-                      className={`btn btn-xs ${modalFilter === 'OVERRIDDEN' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'PENDING' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark'}`}
+                      onClick={() => setModalFilter('PENDING')}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      Pending ({liveSummary.pendingCount})
+                    </button>
+                  )}
+                  <button 
+                    type="button" 
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'PASSED' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
+                    onClick={() => setModalFilter('PASSED')}
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    Passed ({liveSummary.passedCount})
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'FAILED' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
+                    onClick={() => setModalFilter('FAILED')}
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    Failed ({liveSummary.failedCount})
+                  </button>
+                  {liveSummary.ineligibleCount > 0 && (
+                    <button 
+                      type="button" 
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'INELIGIBLE' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
+                      onClick={() => setModalFilter('INELIGIBLE')}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      Ineligible ({liveSummary.ineligibleCount})
+                    </button>
+                  )}
+                  {liveSummary.overriddenCount > 0 && (
+                    <button 
+                      type="button" 
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'OVERRIDDEN' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'}`}
                       onClick={() => setModalFilter('OVERRIDDEN')}
                       style={{ fontSize: '0.75rem' }}
                     >
-                      Overridden
+                      Overridden ({liveSummary.overriddenCount})
                     </button>
                   )}
                 </div>
-                <div style={{ width: '240px' }}>
-                  <input 
-                    type="text" 
-                    className="form-control form-control-sm" 
-                    placeholder="Search Service No / Name..."
-                    value={modalSearch}
-                    onChange={(e) => setModalSearch(e.target.value)}
-                  />
+
+                <div className="d-flex align-items-center gap-2 ms-auto flex-wrap">
+                  {/* Quick Auto Fill Button */}
+                  <button 
+                    className="btn btn-outline-secondary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs" 
+                    style={{ fontSize: '0.78rem' }} 
+                    type="button" 
+                    onClick={handleBatchFillPassMarks}
+                    title={`Auto-fill eligible blanks with pass marks (${selectedExam.pass_marks})`}
+                  >
+                    <i className="bi bi-magic text-primary"></i>
+                    <span>Fill Pass Mark</span>
+                  </button>
+
+                  {/* Search Box */}
+                  <div className="input-group input-group-sm" style={{ width: '220px' }}>
+                    <span className="input-group-text bg-white border-end-0 text-muted"><i className="bi bi-search"></i></span>
+                    <input 
+                      type="text" 
+                      className="form-control border-start-0" 
+                      placeholder="Filter trainee name / no..."
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                    />
+                    {modalSearch && (
+                      <button className="btn btn-outline-secondary border-start-0 bg-white" type="button" onClick={() => setModalSearch('')}>
+                        <i className="bi bi-x"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Marksheet Form & Interactive Table */}
-              <form onSubmit={handleSaveMarks} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                <div className="modal-body p-0" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <form onSubmit={handleSaveMarks} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <div className="table-responsive" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'auto', width: '100%' }}>
                   <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.875rem' }}>
                     <thead className="table-light sticky-top shadow-xs" style={{ zIndex: 10 }}>
                       <tr>
-                        <th style={{ minWidth: '110px', width: '120px', padding: '12px 16px' }}>Service No</th>
-                        <th style={{ minWidth: '220px', padding: '12px 16px' }}>Trainee Full Name</th>
-                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Trade / Batch</th>
-                        <th style={{ minWidth: '170px', padding: '12px 16px' }}>Parade State Status</th>
-                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Exam Eligibility</th>
-                        <th style={{ minWidth: '130px', padding: '12px 16px' }}>Marks Obtained</th>
-                        <th style={{ minWidth: '140px', padding: '12px 16px' }}>Result Status</th>
-                        <th style={{ minWidth: '250px', padding: '12px 16px' }}>Remarks / Override Action</th>
+                        <th style={{ minWidth: '100px', width: '110px', padding: '12px 14px' }}>Service No</th>
+                        <th style={{ minWidth: '220px', padding: '12px 14px' }}>Trainee Full Name</th>
+                        <th style={{ minWidth: '130px', padding: '12px 14px' }}>Trade / Batch</th>
+                        <th style={{ minWidth: '160px', padding: '12px 14px' }}>Parade State</th>
+                        <th style={{ minWidth: '130px', padding: '12px 14px' }}>Eligibility</th>
+                        <th style={{ minWidth: '150px', width: '160px', padding: '12px 14px', textAlign: 'center' }}>Marks Obtained</th>
+                        <th style={{ minWidth: '150px', padding: '12px 14px', textAlign: 'center' }}>Result & Grade</th>
+                        <th style={{ minWidth: '220px', padding: '12px 14px' }}>Remarks & Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredModalStudents.length === 0 ? (
                         <tr>
                           <td colSpan="8" className="text-center py-5 text-muted">
-                            <i className="bi bi-inbox fs-3 d-block mb-2"></i>
+                            <i className="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
                             No trainees match the selected filter criteria.
                           </td>
                         </tr>
@@ -758,31 +886,40 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                           const marksNum = parseFloat(st.marks_obtained)
                           const hasValidMarks = !isNaN(marksNum) && st.marks_obtained !== '' && st.marks_obtained !== null
                           const isPass = hasValidMarks && marksNum >= selectedExam.pass_marks
+                          const isOverMax = hasValidMarks && marksNum > selectedExam.max_marks
+                          const isUnderZero = hasValidMarks && marksNum < 0
+                          const isInvalidInput = isOverMax || isUnderZero
+                          const gradeInfo = getGradeInfo(st.marks_obtained, selectedExam.max_marks, selectedExam.pass_marks)
 
                           return (
-                            <tr key={st.student_id} className={!st.can_sit_exam ? 'table-light' : ''}>
+                            <tr key={st.student_id} className={`marks-row-active ${!st.can_sit_exam && !st.is_overridden ? 'marks-row-disabled' : ''}`}>
                               {/* 1. Service No */}
                               <td className="px-3 py-2.5">
-                                <strong className="text-primary font-monospace">{st.service_number}</strong>
+                                <span className="badge bg-primary-subtle text-primary border font-monospace px-2 py-1 fw-bold" style={{ fontSize: '0.82rem' }}>
+                                  {st.service_number}
+                                </span>
                               </td>
 
                               {/* 2. Trainee Name */}
                               <td className="px-3 py-2.5">
-                                <div className="fw-semibold text-dark d-flex align-items-center flex-wrap gap-1">
-                                  <span className="badge bg-secondary-subtle text-dark border" style={{ fontSize: '0.72rem' }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <div className="bg-light rounded-circle d-flex align-items-center justify-content-center border flex-shrink-0 text-dark fw-bold" style={{ width: '28px', height: '28px', fontSize: '0.72rem' }}>
                                     {st.rank || 'LAC'}
-                                  </span>
-                                  <span>{st.student_name}</span>
+                                  </div>
+                                  <div>
+                                    <div className="fw-bold text-dark" style={{ lineHeight: '1.2' }}>{st.student_name}</div>
+                                    <small className="text-muted" style={{ fontSize: '0.72rem' }}>Rank: {st.rank || 'LAC'}</small>
+                                  </div>
                                 </div>
                               </td>
 
                               {/* 3. Trade & Batch */}
                               <td className="px-3 py-2.5">
-                                <small className="text-muted d-block fw-medium">{st.trade || 'General'}</small>
-                                <span className="badge bg-light text-muted border" style={{ fontSize: '0.675rem' }}>{st.batch || '26/1'}</span>
+                                <div className="fw-medium text-dark" style={{ fontSize: '0.82rem' }}>{st.trade || 'General'}</div>
+                                <span className="badge bg-light text-muted border" style={{ fontSize: '0.675rem' }}>Batch {st.batch || '26/1'}</span>
                               </td>
 
-                              {/* 4. Parade State Status (Authoritative Source) */}
+                              {/* 4. Parade State Status */}
                               <td className="px-3 py-2.5">
                                 {getParadeStatusBadge(st.parade_state_status, st.is_parade_approved)}
                               </td>
@@ -799,75 +936,125 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                                     </small>
                                   </div>
                                 ) : st.can_sit_exam ? (
-                                  <span className="badge bg-success-subtle text-success border">
-                                    <i className="bi bi-check-circle me-1"></i>Eligible
+                                  <span className="badge bg-success-subtle text-success border px-2 py-1">
+                                    <i className="bi bi-check-circle-fill me-1"></i>Eligible
                                   </span>
                                 ) : (
-                                  <span className="badge bg-danger-subtle text-danger border" title={`Trainee recorded as ${st.parade_state_status} in approved Parade State`}>
-                                    <i className="bi bi-x-circle me-1"></i>Ineligible
+                                  <span className="badge bg-danger-subtle text-danger border px-2 py-1" title={`Trainee recorded as ${st.parade_state_status} in approved Parade State`}>
+                                    <i className="bi bi-x-circle-fill me-1"></i>Ineligible
                                   </span>
                                 )}
                               </td>
 
-                              {/* 6. Marks Obtained Input */}
-                              <td className="px-3 py-2.5">
-                                {st.marks_entry_allowed ? (
-                                  <input 
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    max={selectedExam.max_marks}
-                                    placeholder="0 - 100"
-                                    className="form-control form-control-sm text-center fw-bold"
-                                    value={st.marks_obtained}
-                                    onChange={(e) => {
-                                      const updated = [...examMarks]
-                                      updated[originalIdx].marks_obtained = e.target.value
-                                      setExamMarks(updated)
-                                    }}
-                                  />
+                              {/* 6. Marks Obtained Input (Modern, keyboard-optimized) */}
+                              <td className="px-3 py-2.5 text-center">
+                                {st.marks_entry_allowed || st.is_overridden ? (
+                                  <div className="d-inline-block" style={{ width: '120px' }}>
+                                    <div className="input-group input-group-sm shadow-xs">
+                                      <input 
+                                        type="number"
+                                        id={`mark-input-${originalIdx}`}
+                                        step="0.5"
+                                        min="0"
+                                        max={selectedExam.max_marks}
+                                        placeholder="—"
+                                        className={`form-control form-control-sm text-center fw-bold marks-input-modern ${isInvalidInput ? 'is-invalid-mark' : ''}`}
+                                        style={{
+                                          fontSize: '1rem',
+                                          backgroundColor: hasValidMarks ? (isPass ? '#f0fdf4' : '#fef2f2') : '#f8fafc',
+                                          borderColor: hasValidMarks ? (isPass ? '#86efac' : '#fca5a5') : '#cbd5e1'
+                                        }}
+                                        value={st.marks_obtained}
+                                        onChange={(e) => {
+                                          const updated = [...examMarks]
+                                          updated[originalIdx].marks_obtained = e.target.value
+                                          setExamMarks(updated)
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            const nextInput = document.getElementById(`mark-input-${originalIdx + 1}`)
+                                            if (nextInput) nextInput.focus()
+                                          }
+                                        }}
+                                      />
+                                      <span className="input-group-text bg-light text-muted border-start-0 px-1.5" style={{ fontSize: '0.72rem' }}>
+                                        /{selectedExam.max_marks}
+                                      </span>
+                                    </div>
+                                    {isOverMax && (
+                                      <small className="text-danger d-block fw-semibold" style={{ fontSize: '0.675rem' }}>
+                                        Max is {selectedExam.max_marks}
+                                      </small>
+                                    )}
+                                  </div>
                                 ) : (
                                   <div className="text-center">
-                                    <span className="badge bg-secondary-subtle text-muted border px-3 py-1 font-monospace">--</span>
+                                    <span className="badge bg-secondary-subtle text-muted border px-2.5 py-1 font-monospace">--</span>
                                     <small className="d-block text-muted" style={{ fontSize: '0.675rem' }}>
-                                      Disabled ({st.parade_state_status})
+                                      Locked ({st.parade_state_status})
                                     </small>
                                   </div>
                                 )}
                               </td>
 
-                              {/* 7. Result Status Badge */}
-                              <td className="px-3 py-2.5">
-                                {hasValidMarks ? (
-                                  getResultBadge(isPass ? 'PASS' : 'FAIL', isPass, marksNum)
+                              {/* 7. Result Status & Grade Badge */}
+                              <td className="px-3 py-2.5 text-center">
+                                {hasValidMarks && gradeInfo ? (
+                                  <div className="d-inline-flex flex-column align-items-center gap-0.5">
+                                    <span
+                                      className="badge fw-bold px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs"
+                                      style={{
+                                        backgroundColor: gradeInfo.bg,
+                                        color: gradeInfo.color,
+                                        border: `1px solid ${gradeInfo.border}`,
+                                        fontSize: '0.8rem'
+                                      }}
+                                    >
+                                      <i className={`bi ${gradeInfo.isPass ? 'bi-check2-circle' : 'bi-x-circle'}`}></i>
+                                      {gradeInfo.isPass ? 'PASS' : 'FAIL'} ({gradeInfo.grade})
+                                    </span>
+                                    <small className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                      {((marksNum / selectedExam.max_marks) * 100).toFixed(0)}% • {gradeInfo.label}
+                                    </small>
+                                  </div>
                                 ) : (
-                                  getResultBadge(st.result_status, false, null)
+                                  <div>
+                                    {st.can_sit_exam || st.is_overridden ? (
+                                      <span className="badge bg-light text-muted border px-2 py-1" style={{ fontSize: '0.75rem' }}>
+                                        <i className="bi bi-clock me-1"></i>Awaiting Marks
+                                      </span>
+                                    ) : (
+                                      getResultBadge(st.result_status || st.parade_state_status, false, null)
+                                    )}
+                                  </div>
                                 )}
                               </td>
 
-                              {/* 8. Remarks & Controlled Override */}
+                              {/* 8. Remarks & Controlled Override Action */}
                               <td className="px-3 py-2.5">
                                 <div className="d-flex align-items-center gap-1.5">
                                   <input 
                                     type="text" 
                                     className="form-control form-control-sm" 
-                                    placeholder="Remarks..."
+                                    placeholder="Optional remarks..."
                                     value={st.remarks}
                                     onChange={(e) => {
                                       const updated = [...examMarks]
                                       updated[originalIdx].remarks = e.target.value
                                       setExamMarks(updated)
                                     }}
+                                    style={{ minWidth: '120px' }}
                                   />
-                                  {!st.can_sit_exam && (
+                                  {!st.can_sit_exam && !st.is_overridden && (
                                     <button 
                                       type="button" 
-                                      className="btn btn-outline-warning btn-sm text-nowrap px-2 py-0.5"
+                                      className="btn btn-outline-warning btn-sm text-nowrap px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs"
                                       onClick={() => handleOpenOverrideModal(st)}
                                       title="Authorize officer override for this trainee"
                                       style={{ fontSize: '0.75rem' }}
                                     >
-                                      <i className="bi bi-shield-lock-fill me-1"></i> Override
+                                      <i className="bi bi-shield-lock-fill"></i> Override
                                     </button>
                                   )}
                                 </div>
@@ -880,29 +1067,57 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </table>
                 </div>
 
-                {/* Modal Footer */}
-                <div className="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between">
-                  <div className="small text-muted">
-                    <i className="bi bi-shield-check text-primary me-1"></i>
-                    Parade State acts as authoritative attendance SSOT for exam date <strong>{resultSheetData.exam_date}</strong>.
+                {/* Modal Footer (Sticky, Perfectly Visible, Uncut) */}
+                <div className="modal-footer border-top bg-white py-2.5 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3 flex-shrink-0 shadow-lg">
+                  <div className="d-flex align-items-center flex-wrap gap-3">
+                    <div className="small text-muted d-flex align-items-center gap-1.5">
+                      <i className="bi bi-shield-check text-primary fs-6"></i>
+                      <span>Parade State SSOT: <strong>{resultSheetData.exam_date}</strong></span>
+                    </div>
+
+                    <div className="vr d-none d-md-block" style={{ height: '18px' }}></div>
+
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="small text-dark fw-semibold">
+                        Progress: {liveSummary.enteredCount} / {liveSummary.eligible} ({liveSummary.progressPct}%)
+                      </span>
+                      <div className="progress" style={{ width: '100px', height: '6px' }}>
+                        <div 
+                          className={`progress-bar ${liveSummary.progressPct === 100 ? 'bg-success' : 'bg-primary'}`} 
+                          role="progressbar" 
+                          style={{ width: `${liveSummary.progressPct}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowMarksModal(false)}>
+
+                  <div className="d-flex align-items-center gap-2 ms-auto">
+                    <button type="button" className="btn btn-outline-secondary btn-sm px-3 fw-semibold" onClick={() => setShowMarksModal(false)}>
                       Close
                     </button>
                     <button 
                       type="submit" 
-                      className="btn btn-primary btn-sm fw-semibold shadow-sm px-3"
+                      className="btn btn-primary btn-sm fw-bold shadow-sm px-4 py-1.5 d-inline-flex align-items-center gap-2"
                       disabled={savingMarks}
+                      style={{
+                        background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                        border: 'none'
+                      }}
                     >
                       {savingMarks ? (
                         <>
-                          <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                          Saving Official Results...
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          <span>Saving Official Marksheet...</span>
                         </>
                       ) : (
                         <>
-                          <i className="bi bi-check2-circle me-1"></i> Save Official Marksheet
+                          <i className="bi bi-cloud-check-fill fs-6"></i>
+                          <span>Save Official Marksheet</span>
+                          {liveSummary.enteredCount > 0 && (
+                            <span className="badge bg-white text-primary rounded-pill px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
+                              {liveSummary.enteredCount} Records
+                            </span>
+                          )}
                         </>
                       )}
                     </button>
