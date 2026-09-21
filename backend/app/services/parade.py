@@ -499,7 +499,7 @@ class ParadeStateService:
 
     def save_night_draft(self, db: Session, draft_data: NightParadeSaveDraftRequest,
                          user_id: str, ip: str, ua: str) -> dict:
-        """Save evening roll call records as DRAFT under parade_type='NIGHT'."""
+        """Save evening roll call records as DRAFT / IN_PROGRESS under parade_type='NIGHT'."""
         parade_date = draft_data.date
         trade = draft_data.trade
         course_id = draft_data.course_id
@@ -511,6 +511,10 @@ class ParadeStateService:
             submitter_id=user_id, course_id=course_id, batch=batch,
             parade_type='NIGHT'
         )
+        if draft_data.submitter_remarks is not None:
+            sub.submitter_remarks = draft_data.submitter_remarks
+        if sub.status == 'DRAFT':
+            sub.status = 'IN_PROGRESS'
 
         # Query morning states to enforce true morning baseline references
         from sqlalchemy import or_
@@ -552,16 +556,20 @@ class ParadeStateService:
         db.commit()
 
         audit_repo.create_log(
-            db, user_id, "PARADE_NIGHT_DRAFT_SAVED", ip, ua,
-            f"Draft-saved Night Parade Roll Call for trade '{trade}' on {parade_date}. Records: {updated_count}, Changes: {changed_count}"
+            db, user_id, "PARADE_NIGHT_SAVED", ip, ua,
+            f"Saved Night Parade Roll Call for trade '{trade}' on {parade_date}. Records: {updated_count}, Changes: {changed_count}"
         )
 
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return {
-            "status": "draft_saved",
+            "status": "saved",
             "submission_id": sub.id,
             "updated_count": updated_count,
-            "changed_count": changed_count
+            "changed_count": changed_count,
+            "last_saved_at": now_str
         }
+
+    save_night_parade = save_night_draft
 
     def complete_night_parade(self, db: Session, completion_data: NightParadeCompleteRequest,
                               user_id: str, ip: str, ua: str) -> dict:

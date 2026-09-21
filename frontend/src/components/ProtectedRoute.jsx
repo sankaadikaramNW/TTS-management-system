@@ -1,42 +1,32 @@
 import React from 'react'
-import { Navigate, Outlet, Link } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { AccessDenied } from './AccessDenied'
 
-export const ProtectedRoute = ({ permissionCode }) => {
+export const ProtectedRoute = ({ permissionCode, moduleName }) => {
   const { token, loading, hasPermission } = useAuth()
 
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100 bg-app">
         <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+          <span className="visually-hidden">Loading authenticated session...</span>
         </div>
       </div>
     )
   }
 
+  // If token does not exist or expired, redirect to existing login page
   if (!token) {
     return <Navigate to="/login" replace />
   }
 
+  // If permission code is specified and user lacks the permission (and is not Admin)
   if (permissionCode && !hasPermission(permissionCode)) {
-    return (
-      <div className="container py-5 text-center fade-in-slide">
-        <div className="card slaf-card p-5 mx-auto" style={{ maxWidth: '600px' }}>
-          <div className="text-danger mb-4">
-            <i className="bi bi-shield-lock-fill" style={{ fontSize: '4rem' }}></i>
-          </div>
-          <h2 className="mb-3">Access Denied</h2>
-          <p className="text-muted mb-4">
-            You do not have the required permissions to access this page. Please contact the administrator if you believe this is in error.
-          </p>
-          <Link to="/dashboard" className="btn btn-primary px-4 py-2">
-            Return to Dashboard
-          </Link>
-        </div>
-      </div>
-    )
+    return <AccessDenied moduleTitle={moduleName} permissionCode={permissionCode} />
   }
 
   return <Outlet />
 }
+
+export default ProtectedRoute

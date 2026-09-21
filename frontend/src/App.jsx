@@ -21,6 +21,7 @@ import CourseList from './pages/Academic/CourseList'
 import ReportGenerator from './pages/Reports/ReportGenerator'
 import UserManagement from './pages/Admin/UserManagement'
 import UserProfile from './pages/Admin/UserProfile'
+import AccessDenied from './components/AccessDenied'
 
 function App() {
   return (
@@ -37,44 +38,44 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<UserProfile />} />
+                <Route path="/access-denied" element={<AccessDenied />} />
                 
                 {/* Student Management */}
-                <Route element={<ProtectedRoute permissionCode="student:read" />}>
+                <Route element={<ProtectedRoute permissionCode="student:read" moduleName="Student & Trainee Management" />}>
                   <Route path="/students" element={<StudentList />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                 </Route>
-                <Route element={<ProtectedRoute permissionCode="personal_occurrence:read" />}>
+                <Route element={<ProtectedRoute permissionCode="personal_occurrence:read" moduleName="Personal Occurrence Reporting" />}>
                   <Route path="/students/occurrences" element={<PersonalOccurrenceReporting />} />
                 </Route>
-                <Route element={<ProtectedRoute permissionCode="student:write" />}>
+                <Route element={<ProtectedRoute permissionCode="student:write" moduleName="Trainee Registration & Editing" />}>
                   <Route path="/students/new" element={<StudentForm />} />
                   <Route path="/students/:id/edit" element={<StudentForm />} />
                 </Route>
 
-
                 {/* Parade State */}
-                <Route element={<ProtectedRoute permissionCode="parade:read" />}>
+                <Route element={<ProtectedRoute permissionCode="parade:read" moduleName="Daily Parade State & Muster" />}>
                   <Route path="/parade" element={<DailyParade />} />
                 </Route>
 
                 {/* Accommodation */}
-                <Route element={<ProtectedRoute permissionCode="room:read" />}>
+                <Route element={<ProtectedRoute permissionCode="room:read" moduleName="Accommodation & Housing Management" />}>
                   <Route path="/accommodation" element={<AccommodationPanel />} />
                   <Route path="/accommodation/:subview" element={<AccommodationPanel />} />
                 </Route>
 
                 {/* Academics */}
-                <Route element={<ProtectedRoute permissionCode="academic:read" />}>
+                <Route element={<ProtectedRoute permissionCode="academic:read" moduleName="Academic Activities & Course Syllabus" />}>
                   <Route path="/academic" element={<CourseList />} />
                 </Route>
 
                 {/* Reports */}
-                <Route element={<ProtectedRoute permissionCode="reports:read" />}>
+                <Route element={<ProtectedRoute permissionCode="reports:read" moduleName="Institutional Reports & Analytics" />}>
                   <Route path="/reports" element={<ReportGenerator />} />
                 </Route>
 
                 {/* System Administration */}
-                <Route element={<ProtectedRoute permissionCode="system:audit" />}>
+                <Route element={<ProtectedRoute permissionCode="system:audit" moduleName="System Administration & RBAC Security" />}>
                   <Route path="/admin" element={<UserManagement />} />
                   <Route path="/admin/:subview" element={<UserManagement />} />
                 </Route>

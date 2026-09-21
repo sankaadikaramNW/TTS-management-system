@@ -655,12 +655,7 @@ export const DailyParade = () => {
             icon: 'bi-clock-history',
             label: 'Submission History'
           },
-          {
-            key: 'officers',
-            icon: 'bi-person-badge',
-            label: 'Instructor Setup',
-            show: hasPermission('parade:manage_officers') || hasPermission('parade:read')
-          }
+
         ]
           .filter((t) => t.show !== false)
           .map((tab) => (

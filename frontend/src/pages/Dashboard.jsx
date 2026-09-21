@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
+import { SYSTEM_MODULES, openModule, checkModuleAccess, isUserAdmin } from '../utils/navigation'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -17,10 +19,12 @@ import { Pie, Bar } from 'react-chartjs-2'
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title)
 
 export const Dashboard = () => {
-  const { hasPermission, hasRole } = useAuth()
+  const { user, hasPermission, hasRole } = useAuth()
+  const navigate = useNavigate()
   const [summary, setSummary] = useState(null)
   const [paradeMonitoring, setParadeMonitoring] = useState(null)
   const [loading, setLoading] = useState(true)
+  const isAdmin = isUserAdmin(user)
 
   const fetchSummary = async () => {
     try {
@@ -31,7 +35,7 @@ export const Dashboard = () => {
       setSummary(sumRes.data)
       setParadeMonitoring(paradeMonRes.data)
     } catch (err) {
-      console.error(err)
+      console.error('Failed to load dashboard summary', err)
     } finally {
       setLoading(false)
     }
@@ -99,45 +103,148 @@ export const Dashboard = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      {/* Top Header */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="mb-0 text-primary display-font">Executive Overview</h2>
-          <p className="text-muted mb-0">Daily status updates for Sri Lanka Air Force Trade Training School</p>
+          <div className="d-flex align-items-center gap-2">
+            <h2 className="mb-0 text-primary display-font fw-bold">Executive Dashboard</h2>
+            <span className={`badge ${isAdmin ? 'bg-primary' : 'bg-secondary'} px-2.5 py-1 fw-semibold`}>
+              <i className={`bi ${isAdmin ? 'bi-shield-fill-check' : 'bi-person-badge'} me-1`}></i>
+              {isAdmin ? 'ADMIN SESSION' : `${user?.role?.name || 'STANDARD USER'}`}
+            </span>
+          </div>
+          <p className="text-muted mb-0 small">
+            Central operational gateway and status overview for Sri Lanka Air Force Trade Training School
+          </p>
         </div>
-        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={fetchSummary}>
-          <i className="bi bi-arrow-clockwise"></i> Refresh
+        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-xs fw-semibold" onClick={fetchSummary}>
+          <i className="bi bi-arrow-clockwise"></i> Refresh Status
         </button>
       </div>
 
       {/* KPI Cards Row */}
       <div className="row g-3 mb-4">
         <div className="col-md-3 col-sm-6">
-          <div className="card slaf-card kpi-card p-3 d-flex flex-column h-100">
+          <div className="card slaf-card kpi-card p-3 d-flex flex-column h-100 shadow-xs">
             <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Total Enrolled</span>
             <h3 className="mb-0 mt-2 fw-bold">{parade.total_enrolled}</h3>
             <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Registered trainees</span>
           </div>
         </div>
         <div className="col-md-3 col-sm-6">
-          <div className="card slaf-card kpi-card success p-3 d-flex flex-column h-100">
+          <div className="card slaf-card kpi-card success p-3 d-flex flex-column h-100 shadow-xs">
             <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Present Strength</span>
             <h3 className="mb-0 mt-2 fw-bold text-success">{parade.present}</h3>
             <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>On-duty strength</span>
           </div>
         </div>
         <div className="col-md-3 col-sm-6">
-          <div className="card slaf-card kpi-card warning p-3 d-flex flex-column h-100">
+          <div className="card slaf-card kpi-card warning p-3 d-flex flex-column h-100 shadow-xs">
             <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Sick Report / Hospital</span>
             <h3 className="mb-0 mt-2 fw-bold text-warning">{parade.sick_report + parade.hospital}</h3>
             <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Medical category</span>
           </div>
         </div>
         <div className="col-md-3 col-sm-6">
-          <div className="card slaf-card kpi-card danger p-3 d-flex flex-column h-100">
+          <div className="card slaf-card kpi-card danger p-3 d-flex flex-column h-100 shadow-xs">
             <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Absent / AWOL</span>
             <h3 className="mb-0 mt-2 fw-bold text-danger">{parade.leave + parade.awol}</h3>
             <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Out of camp limits</span>
           </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          CENTRAL MODULE LAUNCHER & WORKSPACE GATEWAY
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="card slaf-card p-4 mb-4 border-0 shadow-sm bg-white">
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 className="card-title mb-0 fw-bold display-font text-dark d-flex align-items-center gap-2">
+              <i className="bi bi-grid-3x3-gap-fill text-primary"></i>
+              SLAF TTS Operational Modules & Workspaces
+            </h5>
+            <small className="text-muted">
+              Select an authorized operational module below. Permissions are dynamically validated per session.
+            </small>
+          </div>
+          <span className="badge bg-light text-secondary border px-2.5 py-1.5 small">
+            Logged In: <strong>{user?.full_name}</strong> ({user?.role?.name})
+          </span>
+        </div>
+
+        <div className="row g-3">
+          {SYSTEM_MODULES.map((mod) => {
+            const hasAccess = checkModuleAccess(user, mod.permissionCode, hasPermission)
+
+            return (
+              <div key={mod.id} className="col-12 col-sm-6 col-lg-3">
+                <div 
+                  className={`card h-100 p-3.5 border transition-all cursor-pointer position-relative ${
+                    hasAccess ? 'hover-shadow-md border-secondary border-opacity-25' : 'bg-light bg-opacity-75 border-secondary border-opacity-10 opacity-75'
+                  }`}
+                  style={{
+                    borderRadius: '12px',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => openModule(navigate, mod, user, hasPermission)}
+                  title={hasAccess ? `Open ${mod.title}` : `Access Restricted: Requires ${mod.permissionCode}`}
+                >
+                  <div className="d-flex justify-content-between align-items-start mb-2.5">
+                    <div 
+                      className="d-inline-flex align-items-center justify-content-center rounded-3 p-2.5 shadow-xs"
+                      style={{ 
+                        backgroundColor: mod.bgColor, 
+                        color: mod.color,
+                        width: '44px',
+                        height: '44px'
+                      }}
+                    >
+                      <i className={`bi ${mod.icon} fs-5`}></i>
+                    </div>
+
+                    <span 
+                      className={`badge rounded-pill px-2 py-1 ${
+                        hasAccess 
+                          ? (isAdmin ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-success-subtle text-success border border-success-subtle') 
+                          : 'bg-danger-subtle text-danger border border-danger-subtle'
+                      }`}
+                      style={{ fontSize: '0.68rem', fontWeight: 600 }}
+                    >
+                      {hasAccess ? (isAdmin ? 'Admin' : 'Authorized') : 'Restricted'}
+                    </span>
+                  </div>
+
+                  <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
+                    {mod.title}
+                  </h6>
+                  
+                  <p className="text-muted mb-3 flex-grow-1" style={{ fontSize: '0.78rem', lineHeight: '1.35' }}>
+                    {mod.description}
+                  </p>
+
+                  <div className="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-10 mt-auto">
+                    <small className="text-muted fw-semibold" style={{ fontSize: '0.72rem' }}>
+                      {mod.category}
+                    </small>
+                    <span 
+                      className={`small fw-bold d-inline-flex align-items-center gap-1 ${
+                        hasAccess ? 'text-primary' : 'text-danger'
+                      }`}
+                      style={{ fontSize: '0.78rem' }}
+                    >
+                      {hasAccess ? (
+                        <>Open <i className="bi bi-arrow-right"></i></>
+                      ) : (
+                        <><i className="bi bi-lock-fill"></i> Locked</>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -185,10 +292,13 @@ export const Dashboard = () => {
                 )}
               </div>
 
-              <a href="/parade?tab=monitoring" className="btn btn-info btn-sm fw-semibold text-dark shadow-sm">
+              <button 
+                onClick={() => openModule(navigate, SYSTEM_MODULES.find(m => m.id === 'parade'), user, hasPermission)}
+                className="btn btn-info btn-sm fw-semibold text-dark shadow-sm"
+              >
                 <i className="bi bi-speedometer2 me-1" />
                 Manage Monitoring
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -197,16 +307,16 @@ export const Dashboard = () => {
       {/* Main Graphs Layout */}
       <div className="row g-4 mb-4">
         <div className="col-lg-6 col-md-12">
-          <div className="card slaf-card p-4 h-100">
-            <h5 className="card-title mb-3">Trainee Strength Distribution</h5>
+          <div className="card slaf-card p-4 h-100 shadow-xs">
+            <h5 className="card-title mb-3 fw-bold">Trainee Strength Distribution</h5>
             <div className="mx-auto" style={{ maxWidth: '300px' }}>
               <Pie data={pieData} />
             </div>
           </div>
         </div>
         <div className="col-lg-6 col-md-12">
-          <div className="card slaf-card p-4 h-100">
-            <h5 className="card-title mb-3">Performance & Accommodation</h5>
+          <div className="card slaf-card p-4 h-100 shadow-xs">
+            <h5 className="card-title mb-3 fw-bold">Performance & Accommodation</h5>
             <Bar data={barData} />
           </div>
         </div>
@@ -215,10 +325,10 @@ export const Dashboard = () => {
       {/* Dashboard Sub-layouts */}
       <div className="row g-4">
         {/* Recent Audit Logs (Only visible to System Administrators & Security Officers) */}
-        {(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator')) && (
+        {(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator') || isAdmin) && (
           <div className="col-lg-7 col-md-12">
-            <div className="card slaf-card p-4 h-100">
-              <h5 className="card-title mb-3">Recent Security & Audit Logs</h5>
+            <div className="card slaf-card p-4 h-100 shadow-xs">
+              <h5 className="card-title mb-3 fw-bold">Recent Security & Audit Logs</h5>
               <div className="table-responsive">
                 <table className="table slaf-table mb-0">
                   <thead>
@@ -250,9 +360,9 @@ export const Dashboard = () => {
         )}
 
         {/* Accommodation Occupancy Card */}
-        <div className={(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator')) ? 'col-lg-5 col-md-12' : 'col-12'}>
-          <div className="card slaf-card p-4 h-100">
-            <h5 className="card-title mb-3">Accommodation Summary</h5>
+        <div className={(hasPermission('system:audit') || hasRole('Super Administrator') || hasRole('System Administrator') || isAdmin) ? 'col-lg-5 col-md-12' : 'col-12'}>
+          <div className="card slaf-card p-4 h-100 shadow-xs">
+            <h5 className="card-title mb-3 fw-bold">Accommodation Summary</h5>
             <div className="d-flex flex-column gap-3">
               <div className="d-flex justify-content-between align-items-center">
                 <span>Total beds configured</span>

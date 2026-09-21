@@ -27,9 +27,9 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span className="module-header-text">Housing Module</span>
           </div>
 
-          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
             <i className="bi bi-arrow-left-circle-fill"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
 
           <NavLink to="/accommodation" end className="nav-link" title="Dashboard">
@@ -68,11 +68,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <i className="bi bi-geo-alt"></i>
             <span>Visual Bunk Map</span>
           </NavLink>
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -86,9 +86,9 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span className="module-header-text">Trainees Module</span>
           </div>
 
-          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
             <i className="bi bi-arrow-left-circle-fill"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
 
           <NavLink to="/students" end className="nav-link" title="Trainee Directory">
@@ -107,11 +107,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span>Personal Occurrence Reporting</span>
             </NavLink>
           )}
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -126,9 +126,9 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span className="module-header-text">Parade State Module</span>
           </div>
 
-          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
             <i className="bi bi-arrow-left-circle-fill"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
 
           <NavLink
@@ -181,16 +181,7 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <i className="bi bi-clock-history"></i>
             <span>Parade State History</span>
           </NavLink>
-          {(hasPermission('parade:manage_officers') || hasPermission('parade:read')) && (
-            <NavLink
-              to="/parade?tab=officers"
-              className={`nav-link ${curTab === 'officers' ? 'active' : ''}`}
-              title="Officer I/C Setup"
-            >
-              <i className="bi bi-person-badge"></i>
-              <span>Officer I/C Setup</span>
-            </NavLink>
-          )}
+
           {hasPermission('reports:read') && (
             <NavLink
               to="/reports?tab=parade"
@@ -201,11 +192,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span>Official Reports</span>
             </NavLink>
           )}
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -221,22 +212,22 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span className="module-header-text">Academic Module</span>
           </div>
 
-          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
             <i className="bi bi-arrow-left-circle-fill"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
 
-          <NavLink 
-            to="/academic" 
-            end 
+          <NavLink
+            to="/academic"
+            end
             className={`nav-link ${(!isTrades && !isCalendar && path === '/academic') ? 'active' : ''}`}
             title="Course Syllabus"
           >
             <i className="bi bi-journal-bookmark-fill"></i>
             <span>Course Syllabus</span>
           </NavLink>
-          <NavLink 
-            to="/academic?view=calendar" 
+          <NavLink
+            to="/academic?view=calendar"
             className={`nav-link ${isCalendar ? 'active' : ''}`}
             title="Course Calendar"
           >
@@ -244,8 +235,8 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span>Course Calendar</span>
           </NavLink>
           {hasPermission('academic:write') && (
-            <NavLink 
-              to="/academic?view=trades" 
+            <NavLink
+              to="/academic?view=trades"
               className={`nav-link ${isTrades ? 'active' : ''}`}
               title="Trade Management"
             >
@@ -253,11 +244,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span>Trade Management</span>
             </NavLink>
           )}
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -293,9 +284,9 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span>Back to Academic</span>
             </NavLink>
           ) : (
-            <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+            <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
               <i className="bi bi-arrow-left-circle-fill"></i>
-              <span>Back to Portal Home</span>
+              <span>Back to Home Portal</span>
             </NavLink>
           )}
 
@@ -331,11 +322,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <i className="bi bi-shield-exclamation"></i>
             <span>Occurrences Log</span>
           </NavLink>
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -349,20 +340,20 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <span className="module-header-text">Security Module</span>
           </div>
 
-          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info mb-2 border border-info border-opacity-25" title="Back to Home Portal">
             <i className="bi bi-arrow-left-circle-fill"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
 
           <NavLink to="/admin" className="nav-link" title="User Accounts">
             <i className="bi bi-gear-fill"></i>
             <span>User Accounts</span>
           </NavLink>
-          
+
           <hr className="mx-3 opacity-25" style={{ color: '#fff' }} />
-          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Portal Home">
+          <NavLink to="/dashboard" className="nav-link text-info" title="Back to Home Portal">
             <i className="bi bi-arrow-left-square"></i>
-            <span>Back to Portal Home</span>
+            <span>Back to Home Portal</span>
           </NavLink>
         </>
       )
@@ -435,7 +426,7 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         <div className="position-relative">
           {/* Desktop Collapse Toggle Button */}
           <div className={`d-none d-lg-flex px-3 mb-2 ${isCollapsed ? 'justify-content-center' : 'justify-content-end'}`}>
-            <button 
+            <button
               className="sidebar-toggle-btn"
               onClick={onToggleCollapse}
               title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -452,8 +443,8 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
 
           {/* Sidebar Header Logo */}
           <Link to="/dashboard" className="text-decoration-none d-block px-3 mb-4 text-center">
-            <div 
-              className="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2 mb-2 shadow-sm" 
+            <div
+              className="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2 mb-2 shadow-sm"
               style={{ width: isCollapsed ? '42px' : '50px', height: isCollapsed ? '42px' : '50px', transition: 'all 0.3s ease' }}
             >
               <i className="bi bi-airplane-engines" style={{ fontSize: isCollapsed ? '1.25rem' : '1.5rem' }}></i>

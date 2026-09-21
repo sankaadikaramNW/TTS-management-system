@@ -254,7 +254,18 @@ class NightParadeSaveDraftRequest(BaseModel):
     trade: str
     course_id: Optional[str] = None
     batch: Optional[str] = None
+    submitter_remarks: Optional[str] = None
     records: List[NightParadeRecord]
+
+# Semantic alias
+NightParadeSaveRequest = NightParadeSaveDraftRequest
+
+class NightParadeSaveResponse(BaseModel):
+    status: str
+    submission_id: Optional[str] = None
+    updated_count: int = 0
+    changed_count: int = 0
+    last_saved_at: Optional[str] = None
 
 class NightParadeCompleteRequest(BaseModel):
     """Complete and lock Night Parade Roll Call with 100% accountability verification."""

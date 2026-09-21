@@ -16,7 +16,8 @@ from app.schemas.parade import (
     ParadeSubmissionDetailResponse, ApprovalActionRequest, RejectionActionRequest,
     ParadeReturnActionRequest, ParadeMonitoringResponse, ParadeMonitoringSummary,
     ParadeDateRangeResponse,
-    NightParadeSaveDraftRequest, NightParadeSubmitRequest, NightParadeCompleteRequest,
+    NightParadeSaveDraftRequest, NightParadeSaveRequest, NightParadeSaveResponse,
+    NightParadeSubmitRequest, NightParadeCompleteRequest,
     NightParadeContextResponse, NightParadeSummaryResponse
 )
 
@@ -434,7 +435,25 @@ def get_night_parade_summary(
     )
 
 
-@router.post("/night/draft", summary="Save Night Parade roll call records as DRAFT")
+@router.post("/night/save", response_model=NightParadeSaveResponse,
+             summary="Save and persist Night Parade evening status changes")
+def save_night_parade_state(
+    request: Request,
+    save_data: NightParadeSaveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:write"))
+):
+    """
+    Save and persist evening roll call status changes and remarks under parade_type='NIGHT'.
+    Allows partial progress. Morning state baseline remains strictly preserved.
+    """
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.save_night_parade(db, save_data, current_user.id, ip, ua)
+
+
+@router.post("/night/draft", response_model=NightParadeSaveResponse,
+             summary="Save Night Parade roll call records as DRAFT")
 def save_night_parade_draft(
     request: Request,
     draft_data: NightParadeSaveDraftRequest,

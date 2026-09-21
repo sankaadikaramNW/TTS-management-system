@@ -61,6 +61,8 @@ export const NightParadeTab = ({
 
   // Trainees & verification tracking: { [student_id]: { night_status, morning_status, remarks, verified } }
   const [traineeRecords, setTraineeRecords] = useState({})
+  const [savedSnapshot, setSavedSnapshot] = useState({}) // Snapshot of persisted DB values for dirty tracking
+  const [lastSavedAt, setLastSavedAt] = useState(null)
   const [traineeList, setTraineeList] = useState([])
 
   // Analytics / Summary
@@ -90,19 +92,27 @@ export const NightParadeTab = ({
       setSubmitterRemarks(ctx.submitter_remarks || '')
       setTraineeList(ctx.trainees || [])
 
-      // Build state record map
+      // Build state record map & snapshot for dirty detection
       const recordsMap = {}
+      const snapshotMap = {}
       ;(ctx.trainees || []).forEach((t) => {
+        const nStatus = t.night_status || t.morning_status || 'Present'
+        const rem = t.remarks || ''
         recordsMap[t.student_id] = {
           student_id: t.student_id,
           morning_status: t.morning_status || 'Present',
-          night_status: t.night_status || t.morning_status || 'Present',
-          remarks: t.remarks || '',
+          night_status: nStatus,
+          remarks: rem,
           verified: t.is_verified || (ctx.night_submission_status === 'COMPLETED'),
           status_changed: t.status_changed || false
         }
+        snapshotMap[t.student_id] = {
+          night_status: nStatus,
+          remarks: rem
+        }
       })
       setTraineeRecords(recordsMap)
+      setSavedSnapshot(snapshotMap)
       setSummaryData(sumRes.data)
     } catch (err) {
       console.error('Failed to load night parade context', err)
@@ -197,12 +207,37 @@ export const NightParadeTab = ({
     toast.info('Marked unverified trainees as Present (On Parade).')
   }
 
-  // ── Save Draft ─────────────────────────────────────────────────
-  const handleSaveDraft = async () => {
-    if (selectedTrade === 'All') {
-      toast.warning('Please select a specific Trade unit to save draft.')
-      return
+  // ── Dirty State & Unsaved Changes Tracking ────────────────────
+  const { dirtyCount, dirtyMap } = useMemo(() => {
+    let count = 0
+    const map = {}
+    traineeList.forEach((t) => {
+      const current = traineeRecords[t.student_id]
+      const snapshot = savedSnapshot[t.student_id]
+      if (current && snapshot) {
+        const isDirty = (current.night_status !== snapshot.night_status) || (current.remarks !== snapshot.remarks)
+        if (isDirty) {
+          count++
+          map[t.student_id] = true
+        }
+      }
+    })
+    return { dirtyCount: count, dirtyMap: map }
+  }, [traineeList, traineeRecords, savedSnapshot])
+
+  const hasUnsavedChanges = dirtyCount > 0
+
+  const handleTradeChange = (newTrade) => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm(`You have ${dirtyCount} unsaved change(s) for ${selectedTrade}. Switching trade will discard these changes. Continue?`)) {
+        return
+      }
     }
+    setSelectedTrade(newTrade)
+  }
+
+  // ── SAVE NIGHT PARADE (Persist Evening Changes to DB) ──────────
+  const handleSaveNightParade = async () => {
     setSaving(true)
     try {
       const recordsPayload = traineeList.map((t) => {
@@ -218,17 +253,19 @@ export const NightParadeTab = ({
 
       const payload = {
         date: selectedDate,
-        trade: selectedTrade,
+        trade: selectedTrade || 'All',
         records: recordsPayload,
         submitter_remarks: submitterRemarks
       }
 
-      await axios.post('/api/v1/parade/night/draft', payload)
-      toast.success(`Night Parade Roll Call draft saved for ${selectedTrade}.`)
+      const res = await axios.post('/api/v1/parade/night/save', payload)
+      const saveTime = res.data?.last_saved_at || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      setLastSavedAt(saveTime)
+      toast.success(`Night Parade changes saved successfully. (${selectedTrade === 'All' ? 'All Trades' : selectedTrade})`)
       await fetchNightContext()
     } catch (err) {
       console.error(err)
-      toast.error(err.response?.data?.detail || 'Failed to save Night Parade draft.')
+      toast.error(err.response?.data?.detail || 'Night Parade changes could not be saved.')
     } finally {
       setSaving(false)
     }
@@ -238,10 +275,6 @@ export const NightParadeTab = ({
   const handleCompleteNightParade = async () => {
     if (!morningAvailable) {
       toast.error('Cannot complete: Morning Parade State has not been recorded for this date.')
-      return
-    }
-    if (selectedTrade === 'All') {
-      toast.warning('Please select a specific Trade unit to complete.')
       return
     }
 
@@ -467,7 +500,7 @@ export const NightParadeTab = ({
               </div>
             </div>
 
-            {/* Trade selector & Classical Report button */}
+            {/* Trade selector & Top Actions Toolbar */}
             <div className="d-flex align-items-center gap-2 flex-wrap ms-auto">
               <div className="d-flex align-items-center gap-1.5">
                 <label className="form-label mb-0 small fw-bold text-muted text-nowrap">Trade Unit:</label>
@@ -475,7 +508,7 @@ export const NightParadeTab = ({
                   className="form-select form-select-sm shadow-xs fw-semibold"
                   style={{ minWidth: '180px' }}
                   value={selectedTrade}
-                  onChange={(e) => setSelectedTrade(e.target.value)}
+                  onChange={(e) => handleTradeChange(e.target.value)}
                 >
                   <option value="All">All Trades (Overview)</option>
                   {trades.map((tr) => (
@@ -486,8 +519,51 @@ export const NightParadeTab = ({
                 </select>
               </div>
 
+              {/* Unsaved Changes Status Indicator */}
+              {hasUnsavedChanges ? (
+                <span
+                  className="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1 shadow-xs animate-pulse"
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  <i className="bi bi-exclamation-triangle-fill" />
+                  {dirtyCount} Unsaved Change{dirtyCount > 1 ? 's' : ''}
+                </span>
+              ) : lastSavedAt ? (
+                <span
+                  className="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs"
+                  style={{ fontSize: '0.76rem' }}
+                >
+                  <i className="bi bi-check-circle-fill" />
+                  Saved ({lastSavedAt})
+                </span>
+              ) : null}
+
+              {/* Top Prominent SAVE NIGHT PARADE Button */}
+              {!isCompleted && (
+                <button
+                  className={`btn btn-sm fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 ${
+                    hasUnsavedChanges ? 'btn-primary' : 'btn-outline-primary'
+                  }`}
+                  onClick={handleSaveNightParade}
+                  disabled={saving || completing || !hasUnsavedChanges}
+                  title={hasUnsavedChanges ? "Persist Night Parade status changes to database" : "No unsaved changes to save"}
+                >
+                  {saving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" />
+                      SAVING...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-floppy-fill" />
+                      SAVE NIGHT PARADE
+                    </>
+                  )}
+                </button>
+              )}
+
               <button
-                className="btn btn-sm btn-outline-primary fw-semibold shadow-xs"
+                className="btn btn-sm btn-outline-secondary fw-semibold shadow-xs"
                 onClick={() => setShowNightReportModal(true)}
                 title="Generate Official SLAF Night Roll Call Classical Report"
               >
@@ -842,7 +918,18 @@ export const NightParadeTab = ({
                           </td>
 
                           {/* Service Number */}
-                          <td className="font-monospace fw-bold text-primary">{t.service_number}</td>
+                          <td className="fw-bold font-monospace">
+                            {t.service_number}
+                            {dirtyMap[t.student_id] && (
+                              <span
+                                className="badge bg-warning text-dark ms-1.5 px-1.5 py-0.5 fw-bold"
+                                style={{ fontSize: '0.65rem' }}
+                                title="Modified — Unsaved change"
+                              >
+                                UNSAVED
+                              </span>
+                            )}
+                          </td>
 
                           {/* Rank */}
                           <td>
@@ -932,13 +1019,12 @@ export const NightParadeTab = ({
           </div>
 
           {/* ─── 7. Completion & Accountability Panel ─── */}
-          {selectedTrade !== 'All' && (
-            <div className="card slaf-card shadow-sm border-0 mb-4">
-              <div className="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
-                <div className="fw-bold d-flex align-items-center gap-2">
-                  <i className="bi bi-shield-check text-success" />
-                  Night Parade Roll Call Verification & Completion — {selectedTrade}
-                </div>
+          <div className="card slaf-card shadow-sm border-0 mb-4">
+            <div className="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+              <div className="fw-bold d-flex align-items-center gap-2">
+                <i className="bi bi-shield-check text-success" />
+                Night Parade Roll Call Verification & Completion — {selectedTrade === 'All' ? 'All Trades (Camp Overview)' : selectedTrade}
+              </div>
                 {isCompleted && (
                   <span className="badge bg-success px-2.5 py-1">
                     <i className="bi bi-lock-fill me-1" />
@@ -996,19 +1082,31 @@ export const NightParadeTab = ({
                   {!isCompleted && (
                     <div className="d-flex align-items-center gap-2">
                       <button
-                        className="btn btn-outline-secondary btn-sm px-3 fw-semibold shadow-xs"
-                        onClick={handleSaveDraft}
-                        disabled={saving || completing}
+                        className={`btn btn-sm px-3 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 ${
+                          hasUnsavedChanges ? 'btn-primary' : 'btn-outline-primary'
+                        }`}
+                        onClick={handleSaveNightParade}
+                        disabled={saving || completing || !hasUnsavedChanges}
+                        title={hasUnsavedChanges ? "Persist Night Parade status changes to database" : "No unsaved changes"}
                       >
-                        {saving ? <span className="spinner-border spinner-border-sm me-1" /> : <i className="bi bi-floppy me-1" />}
-                        Save Draft
+                        {saving ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" />
+                            SAVING...
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-floppy-fill" />
+                            SAVE NIGHT PARADE
+                          </>
+                        )}
                       </button>
                       <button
                         className={`btn btn-sm px-4 fw-bold shadow-sm ${
                           liveStats.isComplete ? 'btn-success' : 'btn-secondary'
                         }`}
                         onClick={handleCompleteNightParade}
-                        disabled={saving || completing || !morningAvailable}
+                        disabled={saving || completing || !morningAvailable || !liveStats.isComplete}
                         title={
                           liveStats.isComplete
                             ? 'Complete and lock Night Parade State'
@@ -1027,7 +1125,6 @@ export const NightParadeTab = ({
                 </div>
               </div>
             </div>
-          )}
         </div>
       )}
 

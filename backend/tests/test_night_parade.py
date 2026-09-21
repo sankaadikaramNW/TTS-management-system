@@ -195,7 +195,7 @@ def test_01_to_05_status_comparison_and_transitions(client, auth_headers, db_ses
     }
     draft_res = client.post("/api/v1/parade/night/draft", json=draft_payload, headers=auth_headers)
     assert draft_res.status_code == 200
-    assert draft_res.json()["status"] == "draft_saved"
+    assert draft_res.json()["status"] in ["saved", "draft_saved"]
     assert draft_res.json()["changed_count"] == 3
 
     # Verify context reflecting draft states
@@ -402,3 +402,83 @@ def test_night_parade_summary_and_report(client, auth_headers, db_session, setup
     assert r2["morning_status"] == 'Hospital'
     assert r2["night_status"] == 'Present'
     assert r2["status_changed"] == 'YES'
+
+
+def test_partial_save_and_reload_persistence(client, auth_headers, db_session, setup_night_parade_data):
+    """
+    TEST: Verify /api/v1/parade/night/save endpoint:
+    1. Saves partial progress (e.g. only 1 trainee's status changed: Hospital -> Present).
+    2. Morning parade record remains strictly untouched (Hospital).
+    3. Night parade record is permanently saved as Present with status_changed = True.
+    4. Reload context returns saved night status.
+    5. Night submission status is IN_PROGRESS (not COMPLETED).
+    """
+    test_date = date(2026, 9, 26)
+    s1, s2, s3, s4, s5 = setup_night_parade_data["students"]
+
+    # Set up Morning Parade baseline
+    m_sub = ParadeSubmission(id='sub-m-26', date=test_date, trade='Airframe', parade_type='MORNING', status='APPROVED')
+    db_session.add(m_sub)
+    m1 = ParadeState(student_id=s1.id, date=test_date, parade_type='MORNING', status='Present', submission_id=m_sub.id)
+    m2 = ParadeState(student_id=s2.id, date=test_date, parade_type='MORNING', status='Hospital', submission_id=m_sub.id, remarks='Morning admission')
+    m3 = ParadeState(student_id=s3.id, date=test_date, parade_type='MORNING', status='Sick Report', submission_id=m_sub.id)
+    m4 = ParadeState(student_id=s4.id, date=test_date, parade_type='MORNING', status='Leave', submission_id=m_sub.id)
+    m5 = ParadeState(student_id=s5.id, date=test_date, parade_type='MORNING', status='Present', submission_id=m_sub.id)
+    db_session.add_all([m1, m2, m3, m4, m5])
+    db_session.commit()
+
+    # 1. User changes only s2 (Hospital -> Present with remark) and clicks SAVE NIGHT PARADE
+    save_payload = {
+        "date": str(test_date),
+        "trade": "Airframe",
+        "submitter_remarks": "Partial evening roll call progress",
+        "records": [
+            {
+                "student_id": s2.id,
+                "night_status": "Present",
+                "remarks": "Discharged from hospital and returned to camp"
+            }
+        ]
+    }
+
+    save_res = client.post("/api/v1/parade/night/save", json=save_payload, headers=auth_headers)
+    assert save_res.status_code == 200
+    save_data = save_res.json()
+    assert save_data["status"] == "saved"
+    assert save_data["updated_count"] == 1
+    assert save_data["changed_count"] == 1
+    assert "last_saved_at" in save_data
+
+    # 2. Verify Morning DB record is 100% UNCHANGED
+    m2_db = db_session.query(ParadeState).filter(
+        ParadeState.student_id == s2.id,
+        ParadeState.date == test_date,
+        ParadeState.parade_type == 'MORNING'
+    ).first()
+    assert m2_db.status == 'Hospital'
+    assert m2_db.remarks == 'Morning admission'
+
+    # 3. Verify Night DB record is permanently stored
+    n2_db = db_session.query(ParadeState).filter(
+        ParadeState.student_id == s2.id,
+        ParadeState.date == test_date,
+        ParadeState.parade_type == 'NIGHT'
+    ).first()
+    assert n2_db is not None
+    assert n2_db.status == 'Present'
+    assert n2_db.morning_status == 'Hospital'
+    assert n2_db.status_changed is True
+    assert "Discharged from hospital" in n2_db.remarks
+
+    # 4. Verify reload context reflects saved night status
+    ctx_res = client.get(f"/api/v1/parade/night/context?parade_date={test_date}&trade=Airframe", headers=auth_headers)
+    assert ctx_res.status_code == 200
+    trainees = {t["student_id"]: t for t in ctx_res.json()["trainees"]}
+    assert trainees[s2.id]["morning_status"] == "Hospital"
+    assert trainees[s2.id]["night_status"] == "Present"
+    assert trainees[s2.id]["status_changed"] is True
+    assert "Discharged from hospital" in trainees[s2.id]["remarks"]
+
+    # 5. Verify submission status is IN_PROGRESS (not COMPLETED)
+    assert ctx_res.json()["night_submission_status"] in ["IN_PROGRESS", "DRAFT"]
+

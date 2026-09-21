@@ -32,6 +32,7 @@
   "backend/tests/test_night_parade.py::test_12_return_and_resubmit_workflow",
   "backend/tests/test_night_parade.py::test_night_parade_summary_and_report",
   "backend/tests/test_night_parade.py::test_no_instructor_approval_dependency",
+  "backend/tests/test_night_parade.py::test_partial_save_and_reload_persistence",
   "backend/tests/test_night_parade.py::test_strength_reconciliation_and_completion_workflow",
   "backend/tests/test_parade_academic_integration.py::test_backend_validation_rejects_ineligible_marks_submission",
   "backend/tests/test_parade_academic_integration.py::test_controlled_officer_override_and_audit",

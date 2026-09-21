@@ -99,14 +99,26 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
         </button>
 
         {!isHome && (
-          <button 
-            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 me-1 shadow-xs px-2 py-1 rounded-pill"
-            onClick={() => moduleInfo.parent ? navigate(moduleInfo.parent) : navigate(-1)}
-            title={`Back to ${moduleInfo.parentLabel || 'Previous Page'}`}
-          >
-            <i className="bi bi-arrow-left"></i>
-            <span className="d-none d-sm-inline small fw-semibold">Back</span>
-          </button>
+          <div className="d-flex align-items-center gap-1.5 me-1">
+            <button 
+              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-xs px-2.5 py-1 rounded-pill"
+              onClick={() => navigate('/dashboard')}
+              title="Back to Home Portal"
+            >
+              <i className="bi bi-arrow-left-circle-fill"></i>
+              <span className="d-none d-md-inline small fw-semibold">Back to Home Portal</span>
+            </button>
+            {moduleInfo.parent && moduleInfo.parent !== '/dashboard' && (
+              <button 
+                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-xs px-2 py-1 rounded-pill"
+                onClick={() => navigate(moduleInfo.parent)}
+                title={`Back to ${moduleInfo.parentLabel || 'Previous Page'}`}
+              >
+                <i className="bi bi-arrow-left"></i>
+                <span className="d-none d-sm-inline small fw-semibold">{moduleInfo.parentLabel || 'Back'}</span>
+              </button>
+            )}
+          </div>
         )}
 
         <div>

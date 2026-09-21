@@ -141,7 +141,7 @@ class StudentService:
         img = qr.make_image(fill_color="black", back_color="white")
         
         buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
+        img.save(buffered)
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return f"data:image/png;base64,{img_str}"
 
