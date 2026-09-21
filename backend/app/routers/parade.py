@@ -15,7 +15,9 @@ from app.schemas.parade import (
     ParadeSubmissionCreate, ParadeSubmissionDraftSave, ParadeSubmissionResponse,
     ParadeSubmissionDetailResponse, ApprovalActionRequest, RejectionActionRequest,
     ParadeReturnActionRequest, ParadeMonitoringResponse, ParadeMonitoringSummary,
-    ParadeDateRangeResponse
+    ParadeDateRangeResponse,
+    NightParadeSaveDraftRequest, NightParadeSubmitRequest, NightParadeCompleteRequest,
+    NightParadeContextResponse, NightParadeSummaryResponse
 )
 
 router = APIRouter(prefix="/parade", tags=["Daily Parade State"])
@@ -385,3 +387,128 @@ def remove_officer_in_charge(
     )
 
     return {"status": "removed", "oic_id": oic_id}
+
+
+# ─────────────────────────────────────────────────────────────
+# Night Parade State & Evening Roll Call Endpoints
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/night/context", response_model=NightParadeContextResponse,
+            summary="Fetch Morning baseline and Night working roll call context")
+def get_night_parade_context(
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query("All"),
+    course_id: Optional[str] = Query(None),
+    batch: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Retrieve the saved Morning Parade baseline and evening roll-call state for a date and group.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_night_context(
+        db, target_date=target_date, trade=trade,
+        course_id=course_id, batch=batch
+    )
+
+
+@router.get("/night/summary", response_model=NightParadeSummaryResponse,
+            summary="Get Night Parade strength, trade/category breakdowns, and transitions")
+def get_night_parade_summary(
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    course_id: Optional[str] = Query(None),
+    batch: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """
+    Get aggregated Night Parade KPIs, trade-wise breakdown, category-wise breakdown,
+    and Morning-to-Night status transitions matrix.
+    """
+    target_date = parade_date or date.today()
+    return parade_service.get_night_summary(
+        db, target_date=target_date, trade=trade,
+        course_id=course_id, batch=batch
+    )
+
+
+@router.post("/night/draft", summary="Save Night Parade roll call records as DRAFT")
+def save_night_parade_draft(
+    request: Request,
+    draft_data: NightParadeSaveDraftRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:write"))
+):
+    """Save evening roll call records as DRAFT under parade_type='NIGHT'."""
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.save_night_draft(db, draft_data, current_user.id, ip, ua)
+
+
+@router.post("/night/complete", summary="Complete and verify Night Parade State")
+def complete_night_parade_state(
+    request: Request,
+    completion_data: NightParadeCompleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:write"))
+):
+    """
+    Complete Night Parade State with strict 100% accountability reconciliation.
+    No instructor approval is required.
+    """
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.complete_night_parade(db, completion_data, current_user.id, ip, ua)
+
+
+@router.post("/night/submit", summary="Submit/Complete Night Parade State")
+def submit_night_parade_state(
+    request: Request,
+    submission_data: NightParadeCompleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:write"))
+):
+    """
+    Alias for complete_night_parade_state for backward compatibility.
+    """
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.complete_night_parade(db, submission_data, current_user.id, ip, ua)
+
+
+@router.get("/night/submissions", response_model=List[ParadeSubmissionResponse],
+            summary="List Night Parade submissions")
+def list_night_submissions(
+    parade_date: Optional[date] = None,
+    trade: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("parade:read"))
+):
+    """List Night Parade submissions."""
+    return submission_repo.get_list(db, parade_date=parade_date, trade=trade, status=status, parade_type='NIGHT', limit=limit)
+
+
+@router.get("/night/report", summary="Generate official Sri Lanka Air Force Night Parade State & Roll Call Report")
+def get_night_parade_classical_report(
+    request: Request,
+    parade_date: Optional[date] = Query(None),
+    trade: Optional[str] = Query(None),
+    course_id: Optional[str] = Query(None),
+    batch: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("reports:read"))
+):
+    """Generate the official Classical Report dataset for Night Parade State."""
+    target_date = parade_date or date.today()
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    return parade_service.get_night_report_data(
+        db, current_user=current_user, target_date=target_date,
+        trade=trade, course_id=course_id, batch=batch,
+        ip=ip, ua=ua
+    )
+

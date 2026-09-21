@@ -142,9 +142,8 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
       if (formData.remarks.trim()) uploadData.append('remarks', formData.remarks.trim())
 
       await axios.post('/api/v1/academic/lesson-plans', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
           setUploadProgress(percent)
         }
       })

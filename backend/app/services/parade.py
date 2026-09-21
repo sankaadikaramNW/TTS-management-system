@@ -12,7 +12,8 @@ from app.repositories.student import student_repo
 from app.repositories.user import audit_repo
 from app.schemas.parade import (
     DailyParadeUpdateRequest, ParadeSubmissionCreate,
-    ParadeSubmissionDraftSave, ApprovalActionRequest, RejectionActionRequest
+    ParadeSubmissionDraftSave, ApprovalActionRequest, RejectionActionRequest,
+    NightParadeSaveDraftRequest, NightParadeSubmitRequest, NightParadeCompleteRequest
 )
 
 
@@ -481,6 +482,387 @@ class ParadeStateService:
             "parade_date": str(target_date),
             "summary": summary,
             "rows": rows
+        }
+
+    # ─────────────────────────────────────────────────────────────
+    # Night Parade State & Evening Roll Call Service Functions
+    # ─────────────────────────────────────────────────────────────
+
+    def get_night_context(self, db: Session, target_date: date, trade: str,
+                          course_id: Optional[str] = None,
+                          batch: Optional[str] = None) -> dict:
+        """Fetch Morning baseline and evening roll-call status for a trade/course/batch."""
+        return parade_repo.get_night_parade_context(
+            db, parade_date=target_date, trade=trade,
+            course_id=course_id, batch=batch
+        )
+
+    def save_night_draft(self, db: Session, draft_data: NightParadeSaveDraftRequest,
+                         user_id: str, ip: str, ua: str) -> dict:
+        """Save evening roll call records as DRAFT under parade_type='NIGHT'."""
+        parade_date = draft_data.date
+        trade = draft_data.trade
+        course_id = draft_data.course_id
+        batch = draft_data.batch
+
+        # Get or create DRAFT submission for NIGHT
+        sub = submission_repo.get_or_create_draft(
+            db, parade_date=parade_date, trade=trade,
+            submitter_id=user_id, course_id=course_id, batch=batch,
+            parade_type='NIGHT'
+        )
+
+        # Query morning states to enforce true morning baseline references
+        from sqlalchemy import or_
+        from app.models.student import ParadeState
+        morning_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None)
+        ).all()
+        morning_map = {m.student_id: m.status for m in morning_states}
+
+        updated_count = 0
+        changed_count = 0
+
+        for rec in draft_data.records:
+            student = student_repo.get(db, rec.student_id)
+            if not student or student.deleted_at:
+                continue
+
+            m_status = morning_map.get(rec.student_id, rec.morning_status or "Present")
+            n_status = rec.night_status
+            is_changed = (n_status != m_status)
+            if is_changed:
+                changed_count += 1
+
+            parade_repo.create_or_update(
+                db,
+                student_id=rec.student_id,
+                parade_date=parade_date,
+                status=n_status,
+                morning_status=m_status,
+                status_changed=is_changed,
+                remarks=rec.remarks,
+                user_id=user_id,
+                submission_id=sub.id,
+                parade_type='NIGHT'
+            )
+            updated_count += 1
+
+        db.commit()
+
+        audit_repo.create_log(
+            db, user_id, "PARADE_NIGHT_DRAFT_SAVED", ip, ua,
+            f"Draft-saved Night Parade Roll Call for trade '{trade}' on {parade_date}. Records: {updated_count}, Changes: {changed_count}"
+        )
+
+        return {
+            "status": "draft_saved",
+            "submission_id": sub.id,
+            "updated_count": updated_count,
+            "changed_count": changed_count
+        }
+
+    def complete_night_parade(self, db: Session, completion_data: NightParadeCompleteRequest,
+                              user_id: str, ip: str, ua: str) -> dict:
+        """
+        Validate morning baseline exists, perform strict 100% accountability reconciliation,
+        save evening records, and mark Night Parade State as COMPLETED.
+        NO INSTRUCTOR APPROVAL IS REQUIRED.
+        """
+        from sqlalchemy import or_
+        from app.models.student import ParadeState, Student
+
+        parade_date = completion_data.date
+        trade = completion_data.trade
+        course_id = completion_data.course_id
+        batch = completion_data.batch
+        records = completion_data.records
+
+        # 1. Enforce Morning Parade baseline validation
+        morning_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None)
+        ).all()
+        if not morning_states:
+            raise HTTPException(
+                status_code=400,
+                detail="MORNING PARADE STATE NOT AVAILABLE: Morning parade state must be recorded and saved before conducting Night Parade Roll Call."
+            )
+
+        morning_map = {m.student_id: m.status for m in morning_states}
+
+        # 2. Fetch expected active trainee population from DB (Backend SSOT)
+        sq = db.query(Student).filter(
+            Student.deleted_at == None,
+            Student.status != 'Passed Out'
+        )
+        if trade and trade != 'All':
+            sq = sq.filter(Student.trade == trade)
+        if course_id:
+            sq = sq.filter(Student.course_id == course_id)
+        if batch and batch != 'All':
+            sq = sq.filter(Student.batch == batch)
+
+        expected_students = sq.all()
+        expected_student_ids = {s.id for s in expected_students}
+        expected_strength = len(expected_students)
+
+        # 3. Check if an active COMPLETED submission already exists for this date, trade
+        existing_sub = db.query(ParadeSubmission).filter(
+            ParadeSubmission.date == parade_date,
+            ParadeSubmission.trade == trade,
+            ParadeSubmission.parade_type == 'NIGHT'
+        ).first()
+        if existing_sub and existing_sub.status == 'COMPLETED':
+            raise HTTPException(
+                status_code=409,
+                detail=f"Night Parade state for trade '{trade}' on {parade_date} is already COMPLETED. Duplicate completion is not allowed."
+            )
+
+        # 4. Strictly validate records completeness & dynamic strength reconciliation
+        VALID_STATUSES = {
+            "Present", "Hospital", "Sick Report", "Leave",
+            "AWOL", "Temporary Duty", "Course Visit", "Detached Duty"
+        }
+
+        submitted_ids = set()
+        status_counts = {
+            "on_parade": 0, "hospital": 0, "sick_report": 0, "leave": 0,
+            "awol": 0, "temp_duty": 0, "course_visit": 0, "detached_duty": 0, "other": 0
+        }
+        changes_summary_list = []
+        changed_count = 0
+
+        for rec in records:
+            if rec.student_id not in expected_student_ids:
+                continue  # Ignore records outside of this group
+
+            submitted_ids.add(rec.student_id)
+
+            if not rec.night_status or rec.night_status not in VALID_STATUSES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid or missing Night Parade status for student ID {rec.student_id}. Every trainee must have a valid evening status."
+                )
+
+            n_status = rec.night_status
+            if n_status == "Present":
+                status_counts["on_parade"] += 1
+            elif n_status == "Hospital":
+                status_counts["hospital"] += 1
+            elif n_status == "Sick Report":
+                status_counts["sick_report"] += 1
+            elif n_status == "Leave":
+                status_counts["leave"] += 1
+            elif n_status == "AWOL":
+                status_counts["awol"] += 1
+            elif n_status == "Temporary Duty":
+                status_counts["temp_duty"] += 1
+            elif n_status == "Course Visit":
+                status_counts["course_visit"] += 1
+            elif n_status == "Detached Duty":
+                status_counts["detached_duty"] += 1
+            else:
+                status_counts["other"] += 1
+
+            m_status = morning_map.get(rec.student_id, rec.morning_status or "Present")
+            if n_status != m_status:
+                changed_count += 1
+                changes_summary_list.append(f"{rec.student_id}: {m_status} -> {n_status}")
+
+        total_accounted = sum(status_counts.values())
+        unverified_count = expected_strength - len(submitted_ids)
+
+        if len(submitted_ids) < expected_strength or total_accounted != expected_strength:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Night Parade cannot be completed. "
+                    f"Expected Strength: {expected_strength}, "
+                    f"Accounted: {total_accounted}, "
+                    f"Unverified: {unverified_count}. "
+                    f"Please verify the remaining trainee(s)."
+                )
+            )
+
+        # 5. Get or create submission with parade_type='NIGHT'
+        sub = submission_repo.get_or_create_draft(
+            db, parade_date=parade_date, trade=trade,
+            submitter_id=user_id,
+            course_id=course_id, batch=batch,
+            parade_type='NIGHT'
+        )
+
+        # 6. Save all evening records linking to this submission
+        updated_count = 0
+        for rec in records:
+            if rec.student_id not in expected_student_ids:
+                continue
+
+            student = student_repo.get(db, rec.student_id)
+            if not student or student.deleted_at:
+                continue
+
+            m_status = morning_map.get(rec.student_id, rec.morning_status or "Present")
+            n_status = rec.night_status
+            is_changed = (n_status != m_status)
+
+            parade_repo.create_or_update(
+                db,
+                student_id=rec.student_id,
+                parade_date=parade_date,
+                status=n_status,
+                morning_status=m_status,
+                status_changed=is_changed,
+                remarks=rec.remarks,
+                user_id=user_id,
+                submission_id=sub.id,
+                parade_type='NIGHT'
+            )
+            updated_count += 1
+
+        # 7. Transition directly to COMPLETED (No instructor approval step)
+        now = datetime.utcnow()
+        sub.status = 'COMPLETED'
+        sub.submitted_by = user_id
+        sub.submitted_at = now
+        sub.reviewed_at = now
+        sub.submitter_remarks = completion_data.submitter_remarks
+        db.commit()
+
+        user_obj = db.query(User).filter(User.id == user_id).first()
+        user_display = f"{user_obj.rank or ''} {user_obj.full_name}".strip() if user_obj else user_id
+
+        details_msg = (
+            f"Completed Night Parade Roll Call for trade '{trade}' on {parade_date} by {user_display}. "
+            f"Expected: {expected_strength}, Accounted: {total_accounted}, Changed: {changed_count}."
+        )
+        if changes_summary_list:
+            details_msg += " Status Changes: " + "; ".join(changes_summary_list[:10])
+
+        audit_repo.create_log(db, user_id, "NIGHT_PARADE_COMPLETED", ip, ua, details_msg)
+
+        return {
+            "status": "completed",
+            "id": sub.id,
+            "submission_id": sub.id,
+            "trade": trade,
+            "date": str(parade_date),
+            "expected_strength": expected_strength,
+            "accounted_strength": total_accounted,
+            "changed_count": changed_count,
+            "strength_breakdown": status_counts,
+            "completed_by": user_display,
+            "completed_at": now.isoformat()
+        }
+
+    # Alias for backward compatibility
+    submit_night_parade = complete_night_parade
+
+    def get_night_summary(self, db: Session, target_date: date,
+                          trade: Optional[str] = None,
+                          course_id: Optional[str] = None,
+                          batch: Optional[str] = None) -> dict:
+        """Get roll-call KPIs, trade/category breakdowns, and status transitions."""
+        return parade_repo.get_night_summary_and_breakdowns(
+            db, parade_date=target_date, trade=trade,
+            course_id=course_id, batch=batch
+        )
+
+    def get_night_report_data(self, db: Session, current_user: User,
+                              target_date: date, trade: Optional[str] = None,
+                              course_id: Optional[str] = None,
+                              batch: Optional[str] = None,
+                              ip: str = "127.0.0.1", ua: str = "Unknown") -> dict:
+        """Compile official SLAF TTS Night Parade State & Roll Call report dataset."""
+        context = parade_repo.get_night_parade_context(
+            db, parade_date=target_date, trade=trade,
+            course_id=course_id, batch=batch
+        )
+        summary_data = parade_repo.get_night_summary_and_breakdowns(
+            db, parade_date=target_date, trade=trade,
+            course_id=course_id, batch=batch
+        )
+
+        audit_repo.create_log(
+            db, current_user.id, "NIGHT_PARADE_REPORT_GENERATED", ip, ua,
+            f"Generated Night Parade State Report for date: {target_date}, trade: {trade or 'All'}"
+        )
+
+        rows = []
+        for idx, t in enumerate(context["trainees"], 1):
+            rows.append({
+                "s_no": idx,
+                "service_number": t["service_number"],
+                "rank": t["rank"],
+                "full_name": t["full_name"],
+                "trade": t["trade"],
+                "morning_status": t["morning_status"] or "-",
+                "night_status": t["night_status"] or "-",
+                "status_changed": "YES" if t["status_changed"] else "NO",
+                "remarks": t["remarks"] or "-"
+            })
+
+        kpis = summary_data.get("kpis", {})
+        summary_stats = [
+            {"label": "Total Expected", "value": kpis.get("total_expected", 0), "category": "primary"},
+            {"label": "On Parade", "value": kpis.get("on_parade", 0), "category": "success"},
+            {"label": "In Hospital", "value": kpis.get("in_hospital", 0), "category": "warning"},
+            {"label": "Sick Report", "value": kpis.get("sick_report", 0), "category": "warning"},
+            {"label": "On Leave", "value": kpis.get("on_leave", 0), "category": "info"},
+            {"label": "AWOL", "value": kpis.get("awol", 0), "category": "danger"},
+            {"label": "Other Duties", "value": kpis.get("other", 0), "category": "secondary"},
+            {"label": "Status Changed", "value": kpis.get("changed_count", 0), "category": "danger"},
+            {"label": "Unverified", "value": kpis.get("unverified_count", 0), "category": "warning"},
+        ]
+        columns = [
+            {"field": "s_no", "label": "S/No", "align": "center", "min_width": "50px"},
+            {"field": "service_number", "label": "Service No", "align": "center", "is_monospace": True, "min_width": "100px"},
+            {"field": "rank", "label": "Rank", "align": "center", "min_width": "80px"},
+            {"field": "full_name", "label": "Name with Initials", "align": "left", "min_width": "200px"},
+            {"field": "trade", "label": "Trade", "align": "center", "min_width": "100px"},
+            {"field": "morning_status", "label": "Morning Baseline", "align": "center", "is_badge": True, "min_width": "120px"},
+            {"field": "night_status", "label": "Night Roll Call", "align": "center", "is_badge": True, "min_width": "120px"},
+            {"field": "status_changed", "label": "Changed?", "align": "center", "is_badge": True, "min_width": "85px"},
+            {"field": "remarks", "label": "Remarks", "align": "left", "min_width": "160px"},
+        ]
+
+        title_str = "SRI LANKA AIR FORCE • TRADE TRAINING SCHOOL"
+        subtitle_str = f"NIGHT PARADE STATE & ROLL CALL REPORT — {target_date.strftime('%d %B %Y').upper()}"
+        gen_by = f"{current_user.rank or ''} {current_user.full_name} ({current_user.username})".strip()
+        gen_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        return {
+            "report_type": "night_parade_state",
+            "title": title_str,
+            "subtitle": subtitle_str,
+            "generated_at": gen_at,
+            "generated_by": gen_by,
+            "parade_date": str(target_date),
+            "trade": trade or "All Trades",
+            "morning_available": context["morning_available"],
+            "summary": summary_data,
+            "rows": rows,
+            "total_records": len(rows),
+            "header": {
+                "title": f"NIGHT PARADE STATE & ROLL CALL REPORT — {target_date.strftime('%d %B %Y').upper()}",
+                "subtitle": f"Evening Verification & Accountability Register (Trade: {trade or 'All Trades'})",
+                "organization": "Sri Lanka Air Force",
+                "school_name": "Trade Training School (TTS Ekala)",
+                "portal_name": "TTS Management Portal",
+                "section": "Operations & Trainee Management Wing",
+                "generated_at": gen_at,
+                "generated_by": gen_by,
+                "security_classification": "RESTRICTED / OFFICIAL USE ONLY",
+                "parameters": {
+                    "Parade Date": str(target_date),
+                    "Trade": trade or "All Trades",
+                    "Morning Baseline Available": "YES" if context["morning_available"] else "NO"
+                }
+            },
+            "summary_stats": summary_stats,
+            "columns": columns
         }
 
 

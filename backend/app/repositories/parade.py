@@ -12,14 +12,24 @@ class ParadeStateRepository:
     # Core Parade State (per-student, per-date)
     # ─────────────────────────────────────────────
 
-    def get_by_student_and_date(self, db: Session, student_id: str, parade_date: date) -> Optional[ParadeState]:
-        return db.query(ParadeState).filter(
+    def get_by_student_and_date(self, db: Session, student_id: str, parade_date: date, parade_type: str = 'MORNING') -> Optional[ParadeState]:
+        q = db.query(ParadeState).filter(
             ParadeState.student_id == student_id,
             ParadeState.date == parade_date
-        ).first()
+        )
+        if parade_type == 'MORNING':
+            q = q.filter(or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None))
+        else:
+            q = q.filter(ParadeState.parade_type == parade_type)
+        return q.first()
 
-    def get_parade_states_by_date(self, db: Session, parade_date: date) -> List[ParadeState]:
-        results = db.query(ParadeState).filter(ParadeState.date == parade_date).all()
+    def get_parade_states_by_date(self, db: Session, parade_date: date, parade_type: str = 'MORNING') -> List[ParadeState]:
+        q = db.query(ParadeState).filter(ParadeState.date == parade_date)
+        if parade_type == 'MORNING':
+            q = q.filter(or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None))
+        else:
+            q = q.filter(ParadeState.parade_type == parade_type)
+        results = q.all()
         for p in results:
             student = db.query(Student).filter(Student.id == p.student_id).first()
             if student:
@@ -41,19 +51,29 @@ class ParadeStateRepository:
     def create_or_update(self, db: Session, *, student_id: str, parade_date: date,
                          status: str, remarks: Optional[str] = None,
                          user_id: Optional[str] = None,
-                         submission_id: Optional[str] = None) -> ParadeState:
-        db_obj = self.get_by_student_and_date(db, student_id, parade_date)
+                         submission_id: Optional[str] = None,
+                         parade_type: str = 'MORNING',
+                         morning_status: Optional[str] = None,
+                         status_changed: bool = False) -> ParadeState:
+        db_obj = self.get_by_student_and_date(db, student_id, parade_date, parade_type=parade_type)
         if db_obj:
             db_obj.status = status
             db_obj.remarks = remarks
             db_obj.updated_by = user_id
+            db_obj.parade_type = parade_type
+            if morning_status is not None:
+                db_obj.morning_status = morning_status
+            db_obj.status_changed = status_changed
             if submission_id:
                 db_obj.submission_id = submission_id
         else:
             db_obj = ParadeState(
                 student_id=student_id,
                 date=parade_date,
+                parade_type=parade_type,
                 status=status,
+                morning_status=morning_status,
+                status_changed=status_changed,
                 remarks=remarks,
                 updated_by=user_id,
                 submission_id=submission_id
@@ -64,7 +84,307 @@ class ParadeStateRepository:
         db.refresh(db_obj)
         return db_obj
 
-    def get_summary(self, db: Session, parade_date: date, official_approved_only: bool = False) -> dict:
+    def get_night_parade_context(self, db: Session, parade_date: date, trade: str,
+                                 course_id: Optional[str] = None,
+                                 batch: Optional[str] = None) -> dict:
+        """
+        Retrieves morning baseline and night working roll-call states for a trade/group on a date.
+        If no morning parade state exists, morning_available is returned as False.
+        """
+        from app.repositories.academic import batch_repo
+
+        # 1. Fetch active students in target trade/group
+        sq = db.query(Student).filter(
+            Student.deleted_at == None,
+            Student.status != 'Passed Out'
+        )
+        if trade and trade != 'All':
+            sq = sq.filter(Student.trade == trade)
+        if course_id:
+            sq = sq.filter(Student.course_id == course_id)
+        if batch and batch != 'All':
+            sq = sq.filter(Student.batch == batch)
+
+        students = sq.order_by(Student.service_number.asc()).all()
+        student_ids = [s.id for s in students]
+
+        # 2. Check Morning Parade records for these students
+        morning_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            ParadeState.student_id.in_(student_ids),
+            or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None)
+        ).all() if student_ids else []
+
+        morning_state_map = {m.student_id: m for m in morning_states}
+
+        # Check Morning Parade Submission
+        morning_sub = db.query(ParadeSubmission).filter(
+            ParadeSubmission.date == parade_date,
+            ParadeSubmission.trade == trade,
+            or_(ParadeSubmission.parade_type == 'MORNING', ParadeSubmission.parade_type == None)
+        ).first() if trade and trade != 'All' else None
+
+        morning_available = len(morning_states) > 0
+
+        # Course name resolution
+        course_name = None
+        if course_id:
+            c = db.query(Course).filter(Course.id == course_id).first()
+            if c:
+                course_name = c.name
+
+        # 3. Check Night Parade Submission
+        night_sub = db.query(ParadeSubmission).filter(
+            ParadeSubmission.date == parade_date,
+            ParadeSubmission.trade == trade,
+            ParadeSubmission.parade_type == 'NIGHT'
+        ).first() if trade and trade != 'All' else None
+
+        # 4. Check Night Parade records
+        night_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            ParadeState.student_id.in_(student_ids),
+            ParadeState.parade_type == 'NIGHT'
+        ).all() if student_ids else []
+        night_state_map = {n.student_id: n for n in night_states}
+
+        # Resolve assigned instructor
+        assigned_inst = batch_repo.get_instructor_for_batch(
+            db, trade=trade, course_id=course_id, batch_name=batch
+        )
+
+        trainees = []
+        if morning_available:
+            for s in students:
+                m_state = morning_state_map.get(s.id)
+                m_status = m_state.status if m_state else "Present"
+                n_state = night_state_map.get(s.id)
+
+                if n_state:
+                    n_status = n_state.status
+                    rem = n_state.remarks or ""
+                    changed = (n_status != m_status)
+                    is_ver = True
+                else:
+                    n_status = m_status
+                    rem = ""
+                    changed = False
+                    is_ver = False
+
+                c_name = course_name or (s.course.name if s.course else "N/A")
+
+                trainees.append({
+                    "student_id": s.id,
+                    "service_number": s.service_number,
+                    "rank": s.rank or "AC",
+                    "full_name": s.full_name,
+                    "trade": s.trade or "N/A",
+                    "course_id": s.course_id,
+                    "course_name": c_name,
+                    "batch": s.batch or "N/A",
+                    "medical_category": s.medical_category or "A4G4",
+                    "morning_status": m_status,
+                    "night_status": n_status,
+                    "status_changed": changed,
+                    "remarks": rem,
+                    "is_verified": is_ver
+                })
+
+        # Dynamic Strength & Accountability Calculation
+        expected_strength = len(students)
+        VALID_STATUSES = {
+            "Present", "Hospital", "Sick Report", "Leave",
+            "AWOL", "Temporary Duty", "Course Visit", "Detached Duty"
+        }
+        accounted_strength = sum(1 for t in trainees if t["is_verified"] and t["night_status"] in VALID_STATUSES)
+        unverified_count = max(0, expected_strength - accounted_strength)
+        is_accountability_complete = (expected_strength > 0 and unverified_count == 0)
+
+        can_complete = (night_sub.status != 'COMPLETED') if night_sub else True
+
+        completed_user = None
+        if night_sub and night_sub.status == 'COMPLETED':
+            c_uid = night_sub.submitted_by
+            if c_uid:
+                completed_user = db.query(User).filter(User.id == c_uid).first()
+        completed_by_name = f"{completed_user.rank or ''} {completed_user.full_name}".strip() if completed_user else None
+
+        appr_id = night_sub.approving_officer_id if night_sub else (assigned_inst.id if assigned_inst else None)
+        appr_user = db.query(User).filter(User.id == appr_id).first() if appr_id else None
+        appr_name = f"{appr_user.rank or ''} {appr_user.full_name}".strip() if appr_user else (
+            f"{assigned_inst.rank or ''} {assigned_inst.full_name}".strip() if assigned_inst else None
+        )
+        appr_rank = appr_user.rank if appr_user else (assigned_inst.rank if assigned_inst else None)
+
+        return {
+            "date": parade_date,
+            "trade": trade or "All",
+            "course_id": course_id,
+            "course_name": course_name,
+            "batch": batch,
+            "morning_available": morning_available,
+            "morning_submission_status": morning_sub.status if morning_sub else ("RECORDED" if morning_available else "NOT_AVAILABLE"),
+            "morning_submission_id": morning_sub.id if morning_sub else None,
+            "night_submission_id": night_sub.id if night_sub else None,
+            "night_submission_status": night_sub.status if night_sub else "DRAFT",
+            "submitter_remarks": night_sub.submitter_remarks if night_sub else None,
+            "completed_by_name": completed_by_name,
+            "completed_at": night_sub.reviewed_at or night_sub.submitted_at if night_sub else None,
+            "is_accountability_complete": is_accountability_complete,
+            "expected_strength": expected_strength,
+            "accounted_strength": accounted_strength,
+            "unverified_count": unverified_count,
+            "can_complete": can_complete,
+            "can_submit": can_complete,
+            "can_approve": False,
+            "approving_officer_id": appr_id,
+            "approving_officer_name": appr_name,
+            "approving_officer_rank": appr_rank,
+            "assigned_instructor_id": assigned_inst.id if assigned_inst else None,
+            "assigned_instructor_name": f"{assigned_inst.rank or ''} {assigned_inst.full_name}".strip() if assigned_inst else None,
+            "assigned_instructor_rank": assigned_inst.rank if assigned_inst else None,
+            "instructor_status": "ASSIGNED" if assigned_inst else "NOT_ASSIGNED",
+            "approver_remarks": night_sub.approver_remarks if night_sub else None,
+            "rejection_reason": night_sub.rejection_reason if night_sub else None,
+            "trainees": trainees
+        }
+
+    def get_night_summary_and_breakdowns(self, db: Session, parade_date: date,
+                                         trade: Optional[str] = None,
+                                         course_id: Optional[str] = None,
+                                         batch: Optional[str] = None) -> dict:
+        """
+        Calculates overall strength, trade-wise strength, category-wise strength,
+        and morning-to-night status transitions for Night Parade.
+        """
+        sq = db.query(Student).filter(
+            Student.deleted_at == None,
+            Student.status != 'Passed Out'
+        )
+        if trade and trade != 'All':
+            sq = sq.filter(Student.trade == trade)
+        if course_id:
+            sq = sq.filter(Student.course_id == course_id)
+        if batch and batch != 'All':
+            sq = sq.filter(Student.batch == batch)
+        students = sq.all()
+        student_ids = [s.id for s in students]
+
+        m_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            ParadeState.student_id.in_(student_ids),
+            or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None)
+        ).all() if student_ids else []
+        m_map = {m.student_id: m.status for m in m_states}
+
+        n_states = db.query(ParadeState).filter(
+            ParadeState.date == parade_date,
+            ParadeState.student_id.in_(student_ids),
+            ParadeState.parade_type == 'NIGHT'
+        ).all() if student_ids else []
+        n_map = {n.student_id: n for n in n_states}
+
+        status_keys = {
+            "Present": "present",
+            "Sick Report": "sick_report",
+            "Hospital": "hospital",
+            "Leave": "leave",
+            "Temporary Duty": "temp_duty",
+            "Course Visit": "course_visit",
+            "Detached Duty": "detached_duty",
+            "AWOL": "awol"
+        }
+
+        total_expected = len(students)
+        counts = {
+            "present": 0, "sick_report": 0, "hospital": 0, "leave": 0,
+            "temp_duty": 0, "course_visit": 0, "detached_duty": 0,
+            "awol": 0, "other": 0
+        }
+        changed_count = 0
+        unverified_count = 0
+
+        transitions_map = {}
+        trade_data = {}
+        category_data = {}
+
+        for s in students:
+            m_status = m_map.get(s.id, "Present")
+            n_state = n_map.get(s.id)
+            if n_state:
+                n_status = n_state.status
+                is_changed = (n_status != m_status)
+                is_unver = False
+            else:
+                n_status = m_status
+                is_changed = False
+                is_unver = True
+                unverified_count += 1
+
+            if is_changed:
+                changed_count += 1
+                pair = (m_status, n_status)
+                transitions_map[pair] = transitions_map.get(pair, 0) + 1
+
+            k = status_keys.get(n_status, "other")
+            counts[k] = counts.get(k, 0) + 1
+
+            # Trade aggregation
+            t_name = s.trade or "Unassigned"
+            if t_name not in trade_data:
+                trade_data[t_name] = {
+                    "label": t_name, "expected": 0, "present": 0, "sick_report": 0,
+                    "hospital": 0, "leave": 0, "awol": 0, "course_visit": 0,
+                    "temp_duty": 0, "detached_duty": 0, "other": 0, "changed": 0, "unverified": 0
+                }
+            trade_data[t_name]["expected"] += 1
+            trade_data[t_name][k] = trade_data[t_name].get(k, 0) + 1
+            if is_changed:
+                trade_data[t_name]["changed"] += 1
+            if is_unver:
+                trade_data[t_name]["unverified"] += 1
+
+            # Category aggregation (Medical Category)
+            cat_name = s.medical_category or "A4G4"
+            if cat_name not in category_data:
+                category_data[cat_name] = {
+                    "label": cat_name, "expected": 0, "present": 0, "sick_report": 0,
+                    "hospital": 0, "leave": 0, "awol": 0, "course_visit": 0,
+                    "temp_duty": 0, "detached_duty": 0, "other": 0, "changed": 0, "unverified": 0
+                }
+            category_data[cat_name]["expected"] += 1
+            category_data[cat_name][k] = category_data[cat_name].get(k, 0) + 1
+            if is_changed:
+                category_data[cat_name]["changed"] += 1
+            if is_unver:
+                category_data[cat_name]["unverified"] += 1
+
+        transitions_list = [
+            {"from_status": f, "to_status": t, "count": c}
+            for (f, t), c in sorted(transitions_map.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        return {
+            "date": parade_date,
+            "trade": trade,
+            "total_expected": total_expected,
+            "present": counts["present"],
+            "sick_report": counts["sick_report"],
+            "hospital": counts["hospital"],
+            "leave": counts["leave"],
+            "awol": counts["awol"],
+            "course_visit": counts["course_visit"],
+            "temp_duty": counts["temp_duty"],
+            "detached_duty": counts["detached_duty"],
+            "other": counts["other"],
+            "status_changed_count": changed_count,
+            "unverified_count": unverified_count,
+            "trade_wise": list(trade_data.values()),
+            "category_wise": list(category_data.values()),
+            "transitions": transitions_list
+        }
+
+    def get_summary(self, db: Session, parade_date: date, official_approved_only: bool = False, parade_type: str = 'MORNING') -> dict:
         """
         Get strength summary counts for a given date.
         If official_approved_only=True, only counts students from trades with APPROVED submissions.
@@ -75,10 +395,15 @@ class ParadeStateRepository:
         
         if official_approved_only:
             # Query only approved submissions for this date
-            approved_subs = db.query(ParadeSubmission.id).filter(
+            q_sub = db.query(ParadeSubmission.id).filter(
                 ParadeSubmission.date == parade_date,
                 ParadeSubmission.status == 'APPROVED'
-            ).all()
+            )
+            if parade_type == 'MORNING':
+                q_sub = q_sub.filter(or_(ParadeSubmission.parade_type == 'MORNING', ParadeSubmission.parade_type == None))
+            else:
+                q_sub = q_sub.filter(ParadeSubmission.parade_type == parade_type)
+            approved_subs = q_sub.all()
             approved_sub_ids = [s[0] for s in approved_subs]
             if approved_sub_ids:
                 states = db.query(ParadeState).filter(
@@ -88,7 +413,12 @@ class ParadeStateRepository:
             else:
                 states = []
         else:
-            states = db.query(ParadeState).filter(ParadeState.date == parade_date).all()
+            q_state = db.query(ParadeState).filter(ParadeState.date == parade_date)
+            if parade_type == 'MORNING':
+                q_state = q_state.filter(or_(ParadeState.parade_type == 'MORNING', ParadeState.parade_type == None))
+            else:
+                q_state = q_state.filter(ParadeState.parade_type == parade_type)
+            states = q_state.all()
 
         summary = {
             "date": parade_date,
@@ -189,7 +519,8 @@ class ParadeSubmissionRepository:
     def get_or_create_draft(self, db: Session, parade_date: date, trade: str,
                             submitter_id: str, officer_id: Optional[str] = None,
                             course_id: Optional[str] = None,
-                            batch: Optional[str] = None) -> ParadeSubmission:
+                            batch: Optional[str] = None,
+                            parade_type: str = 'MORNING') -> ParadeSubmission:
         """Get existing DRAFT/REJECTED submission or create a new one."""
         from app.repositories.academic import batch_repo
 
@@ -200,15 +531,22 @@ class ParadeSubmissionRepository:
             if assigned_inst:
                 officer_id = assigned_inst.id
 
-        existing = db.query(ParadeSubmission).filter(
+        q = db.query(ParadeSubmission).filter(
             ParadeSubmission.date == parade_date,
             ParadeSubmission.trade == trade,
             ParadeSubmission.status.in_(['DRAFT', 'REJECTED'])
-        ).first()
+        )
+        if parade_type == 'MORNING':
+            q = q.filter(or_(ParadeSubmission.parade_type == 'MORNING', ParadeSubmission.parade_type == None))
+        else:
+            q = q.filter(ParadeSubmission.parade_type == parade_type)
+
+        existing = q.first()
 
         if existing:
             # Update the officer selection and submitter
             existing.submitted_by = submitter_id
+            existing.parade_type = parade_type
             if officer_id:
                 existing.approving_officer_id = officer_id
             if course_id:
@@ -221,6 +559,7 @@ class ParadeSubmissionRepository:
 
         sub = ParadeSubmission(
             date=parade_date,
+            parade_type=parade_type,
             trade=trade,
             course_id=course_id,
             batch=batch,
@@ -241,6 +580,7 @@ class ParadeSubmissionRepository:
 
     def get_list(self, db: Session, parade_date: Optional[date] = None,
                  trade: Optional[str] = None, status: Optional[str] = None,
+                 parade_type: Optional[str] = None,
                  limit: int = 50) -> List[ParadeSubmission]:
         q = db.query(ParadeSubmission)
         if parade_date:
@@ -249,6 +589,11 @@ class ParadeSubmissionRepository:
             q = q.filter(ParadeSubmission.trade == trade)
         if status:
             q = q.filter(ParadeSubmission.status == status)
+        if parade_type:
+            if parade_type == 'MORNING':
+                q = q.filter(or_(ParadeSubmission.parade_type == 'MORNING', ParadeSubmission.parade_type == None))
+            else:
+                q = q.filter(ParadeSubmission.parade_type == parade_type)
         results = q.order_by(ParadeSubmission.date.desc(), ParadeSubmission.trade).limit(limit).all()
         return [self._enrich_submission(db, sub) for sub in results]
 

@@ -82,9 +82,7 @@ export const UserProfile = () => {
     formData.append('file', avatarFile)
 
     try {
-      const res = await axios.post('/api/v1/auth/upload-avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await axios.post('/api/v1/auth/upload-avatar', formData)
       toast.success('Profile avatar updated successfully')
       if (res.data.profile_photo) {
         setUser({ ...user, profile_photo: res.data.profile_photo })

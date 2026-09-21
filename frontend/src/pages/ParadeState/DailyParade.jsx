@@ -4,16 +4,17 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
 import { ClassicalReportModal } from '../../components/ClassicalReportModal'
+import { NightParadeTab } from './NightParadeTab'
 
 // ─── Status badge config (Text + Accessible Icons + Colors) ────────
 const SUBMISSION_STATUS_CONFIG = {
   NOT_SUBMITTED: { label: 'NOT SUBMITTED', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'bi-exclamation-octagon-fill' },
-  DRAFT:         { label: 'DRAFT (NOT SUBMITTED)', color: '#64748b', bg: '#f1f5f9', border: '#cbd5e1', icon: 'bi-pencil-square' },
-  SUBMITTED:     { label: 'SUBMITTED', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: 'bi-send-fill' },
+  DRAFT: { label: 'DRAFT (NOT SUBMITTED)', color: '#64748b', bg: '#f1f5f9', border: '#cbd5e1', icon: 'bi-pencil-square' },
+  SUBMITTED: { label: 'SUBMITTED', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: 'bi-send-fill' },
   PENDING_APPROVAL: { label: 'PENDING APPROVAL', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: 'bi-hourglass-split' },
-  APPROVED:      { label: 'APPROVED', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: 'bi-patch-check-fill' },
-  RETURNED:      { label: 'RETURNED FOR CORRECTION', color: '#e11d48', bg: '#fff1f2', border: '#fecdd3', icon: 'bi-arrow-counterclockwise' },
-  REJECTED:      { label: 'REJECTED / RETURNED', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'bi-x-circle-fill' },
+  APPROVED: { label: 'APPROVED', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: 'bi-patch-check-fill' },
+  RETURNED: { label: 'RETURNED FOR CORRECTION', color: '#e11d48', bg: '#fff1f2', border: '#fecdd3', icon: 'bi-arrow-counterclockwise' },
+  REJECTED: { label: 'REJECTED / RETURNED', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: 'bi-x-circle-fill' },
 }
 
 const StatusBadge = ({ status, isOverdue = false }) => {
@@ -632,6 +633,11 @@ export const DailyParade = () => {
             label: 'Submit Parade State'
           },
           {
+            key: 'night',
+            icon: 'bi-moon-stars-fill',
+            label: 'Night Parade / Roll Call'
+          },
+          {
             key: 'approvals',
             icon: 'bi-shield-check',
             label: 'Pending Approvals',
@@ -652,7 +658,7 @@ export const DailyParade = () => {
           {
             key: 'officers',
             icon: 'bi-person-badge',
-            label: 'Officer I/C Setup',
+            label: 'Instructor Setup',
             show: hasPermission('parade:manage_officers') || hasPermission('parade:read')
           }
         ]
@@ -660,9 +666,8 @@ export const DailyParade = () => {
           .map((tab) => (
             <li key={tab.key} className="nav-item">
               <button
-                className={`nav-link fw-semibold d-flex align-items-center gap-2 ${
-                  activeTab === tab.key ? 'active text-primary' : 'text-muted'
-                }`}
+                className={`nav-link fw-semibold d-flex align-items-center gap-2 ${activeTab === tab.key ? 'active text-primary' : 'text-muted'
+                  }`}
                 style={{
                   border: 'none',
                   borderBottom: activeTab === tab.key ? '3px solid var(--bs-primary)' : '3px solid transparent',
@@ -733,7 +738,7 @@ export const DailyParade = () => {
                 >
                   <div className="text-muted small fw-semibold text-uppercase">Pending Approval</div>
                   <div className="fw-bold text-warning display-6 my-1">{monitoringData.summary.pending_approval}</div>
-                  <div className="small text-muted">Awaiting Officer I/C</div>
+                  <div className="small text-muted">Awaiting  Instructor </div>
                 </div>
               </div>
 
@@ -799,9 +804,8 @@ export const DailyParade = () => {
                 ].map((pill) => (
                   <button
                     key={pill.key}
-                    className={`btn btn-sm ${
-                      monitoringSubFilter === pill.key ? 'btn-primary' : 'btn-outline-secondary'
-                    } fw-semibold`}
+                    className={`btn btn-sm ${monitoringSubFilter === pill.key ? 'btn-primary' : 'btn-outline-secondary'
+                      } fw-semibold`}
                     style={{ fontSize: '0.8rem', padding: '4px 12px' }}
                     onClick={() => setMonitoringSubFilter(pill.key)}
                   >
@@ -892,10 +896,10 @@ export const DailyParade = () => {
                             background: isReturned
                               ? '#fff1f215'
                               : isPending
-                              ? '#fffbeb15'
-                              : isApproved
-                              ? '#f0fdf410'
-                              : 'transparent'
+                                ? '#fffbeb15'
+                                : isApproved
+                                  ? '#f0fdf410'
+                                  : 'transparent'
                           }}
                         >
                           <td className="text-center fw-bold text-muted">{item.s_no}</td>
@@ -1457,7 +1461,7 @@ export const DailyParade = () => {
         <div>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h5 className="fw-bold mb-1">Officer I/C Approval Queue</h5>
+              <h5 className="fw-bold mb-1">Instructor Approval Queue</h5>
               <p className="text-muted mb-0 small">
                 Submitted daily parade states awaiting your official authorization
               </p>
@@ -1782,7 +1786,7 @@ export const DailyParade = () => {
         <div>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h5 className="fw-bold mb-1">Officer I/C Appointments & Routing</h5>
+              <h5 className="fw-bold mb-1">Instructor Appointments & Routing</h5>
               <p className="text-muted mb-0 small">
                 Designate responsible Officers I/C per trade to review and authorize daily parade states
               </p>
@@ -1790,7 +1794,7 @@ export const DailyParade = () => {
             {hasPermission('parade:manage_officers') && (
               <button className="btn btn-primary btn-sm fw-semibold" onClick={() => setShowOICModal(true)}>
                 <i className="bi bi-person-plus me-1" />
-                Assign Officer I/C
+                Assign Instructor
               </button>
             )}
           </div>
@@ -1802,7 +1806,7 @@ export const DailyParade = () => {
           ) : officers.length === 0 ? (
             <div className="card slaf-card p-5 text-center text-muted">
               <i className="bi bi-person-badge fs-1 text-muted" />
-              <div className="mt-2 fw-semibold">No Officer I/C assignments found</div>
+              <div className="mt-2 fw-semibold">No Instructor assignments found</div>
             </div>
           ) : (
             <div className="row g-3">
@@ -1869,7 +1873,7 @@ export const DailyParade = () => {
                       </select>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold small">Officer / User *</label>
+                      <label className="form-label fw-semibold small">Instructor / User *</label>
                       <select className="form-select" value={oicUserId} onChange={(e) => setOicUserId(e.target.value)}>
                         <option value="">— Select User —</option>
                         {allUsers.map((u) => (
@@ -1898,6 +1902,17 @@ export const DailyParade = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          TAB: NIGHT PARADE STATE & NIGHT ROLL CALL
+      ═══════════════════════════════════════════════════════ */}
+      {activeTab === 'night' && (
+        <NightParadeTab
+          selectedDate={selectedDate}
+          trades={trades}
+          officerOptions={officerOptions}
+        />
       )}
 
       {/* ── Global Approval & Return Modal ── */}

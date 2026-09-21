@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -11,6 +11,12 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [currentDateTime, setCurrentDateTime] = useState(new Date())
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const path = location.pathname
+  const queryParams = new URLSearchParams(location.search)
+  const tab = queryParams.get('tab')
 
   // Dynamic live clock in header
   useEffect(() => {
@@ -46,29 +52,69 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
     }
   }
 
-  // Determine active module title for header
-  const getModuleName = () => {
-    const path = window.location.pathname
-    if (path.startsWith('/accommodation')) return 'Accommodation Management Module'
-    if (path.startsWith('/students')) return 'Student Details Management Module'
-    if (path.startsWith('/parade')) return 'Daily Parade State Board'
-    if (path.startsWith('/academic')) return 'Academic Activities Module'
-    if (path.startsWith('/reports')) return 'Reports & Analytics Module'
-    if (path.startsWith('/admin')) return 'System Administration Module'
-    return 'TTS Management Portal'
+  // Determine active module title and origin link for header
+  const getModuleInfo = () => {
+    if (path.startsWith('/accommodation')) {
+      return { title: 'Accommodation Management Module', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    if (path.startsWith('/students')) {
+      return { title: 'Student Details Management Module', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    if (path.startsWith('/parade')) {
+      return { title: 'Daily Parade State Board', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    if (path.startsWith('/academic')) {
+      return { title: 'Academic Activities Module', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    if (path.startsWith('/reports')) {
+      if (tab === 'parade') {
+        return { title: 'Reports & Analytics — Parade Strength', parent: '/parade?tab=monitoring', parentLabel: 'Parade State' }
+      }
+      if (tab === 'student') {
+        return { title: 'Reports & Analytics — Trainee Dossiers', parent: '/students', parentLabel: 'Students' }
+      }
+      if (tab === 'accommodation') {
+        return { title: 'Reports & Analytics — Bunk Housing', parent: '/accommodation', parentLabel: 'Accommodation' }
+      }
+      if (tab === 'academic_results' || tab === 'attendance' || tab === 'course_calendar') {
+        return { title: 'Reports & Analytics — Academic Reports', parent: '/academic', parentLabel: 'Academic' }
+      }
+      return { title: 'Reports & Analytics Module', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    if (path.startsWith('/admin')) {
+      return { title: 'System Administration Module', parent: '/dashboard', parentLabel: 'Dashboard' }
+    }
+    return { title: 'TTS Management Portal', parent: null, parentLabel: null }
   }
+
+  const moduleInfo = getModuleInfo()
+  const isHome = path === '/dashboard' || path === '/'
 
   return (
     <header className={`glass-header app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 py-2 fixed-top ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
-      {/* Header Module Name and Current DateTime */}
+      {/* Header Module Name, Back Button, and Current DateTime */}
       <div className="d-flex align-items-center gap-2">
         <button className="btn btn-link text-primary p-0 d-lg-none me-1" onClick={onToggleSidebar} title="Open Navigation Menu">
           <i className="bi bi-list fs-1"></i>
         </button>
+
+        {!isHome && (
+          <button 
+            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 me-1 shadow-xs px-2 py-1 rounded-pill"
+            onClick={() => moduleInfo.parent ? navigate(moduleInfo.parent) : navigate(-1)}
+            title={`Back to ${moduleInfo.parentLabel || 'Previous Page'}`}
+          >
+            <i className="bi bi-arrow-left"></i>
+            <span className="d-none d-sm-inline small fw-semibold">Back</span>
+          </button>
+        )}
+
         <div>
-          <h4 className="mb-0 display-font text-primary fw-bold navbar-title" style={{ letterSpacing: '0.3px' }}>
-            {getModuleName()}
-          </h4>
+          <div className="d-flex align-items-center gap-2">
+            <h4 className="mb-0 display-font text-primary fw-bold navbar-title" style={{ letterSpacing: '0.3px' }}>
+              {moduleInfo.title}
+            </h4>
+          </div>
           <small className="text-muted d-none d-md-block" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
             {currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | {currentDateTime.toLocaleTimeString()}
           </small>

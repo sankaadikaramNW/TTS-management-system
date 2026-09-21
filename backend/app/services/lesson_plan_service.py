@@ -97,35 +97,38 @@ class LessonPlanService:
 
     def upload_to_cloudinary(self, file_bytes: bytes, filename: str) -> Tuple[str, str]:
         """
-        Upload PDF bytes to Cloudinary.
+        Upload PDF bytes to Cloudinary with automatic local storage fallback.
         Returns: (public_id, secure_url)
         """
-        _init_cloudinary()
-
-        # Use raw resource type for non-image/video files (PDFs)
-        # Place in a dedicated folder for organization
-        try:
-            result = cloudinary.uploader.upload(
-                file_bytes,
-                resource_type="raw",
-                folder="tts-lesson-plans",
-                public_id=f"{os.path.splitext(filename)[0]}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-                overwrite=False,
-                use_filename=True,
-                unique_filename=True
-            )
-            return result["public_id"], result["secure_url"]
-        except Exception as e:
-            err_msg = str(e)
-            if "Invalid Signature" in err_msg or "AuthorizationRequired" in type(e).__name__:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Cloudinary Authentication Failed: Invalid CLOUDINARY_API_SECRET in your .env file. Please update CLOUDINARY_API_SECRET with your secret key from your Cloudinary dashboard."
+        # Try Cloudinary upload if configured
+        if settings.CLOUDINARY_CLOUD_NAME and settings.CLOUDINARY_API_KEY and settings.CLOUDINARY_API_SECRET:
+            try:
+                _init_cloudinary()
+                result = cloudinary.uploader.upload(
+                    file_bytes,
+                    resource_type="raw",
+                    folder="tts-lesson-plans",
+                    public_id=f"{os.path.splitext(filename)[0]}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                    overwrite=False,
+                    use_filename=True,
+                    unique_filename=True
                 )
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to upload file to cloud storage: {err_msg}"
-            )
+                return result["public_id"], result["secure_url"]
+            except Exception as e:
+                err_msg = str(e)
+                print(f"[WARNING] Cloudinary upload failed ({err_msg}). Falling back to local storage.")
+
+        # Local storage fallback
+        local_dir = os.path.join(settings.UPLOAD_DIR, "lesson_plans")
+        os.makedirs(local_dir, exist_ok=True)
+        safe_name = f"{os.path.splitext(filename)[0]}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.pdf"
+        file_path = os.path.join(local_dir, safe_name)
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+
+        public_id = f"local_lp_{safe_name}"
+        secure_url = f"/static/uploads/lesson_plans/{safe_name}"
+        return public_id, secure_url
 
     def download_document_bytes(self, db: Session, doc_id: str) -> Tuple[bytes, str, str]:
         """
@@ -136,28 +139,42 @@ class LessonPlanService:
         if not doc:
             raise HTTPException(status_code=404, detail="Lesson plan document not found.")
 
+        # 1. Check if stored locally on disk
+        if doc.cloudinary_public_id and doc.cloudinary_public_id.startswith("local_"):
+            filename = doc.cloudinary_public_id.replace("local_lp_", "").replace("local_", "")
+            local_path = os.path.join(settings.UPLOAD_DIR, "lesson_plans", filename)
+            if os.path.exists(local_path):
+                with open(local_path, "rb") as f:
+                    return f.read(), doc.original_file_name, doc.mime_type or "application/pdf"
+
+        # Also check local file by URL path if it has /static/uploads/lesson_plans/
+        if doc.cloudinary_url and "/static/uploads/lesson_plans/" in doc.cloudinary_url:
+            filename = os.path.basename(doc.cloudinary_url)
+            local_path = os.path.join(settings.UPLOAD_DIR, "lesson_plans", filename)
+            if os.path.exists(local_path):
+                with open(local_path, "rb") as f:
+                    return f.read(), doc.original_file_name, doc.mime_type or "application/pdf"
+
+        # 2. Try fetching from Cloudinary URL or API
         if doc.cloudinary_url:
             import urllib.request
-            # 1. Try fetching via direct HTTP request
             try:
                 req = urllib.request.Request(
                     doc.cloudinary_url,
                     headers={'User-Agent': 'Mozilla/5.0'}
                 )
-                with urllib.request.urlopen(req) as response:
+                with urllib.request.urlopen(req, timeout=10) as response:
                     file_bytes = response.read()
                 return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
             except Exception:
-                # 2. If direct HTTP returns 401/403, try constructing signed/raw Cloudinary URL
                 try:
                     _init_cloudinary()
                     res_type = doc.resource_type or "raw"
-                    # Try raw if image returned 401
                     if "/image/upload/" in doc.cloudinary_url:
                         raw_alt_url = doc.cloudinary_url.replace("/image/upload/", "/raw/upload/")
                         try:
                             req_alt = urllib.request.Request(raw_alt_url, headers={'User-Agent': 'Mozilla/5.0'})
-                            with urllib.request.urlopen(req_alt) as response_alt:
+                            with urllib.request.urlopen(req_alt, timeout=10) as response_alt:
                                 file_bytes = response_alt.read()
                             return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
                         except Exception:
@@ -166,7 +183,7 @@ class LessonPlanService:
                     resource_info = cloudinary.api.resource(doc.cloudinary_public_id, resource_type=res_type)
                     download_url = resource_info.get("secure_url") or doc.cloudinary_url
                     req = urllib.request.Request(download_url, headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req) as response:
+                    with urllib.request.urlopen(req, timeout=10) as response:
                         file_bytes = response.read()
                     return file_bytes, doc.original_file_name, doc.mime_type or "application/pdf"
                 except Exception as inner_e:
@@ -178,15 +195,23 @@ class LessonPlanService:
         raise HTTPException(status_code=404, detail="Document file source not available.")
 
     def delete_from_cloudinary(self, public_id: str) -> bool:
-        """Remove a resource from Cloudinary by public_id."""
-        _init_cloudinary()
+        """Remove a resource from Cloudinary or local storage by public_id."""
+        if public_id and public_id.startswith("local_"):
+            filename = public_id.replace("local_lp_", "").replace("local_", "")
+            local_path = os.path.join(settings.UPLOAD_DIR, "lesson_plans", filename)
+            if os.path.exists(local_path):
+                try:
+                    os.remove(local_path)
+                    return True
+                except Exception:
+                    return False
+
         try:
+            _init_cloudinary()
             result = cloudinary.uploader.destroy(public_id, resource_type="raw")
             return result.get("result") == "ok"
         except Exception:
-            return False  # Non-fatal: log but don't block the operation
-        except Exception:
-            return False  # Non-fatal: log but don't block the operation
+            return False
 
     # --- CRUD Operations ---
 
@@ -214,17 +239,11 @@ class LessonPlanService:
             raise HTTPException(status_code=404, detail="The selected course does not exist.")
 
         # Read file bytes
-        import asyncio
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    file_bytes = pool.submit(lambda: file.file.read()).result()
-            else:
-                file_bytes = file.file.read()
+            file.file.seek(0)
         except Exception:
-            file_bytes = file.file.read()
+            pass
+        file_bytes = file.file.read()
 
         # Validate PDF
         self.validate_pdf(file, file_bytes)

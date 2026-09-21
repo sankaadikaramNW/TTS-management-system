@@ -21,6 +21,9 @@ class ParadeStateUpdate(BaseModel):
 
 class ParadeStateResponse(ParadeStateBase):
     id: str
+    parade_type: Optional[str] = 'MORNING'
+    morning_status: Optional[str] = None
+    status_changed: Optional[bool] = False
     updated_by: Optional[str] = None
     submission_id: Optional[str] = None
     created_at: datetime
@@ -233,3 +236,125 @@ class ParadeDateRangeResponse(BaseModel):
     total_entries: int
     items: List[ParadeDateRangeMonitoringItem]
     trades: List[str]
+
+
+# ─────────────────────────────────────────────────────────────
+# Night Parade State & Evening Roll Call Schemas
+# ─────────────────────────────────────────────────────────────
+
+class NightParadeRecord(BaseModel):
+    student_id: str
+    night_status: str
+    morning_status: Optional[str] = None
+    remarks: Optional[str] = None
+    is_verified: bool = True
+
+class NightParadeSaveDraftRequest(BaseModel):
+    date: date
+    trade: str
+    course_id: Optional[str] = None
+    batch: Optional[str] = None
+    records: List[NightParadeRecord]
+
+class NightParadeCompleteRequest(BaseModel):
+    """Complete and lock Night Parade Roll Call with 100% accountability verification."""
+    date: date
+    trade: str
+    course_id: Optional[str] = None
+    batch: Optional[str] = None
+    submitter_remarks: Optional[str] = None
+    records: List[NightParadeRecord]
+
+class NightParadeSubmitRequest(NightParadeCompleteRequest):
+    """Alias for backward compatibility."""
+    approving_officer_id: Optional[str] = None
+
+class NightParadeTraineeItem(BaseModel):
+    student_id: str
+    service_number: str
+    rank: Optional[str] = "AC"
+    full_name: str
+    trade: str
+    course_id: Optional[str] = None
+    course_name: Optional[str] = None
+    batch: Optional[str] = None
+    medical_category: Optional[str] = "A4G4"
+    morning_status: Optional[str] = None
+    night_status: Optional[str] = None
+    status_changed: bool = False
+    remarks: Optional[str] = None
+    is_verified: bool = False
+
+class NightParadeContextResponse(BaseModel):
+    date: date
+    trade: str
+    course_id: Optional[str] = None
+    course_name: Optional[str] = None
+    batch: Optional[str] = None
+    morning_available: bool
+    morning_submission_status: Optional[str] = None
+    morning_submission_id: Optional[str] = None
+    night_submission_id: Optional[str] = None
+    night_submission_status: Optional[str] = None  # DRAFT | IN_PROGRESS | COMPLETED
+    submitter_remarks: Optional[str] = None
+    completed_by_name: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    is_accountability_complete: bool = False
+    expected_strength: int = 0
+    accounted_strength: int = 0
+    unverified_count: int = 0
+    can_complete: bool = True
+    trainees: List[NightParadeTraineeItem]
+
+    # Optional legacy fields for backward compatibility
+    can_submit: bool = True
+    can_approve: bool = False
+    approving_officer_id: Optional[str] = None
+    approving_officer_name: Optional[str] = None
+    approving_officer_rank: Optional[str] = None
+    assigned_instructor_id: Optional[str] = None
+    assigned_instructor_name: Optional[str] = None
+    assigned_instructor_rank: Optional[str] = None
+    instructor_status: Optional[str] = None
+    approver_remarks: Optional[str] = None
+    rejection_reason: Optional[str] = None
+
+class NightStatusTransitionItem(BaseModel):
+    from_status: str
+    to_status: str
+    count: int
+
+class NightStrengthBreakdownItem(BaseModel):
+    label: str
+    expected: int = 0
+    present: int = 0
+    sick_report: int = 0
+    hospital: int = 0
+    leave: int = 0
+    awol: int = 0
+    course_visit: int = 0
+    temp_duty: int = 0
+    detached_duty: int = 0
+    other: int = 0
+    changed: int = 0
+    unverified: int = 0
+
+class NightParadeSummaryResponse(BaseModel):
+    date: date
+    trade: Optional[str] = None
+    total_expected: int = 0
+    present: int = 0
+    sick_report: int = 0
+    hospital: int = 0
+    leave: int = 0
+    awol: int = 0
+    course_visit: int = 0
+    temp_duty: int = 0
+    detached_duty: int = 0
+    other: int = 0
+    status_changed_count: int = 0
+    unverified_count: int = 0
+    trade_wise: List[NightStrengthBreakdownItem] = []
+    category_wise: List[NightStrengthBreakdownItem] = []
+    transitions: List[NightStatusTransitionItem] = []
+

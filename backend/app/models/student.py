@@ -54,7 +54,10 @@ class ParadeState(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     student_id = Column(String(36), ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
     date = Column(Date, nullable=False, index=True)
+    parade_type = Column(String(20), default='MORNING', nullable=False, index=True)  # MORNING, NIGHT
     status = Column(String(30), nullable=False)  # Present, Sick Report, Hospital, Leave, Temporary Duty, Course Visit, Detached Duty, AWOL
+    morning_status = Column(String(30), nullable=True)  # Read-only reference to morning status at evening verification
+    status_changed = Column(Boolean, default=False)     # True if morning_status != status (for night roll calls)
     remarks = Column(Text, nullable=True)
     updated_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     submission_id = Column(String(36), ForeignKey('parade_submissions.id', ondelete='SET NULL'), nullable=True)
@@ -63,6 +66,8 @@ class ParadeState(Base):
 
     __table_args__ = (
         Index('idx_parade_student_date', 'student_id', 'date'),
+        Index('idx_parade_student_date_type', 'student_id', 'date', 'parade_type'),
+        Index('idx_parade_date_type', 'date', 'parade_type'),
         Index('idx_parade_submission_status', 'submission_id', 'status'),
     )
 
@@ -123,13 +128,14 @@ class ParadeSubmission(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     date = Column(Date, nullable=False, index=True)
+    parade_type = Column(String(20), default='MORNING', nullable=False, index=True)  # MORNING, NIGHT
     trade = Column(String(50), nullable=False, index=True)  # Trade name that this submission covers
     course_id = Column(String(36), ForeignKey('courses.id', ondelete='SET NULL'), nullable=True)
     batch = Column(String(30), nullable=True)
     submitted_by = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     approving_officer_id = Column(String(36), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     status = Column(
-        Enum('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', name='parade_submission_status'),
+        Enum('DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'REJECTED', 'COMPLETED', name='parade_submission_status'),
         nullable=False, default='DRAFT'
     )
     submitter_remarks = Column(Text, nullable=True)   # Remarks from NCO on submission
@@ -141,6 +147,10 @@ class ParadeSubmission(Base):
     reviewed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_ps_date_trade_type', 'date', 'trade', 'parade_type'),
+    )
 
     # Relationships
     submitter = relationship("User", foreign_keys=[submitted_by])

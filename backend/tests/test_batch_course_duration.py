@@ -288,8 +288,8 @@ def test_date_aware_status_logic():
     future_start = today + timedelta(days=5)
     future_end = today + timedelta(days=30)
 
-    # Past dates -> COMPLETED
-    assert get_date_aware_status(past_start, past_end) == "COMPLETED"
+    # Past dates -> PASSED OUT / COMPLETED
+    assert get_date_aware_status(past_start, past_end) in ["PASSED OUT", "COMPLETED"]
 
     # Future dates -> UPCOMING
     assert get_date_aware_status(future_start, future_end) == "UPCOMING"

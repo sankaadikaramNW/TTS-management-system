@@ -95,8 +95,8 @@ def test_academic_course_batch_creation_to_student_enrollment_flow(client):
         "course_type": "Basic",
         "duration_weeks": 24,
         "intake_capacity": 30,
-        "start_date": "2026-02-01",
-        "end_date": "2026-07-31",
+        "start_date": "2026-09-01",
+        "end_date": "2027-02-28",
         "description": "Account Assistant Basic Course for Intake 2026",
         "is_active": True
     }
@@ -112,8 +112,8 @@ def test_academic_course_batch_creation_to_student_enrollment_flow(client):
         "name": "2/2026",
         "course_id": course_id,
         "trade_id": trade_id,
-        "intake_date": "2026-02-01",
-        "passing_out_date": "2026-07-31",
+        "intake_date": "2026-09-01",
+        "passing_out_date": "2027-02-28",
         "capacity": 30,
         "status": "Active"
     }
@@ -146,8 +146,8 @@ def test_academic_course_batch_creation_to_student_enrollment_flow(client):
         "trade": matching_option["trade_name"] or "Airframe",
         "course_id": course_id,
         "batch": "2/2026",
-        "joining_date": "2026-02-01",
-        "passing_out_date": "2026-07-31",
+        "joining_date": "2026-09-01",
+        "passing_out_date": "2027-02-28",
         "emergency_contact_name": "Father",
         "emergency_contact_phone": "0779998888",
         "blood_group": "A+",
@@ -179,8 +179,8 @@ def test_multiple_course_creation_and_enrollment_availability(client):
         "course_type": "Basic",
         "duration_weeks": 20,
         "intake_capacity": 25,
-        "start_date": "2026-03-01",
-        "end_date": "2026-08-01",
+        "start_date": "2026-09-01",
+        "end_date": "2027-01-31",
         "is_active": True
     }
     course_res = client.post("/api/v1/academic/courses", json=course_payload, headers=headers)

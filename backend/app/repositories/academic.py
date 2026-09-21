@@ -171,9 +171,8 @@ class CourseRepository(BaseRepository[Course]):
         today = date.today()
         active_courses = db.query(Course).filter(
             Course.is_active == True,
-            Course.deleted_at == None,
-            Course.status != 'PASSED OUT',
-            or_(Course.end_date == None, Course.end_date >= today)
+            Course.deleted_at.is_(None),
+            Course.status != 'PASSED OUT'
         ).order_by(Course.created_at.desc()).all()
 
         options = []
@@ -184,8 +183,8 @@ class CourseRepository(BaseRepository[Course]):
             # Query active batches for this course
             active_batches = db.query(Batch).filter(
                 Batch.course_id == c.id,
-                Batch.status.in_(['Active', 'ONGOING', 'ACTIVE']),
-                or_(Batch.passing_out_date == None, Batch.passing_out_date >= today)
+                Batch.deleted_at.is_(None),
+                Batch.status.notin_(['PASSED OUT', 'PASSED_OUT', 'ARCHIVED', 'DELETED', 'Inactive'])
             ).order_by(Batch.created_at.desc()).all()
 
             if active_batches:

@@ -43,8 +43,12 @@ def run_lightweight_migrations():
             ("audit_logs", "previous_value", "TEXT NULL"),
             ("audit_logs", "new_value", "TEXT NULL"),
             ("parade_states", "submission_id", "VARCHAR(36) NULL"),
+            ("parade_states", "parade_type", "VARCHAR(20) DEFAULT 'MORNING'"),
+            ("parade_states", "morning_status", "VARCHAR(30) NULL"),
+            ("parade_states", "status_changed", "BOOLEAN DEFAULT 0"),
             ("parade_submissions", "course_id", "VARCHAR(36) NULL"),
             ("parade_submissions", "batch", "VARCHAR(30) NULL"),
+            ("parade_submissions", "parade_type", "VARCHAR(20) DEFAULT 'MORNING'"),
             ("parade_submissions", "returned_by", "VARCHAR(36) NULL"),
             ("parade_submissions", "returned_at", "DATETIME NULL"),
             ("trades", "description", "TEXT NULL"),
@@ -227,6 +231,19 @@ def run_lightweight_migrations():
                     INDEX idx_po_type (occurrence_type),
                     INDEX idx_po_date (occurrence_date),
                     INDEX idx_po_trainee_date (trainee_id, occurrence_date)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id VARCHAR(36) PRIMARY KEY,
+                    user_id VARCHAR(36) NULL,
+                    title VARCHAR(150) NOT NULL,
+                    message TEXT NOT NULL,
+                    type VARCHAR(20) DEFAULT 'INFO',
+                    is_read BOOLEAN DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_notif_user (user_id),
+                    INDEX idx_notif_created (created_at)
                 )
             """))
             conn.commit()

@@ -96,9 +96,8 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
       replaceData.append('file', selectedFile)
 
       await axios.post(`/api/v1/academic/lesson-plans/${doc.id}/replace`, replaceData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
           setUploadProgress(percent)
         }
       })

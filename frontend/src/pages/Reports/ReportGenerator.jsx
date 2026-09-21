@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
@@ -227,15 +227,46 @@ export const ReportGenerator = () => {
     })
   }, [reportData, tableSearch])
 
+  // Get source operational workspace for 1-click return
+  const getOriginModuleInfo = () => {
+    switch (activeTab) {
+      case 'parade':
+        return { path: '/parade?tab=monitoring', label: 'Back to Parade State', icon: 'bi-clipboard2-check' }
+      case 'student':
+        return { path: '/students', label: 'Back to Trainee Directory', icon: 'bi-people' }
+      case 'accommodation':
+        return { path: '/accommodation', label: 'Back to Housing Panel', icon: 'bi-house-door' }
+      case 'academic_results':
+      case 'attendance':
+      case 'course_calendar':
+        return { path: '/academic', label: 'Back to Academic Module', icon: 'bi-journal-bookmark-fill' }
+      case 'occurrences':
+        return { path: '/students/occurrences', label: 'Back to Occurrences', icon: 'bi-shield-exclamation' }
+      default:
+        return { path: '/dashboard', label: 'Back to Dashboard', icon: 'bi-grid-1x2' }
+    }
+  }
+  const originInfo = getOriginModuleInfo()
+
   return (
     <div className="fade-in-slide">
       {/* Top Application Header Bar */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
-        <div style={{ minWidth: '220px' }}>
-          <h4 className="fw-bold text-primary mb-0 display-font">
-            <i className="bi bi-file-earmark-text-fill me-2"></i>Institutional & Academic Reporting System
-          </h4>
-          <small className="text-muted">Formal, Database-Compiled Official SLAF Registers & Statistical Tables</small>
+        <div className="d-flex align-items-center gap-2" style={{ minWidth: '220px' }}>
+          <Link
+            to={originInfo.path}
+            className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold px-2.5 py-1.5 rounded-pill"
+            title={`Return to ${originInfo.label}`}
+          >
+            <i className="bi bi-arrow-left"></i>
+            <span>{originInfo.label}</span>
+          </Link>
+          <div>
+            <h4 className="fw-bold text-primary mb-0 display-font">
+              <i className="bi bi-file-earmark-text-fill me-2"></i>Institutional & Academic Reporting System
+            </h4>
+            <small className="text-muted">Formal, Database-Compiled Official SLAF Registers & Statistical Tables</small>
+          </div>
         </div>
         <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
           {/* Orientation Toggle */}

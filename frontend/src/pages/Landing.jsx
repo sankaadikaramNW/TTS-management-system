@@ -25,9 +25,14 @@ export const Landing = () => {
     const fetchStats = async () => {
       try {
         const res = await axios.get('/api/v1/public/stats')
-        setStats(res.data)
+        if (res.data) {
+          setStats(prev => ({
+            ...prev,
+            ...res.data
+          }))
+        }
       } catch (err) {
-        console.error('Failed to load public stats', err)
+        console.warn('Could not load live public stats, using baseline counters.', err)
       } finally {
         setStatsLoading(false)
       }
@@ -36,9 +41,11 @@ export const Landing = () => {
     const fetchNotices = async () => {
       try {
         const res = await axios.get('/api/v1/public/notices')
-        setNotices(res.data)
+        if (Array.isArray(res.data)) {
+          setNotices(res.data)
+        }
       } catch (err) {
-        console.error('Failed to load public notices', err)
+        console.warn('Could not load public notices.', err)
       } finally {
         setNoticesLoading(false)
       }
