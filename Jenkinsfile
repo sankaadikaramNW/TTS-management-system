@@ -1,14 +1,20 @@
 pipeline {
     agent any
-    tools {
-        nodejs 'node' // Matches the name of the Node.js installation in Global Tool Configuration
-    }
     stages {
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
+                    sh '''
+                        # Download and install Node.js locally for this build if missing
+                        export VERSION=v20.11.0
+                        export DISTRO=linux-x64
+                        curl -fsSL https://nodejs.org/dist/$VERSION/node-$VERSION-$DISTRO.tar.xz -o node.tar.xz
+                        tar -xJf node.tar.xz
+                        export PATH=$PWD/node-$VERSION-$DISTRO/bin:$PATH
+                        
+                        npm install
+                        npm run build
+                    '''
                 }
             }
         }
