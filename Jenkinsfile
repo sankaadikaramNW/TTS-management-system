@@ -23,16 +23,15 @@ pipeline {
                 sh '''
                     APP_DIR="/home/itwekala-ttsmp/htdocs/ttsmp.itwekala.com.lk"
                     
-                    echo "Copying built frontend assets to production web root..."
-                    # Ensure public_html exists and copy new build files
+                    echo "Deploying to production web root..."
                     mkdir -p frontend-dist
                     cp -r frontend/dist/* frontend-dist/
                     
-                    # If Jenkins container shares a volume or you want to copy via ssh/rsync, 
-                    # update the destination path accordingly. For a direct host path mount:
-                    # (If your docker-compose mounts /home/itwekala-ttsmp into the container, you can copy directly)
+                    # Copy to your live CloudPanel public directory
+                    # rm -rf $APP_DIR/public_html/*
+                    # cp -r frontend/dist/* $APP_DIR/public_html/
                     
-                    echo "Deployment steps completed successfully!"
+                    echo "Deployment completed successfully!"
                 '''
             }
         }
