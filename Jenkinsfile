@@ -5,7 +5,6 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                        # Download and install Node.js using tar.gz (no xz dependency)
                         export VERSION=v20.11.0
                         export DISTRO=linux-x64
                         curl -fsSL https://nodejs.org/dist/$VERSION/node-$VERSION-$DISTRO.tar.gz -o node.tar.gz
@@ -13,6 +12,10 @@ pipeline {
                         export PATH=$PWD/node-$VERSION-$DISTRO/bin:$PATH
                         
                         npm install
+                        
+                        # Grant execution permissions to local node binaries
+                        chmod +x node_modules/.bin/*
+                        
                         npm run build
                     '''
                 }
