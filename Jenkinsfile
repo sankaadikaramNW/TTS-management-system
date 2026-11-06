@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+        nodejs 'node' // Matches the name of the Node.js installation in Global Tool Configuration
+    }
     stages {
         stage('Build Frontend') {
             steps {
