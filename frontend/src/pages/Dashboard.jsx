@@ -26,23 +26,48 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const isAdmin = isUserAdmin(user)
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (isBackground = false) => {
     try {
       const [sumRes, paradeMonRes] = await Promise.all([
-        axios.get('/api/v1/dashboard/summary'),
-        axios.get('/api/v1/parade/monitoring/summary').catch(() => ({ data: null }))
+        axios.get('/api/v1/dashboard/summary', {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+          params: { _t: Date.now() }
+        }),
+        axios.get('/api/v1/parade/monitoring/summary', {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+          params: { _t: Date.now() }
+        }).catch(() => ({ data: null }))
       ])
       setSummary(sumRes.data)
       setParadeMonitoring(paradeMonRes.data)
     } catch (err) {
       console.error('Failed to load dashboard summary', err)
     } finally {
-      setLoading(false)
+      if (!isBackground) {
+        setLoading(false)
+      }
     }
   }
 
   useEffect(() => {
-    fetchSummary()
+    fetchSummary(false)
+
+    // Periodic real-time update every 15 seconds
+    const interval = setInterval(() => {
+      fetchSummary(true)
+    }, 15000)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSummary(true)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   if (loading || !summary) {

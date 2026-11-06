@@ -1,6 +1,6 @@
 from datetime import date
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, PermissionChecker
@@ -47,13 +47,26 @@ def get_academic_dashboard_summary(
 
     total_trades = db.query(Trade).filter(Trade.is_active == True).count()
     total_courses = db.query(Course).filter(Course.deleted_at == None).count()
-    active_batches = db.query(Batch).filter(Batch.status == 'Active').count()
+    active_batches = db.query(Batch).filter(Batch.deleted_at == None, Batch.status == 'Active').count()
+    if active_batches == 0:
+        active_batches = db.query(Student.batch).filter(
+            Student.deleted_at == None,
+            ~Student.status.in_(['Passed Out', 'PASSED OUT', 'passed out', 'Discharged', 'discharged', 'Struck Off', 'Inactive']),
+            Student.batch.isnot(None),
+            Student.batch != '',
+            Student.batch != 'N/A'
+        ).distinct().count()
     
     # Active Instructors count from SSOT Users
     instructors = instructor_repo.get_instructors(db)
     active_instructors = len(instructors)
     
-    active_students = db.query(Student).filter(Student.status == 'Active').count()
+    active_students = db.query(Student).filter(
+        Student.deleted_at == None,
+        ~Student.status.in_(['Passed Out', 'PASSED OUT', 'passed out', 'Discharged', 'discharged', 'Struck Off', 'Inactive'])
+    ).count()
+    if active_students == 0:
+        active_students = db.query(Student).filter(Student.deleted_at == None).count()
     
     total_classrooms = db.query(Classroom).filter(Classroom.is_active == True).count()
     occupied_classrooms = db.query(Batch).filter(Batch.classroom_id != None, Batch.status == 'Active').count()

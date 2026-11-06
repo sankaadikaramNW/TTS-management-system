@@ -20,12 +20,17 @@ export const Landing = () => {
   const [statsLoading, setStatsLoading] = useState(true)
   const [noticesLoading, setNoticesLoading] = useState(true)
 
-  // Fetch Public Stats
+  // Fetch Public Stats & Notices with real-time sync
   useEffect(() => {
-    const fetchStats = async () => {
+    let isMounted = true
+
+    const fetchStats = async (isBackground = false) => {
       try {
-        const res = await axios.get('/api/v1/public/stats')
-        if (res.data) {
+        const res = await axios.get('/api/v1/public/stats', {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+          params: { _t: Date.now() }
+        })
+        if (res.data && isMounted) {
           setStats(prev => ({
             ...prev,
             ...res.data
@@ -34,25 +39,54 @@ export const Landing = () => {
       } catch (err) {
         console.warn('Could not load live public stats, using baseline counters.', err)
       } finally {
-        setStatsLoading(false)
+        if (isMounted && !isBackground) {
+          setStatsLoading(false)
+        }
       }
     }
 
-    const fetchNotices = async () => {
+    const fetchNotices = async (isBackground = false) => {
       try {
-        const res = await axios.get('/api/v1/public/notices')
-        if (Array.isArray(res.data)) {
+        const res = await axios.get('/api/v1/public/notices', {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+          params: { _t: Date.now() }
+        })
+        if (Array.isArray(res.data) && isMounted) {
           setNotices(res.data)
         }
       } catch (err) {
         console.warn('Could not load public notices.', err)
       } finally {
-        setNoticesLoading(false)
+        if (isMounted && !isBackground) {
+          setNoticesLoading(false)
+        }
       }
     }
 
-    fetchStats()
-    fetchNotices()
+    // Initial load
+    fetchStats(false)
+    fetchNotices(false)
+
+    // Real-time background sync interval (every 15 seconds)
+    const interval = setInterval(() => {
+      fetchStats(true)
+      fetchNotices(true)
+    }, 15000)
+
+    // Immediate sync on tab visibility regaining focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStats(true)
+        fetchNotices(true)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const handleModuleClick = (targetPath, requiredPermission) => {
