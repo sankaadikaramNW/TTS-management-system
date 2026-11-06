@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -66,6 +66,38 @@ export const Landing = () => {
     }
   }
 
+  const [isNavOpen, setIsNavOpen] = useState(false)
+  const navRef = useRef(null)
+
+  const handleNavClick = (id) => {
+    setIsNavOpen(false)
+    scrollSection(id)
+  }
+
+  // Handle outside clicks and window resize for mobile nav drawer
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isNavOpen && navRef.current && !navRef.current.contains(e.target)) {
+        setIsNavOpen(false)
+      }
+    }
+    const handleResize = () => {
+      if (window.innerWidth >= 992 && isNavOpen) {
+        setIsNavOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [isNavOpen])
+
   const scrollSection = (id) => {
     const element = document.getElementById(id)
     if (element) {
@@ -124,61 +156,67 @@ export const Landing = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Sticky Glass Navbar */}
-      <nav className="navbar navbar-expand-lg glass-header fixed-top px-4 py-2" style={{ zIndex: 1000, height: '75px' }}>
+      <nav className="navbar navbar-expand-lg landing-navbar fixed-top px-3 px-md-4 py-2" ref={navRef}>
         <div className="container-fluid d-flex align-items-center justify-content-between">
-          <div className="navbar-brand d-flex align-items-center gap-3 cursor-pointer" onClick={() => scrollSection('hero')}>
+          <div className="navbar-brand d-flex align-items-center gap-3 cursor-pointer" onClick={() => handleNavClick('hero')}>
             {/* Air force icon graphic logo */}
-            <div className="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2" style={{ width: '45px', height: '45px' }}>
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <div className="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2" style={{ width: '42px', height: '42px', minWidth: '42px' }}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                 <path d="M12 2L2 22h9l1-3 1 3h9L12 2zm0 4.27L18.42 19h-2.58l-1-3h-5.68l-1 3H5.58L12 6.27z"/>
               </svg>
             </div>
             <div>
-              <h5 className="mb-0 text-primary display-font fw-bold" style={{ fontSize: '1.1rem', letterSpacing: '0.5px' }}>SRI LANKA AIR FORCE</h5>
-              <p className="mb-0 text-muted" style={{ fontSize: '0.75rem', fontWeight: 600 }}>TRADE TRAINING SCHOOL (TTS) PORTAL</p>
+              <h5 className="mb-0 text-primary display-font fw-bold" style={{ fontSize: '1.05rem', letterSpacing: '0.5px' }}>SRI LANKA AIR FORCE</h5>
+              <p className="mb-0 text-muted" style={{ fontSize: '0.72rem', fontWeight: 600 }}>TRADE TRAINING SCHOOL (TTS) PORTAL</p>
             </div>
           </div>
 
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNavbar">
-            <span className="navbar-toggler-icon"></span>
+          <button 
+            className="navbar-toggler border-0 p-1 d-flex align-items-center justify-content-center shadow-none" 
+            type="button" 
+            onClick={() => setIsNavOpen(prev => !prev)}
+            aria-expanded={isNavOpen}
+            aria-label="Toggle navigation menu"
+          >
+            <i className={isNavOpen ? "bi bi-x-lg fs-2 text-primary" : "bi bi-list fs-1 text-primary"}></i>
           </button>
 
-          <div className="collapse navbar-collapse justify-content-end align-items-center gap-4" id="landingNavbar">
+          <div className={`collapse navbar-collapse landing-navbar-collapse ${isNavOpen ? 'show' : ''} justify-content-end align-items-center gap-4`} id="landingNavbar">
             <ul className="navbar-nav mb-2 mb-lg-0 gap-3">
               <li className="nav-item">
-                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => scrollSection('hero')}>Home</button>
+                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => handleNavClick('hero')}>Home</button>
               </li>
               <li className="nav-item">
-                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => scrollSection('about')}>About</button>
+                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => handleNavClick('about')}>About</button>
               </li>
               <li className="nav-item">
-                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => scrollSection('modules')}>Modules</button>
+                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => handleNavClick('modules')}>Modules</button>
               </li>
               <li className="nav-item">
-                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => scrollSection('notices')}>Notices</button>
+                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => handleNavClick('notices')}>Notices</button>
               </li>
               <li className="nav-item">
-                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => scrollSection('contact')}>Contact</button>
+                <button className="btn btn-link nav-link fw-semibold text-body py-1" onClick={() => handleNavClick('contact')}>Contact</button>
               </li>
             </ul>
 
-            <div className="d-flex align-items-center gap-3 border-start ps-3" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="landing-navbar-auth d-flex align-items-center gap-3 border-start ps-3" style={{ borderColor: 'var(--border-color)' }}>
               {/* Theme toggle */}
-              <button className="btn btn-link text-body p-0 me-1" onClick={toggleTheme} title="Toggle Light/Dark Mode">
+              <button className="btn btn-link text-body p-2 me-1 d-flex align-items-center" onClick={toggleTheme} title="Toggle Light/Dark Mode" aria-label="Toggle theme">
                 {theme === 'light' ? (
-                  <i className="bi bi-moon-stars-fill" style={{ fontSize: '1.2rem' }}></i>
+                  <i className="bi bi-moon-stars-fill fs-5"></i>
                 ) : (
-                  <i className="bi bi-sun-fill" style={{ fontSize: '1.2rem' }}></i>
+                  <i className="bi bi-sun-fill fs-5"></i>
                 )}
               </button>
 
               {/* Login Button */}
               {token && user ? (
-                <Link to="/dashboard" className="btn btn-primary px-4 py-2 rounded-pill fw-semibold d-flex align-items-center gap-2">
+                <Link to="/dashboard" onClick={() => setIsNavOpen(false)} className="btn btn-primary btn-auth-link px-4 py-2 rounded-pill fw-semibold d-flex align-items-center gap-2">
                   <i className="bi bi-grid-1x2"></i> Enter Portal
                 </Link>
               ) : (
-                <Link to="/login" className="btn btn-outline-primary px-4 py-2 rounded-pill fw-semibold">
+                <Link to="/login" onClick={() => setIsNavOpen(false)} className="btn btn-outline-primary btn-auth-link px-4 py-2 rounded-pill fw-semibold">
                   <i className="bi bi-box-arrow-in-right me-1"></i> Sign In
                 </Link>
               )}
@@ -186,6 +224,15 @@ export const Landing = () => {
           </div>
         </div>
       </nav>
+
+      {/* Mobile navigation backdrop */}
+      {isNavOpen && (
+        <div 
+          className="landing-nav-backdrop d-lg-none" 
+          onClick={() => setIsNavOpen(false)}
+          aria-hidden="true" 
+        />
+      )}
 
       {/* Hero Banner Section */}
       <section id="hero" className="position-relative d-flex align-items-center text-white" style={{ 

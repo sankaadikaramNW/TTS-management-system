@@ -103,9 +103,9 @@ export const StudentList = () => {
       s.status
     ])
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n")
-    
+
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
@@ -144,10 +144,10 @@ export const StudentList = () => {
       <div className="card slaf-card p-3 mb-4">
         <div className="row g-2">
           <div className="col-12 col-md-4">
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Search by Service No, Name, NIC..." 
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search by Service No, Name, NIC..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setSkip(0); }}
             />
@@ -361,15 +361,15 @@ export const StudentList = () => {
             Showing {skip + 1} - {Math.min(skip + limit, total)} of {total} trainees
           </span>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-center">
-            <button 
-              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0" 
+            <button
+              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0"
               onClick={() => setSkip(prev => Math.max(0, prev - limit))}
               disabled={skip === 0}
             >
               Previous
             </button>
-            <button 
-              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0" 
+            <button
+              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0"
               onClick={() => setSkip(prev => prev + limit)}
               disabled={skip + limit >= total}
             >

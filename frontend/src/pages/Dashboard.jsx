@@ -179,10 +179,9 @@ export const Dashboard = () => {
 
             return (
               <div key={mod.id} className="col-12 col-sm-6 col-lg-3">
-                <div 
-                  className={`card h-100 p-3.5 border transition-all cursor-pointer position-relative ${
-                    hasAccess ? 'hover-shadow-md border-secondary border-opacity-25' : 'bg-light bg-opacity-75 border-secondary border-opacity-10 opacity-75'
-                  }`}
+                <div
+                  className={`card h-100 p-3.5 border transition-all cursor-pointer position-relative ${hasAccess ? 'hover-shadow-md border-secondary border-opacity-25' : 'bg-light bg-opacity-75 border-secondary border-opacity-10 opacity-75'
+                    }`}
                   style={{
                     borderRadius: '12px',
                     transition: 'all 0.2s ease-in-out',
@@ -192,10 +191,10 @@ export const Dashboard = () => {
                   title={hasAccess ? `Open ${mod.title}` : `Access Restricted: Requires ${mod.permissionCode}`}
                 >
                   <div className="d-flex justify-content-between align-items-start mb-2.5">
-                    <div 
+                    <div
                       className="d-inline-flex align-items-center justify-content-center rounded-3 p-2.5 shadow-xs"
-                      style={{ 
-                        backgroundColor: mod.bgColor, 
+                      style={{
+                        backgroundColor: mod.bgColor,
                         color: mod.color,
                         width: '44px',
                         height: '44px'
@@ -204,12 +203,11 @@ export const Dashboard = () => {
                       <i className={`bi ${mod.icon} fs-5`}></i>
                     </div>
 
-                    <span 
-                      className={`badge rounded-pill px-2 py-1 ${
-                        hasAccess 
-                          ? (isAdmin ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-success-subtle text-success border border-success-subtle') 
-                          : 'bg-danger-subtle text-danger border border-danger-subtle'
-                      }`}
+                    <span
+                      className={`badge rounded-pill px-2 py-1 ${hasAccess
+                        ? (isAdmin ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-success-subtle text-success border border-success-subtle')
+                        : 'bg-danger-subtle text-danger border border-danger-subtle'
+                        }`}
                       style={{ fontSize: '0.68rem', fontWeight: 600 }}
                     >
                       {hasAccess ? (isAdmin ? 'Admin' : 'Authorized') : 'Restricted'}
@@ -219,7 +217,7 @@ export const Dashboard = () => {
                   <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '0.92rem' }}>
                     {mod.title}
                   </h6>
-                  
+
                   <p className="text-muted mb-3 flex-grow-1" style={{ fontSize: '0.78rem', lineHeight: '1.35' }}>
                     {mod.description}
                   </p>
@@ -228,10 +226,9 @@ export const Dashboard = () => {
                     <small className="text-muted fw-semibold" style={{ fontSize: '0.72rem' }}>
                       {mod.category}
                     </small>
-                    <span 
-                      className={`small fw-bold d-inline-flex align-items-center gap-1 ${
-                        hasAccess ? 'text-primary' : 'text-danger'
-                      }`}
+                    <span
+                      className={`small fw-bold d-inline-flex align-items-center gap-1 ${hasAccess ? 'text-primary' : 'text-danger'
+                        }`}
                       style={{ fontSize: '0.78rem' }}
                     >
                       {hasAccess ? (
@@ -292,7 +289,7 @@ export const Dashboard = () => {
                 )}
               </div>
 
-              <button 
+              <button
                 onClick={() => openModule(navigate, SYSTEM_MODULES.find(m => m.id === 'parade'), user, hasPermission)}
                 className="btn btn-info btn-sm fw-semibold text-dark shadow-sm w-100 w-sm-auto"
               >
@@ -379,12 +376,12 @@ export const Dashboard = () => {
                 <span className="fw-bold text-success">{accommodation.occupancy_rate}%</span>
               </div>
               <div className="progress mt-2" style={{ height: '10px' }}>
-                <div 
-                  className="progress-bar bg-success" 
-                  role="progressbar" 
-                  style={{ width: `${accommodation.occupancy_rate}%` }} 
-                  aria-valuenow={accommodation.occupancy_rate} 
-                  aria-valuemin="0" 
+                <div
+                  className="progress-bar bg-success"
+                  role="progressbar"
+                  style={{ width: `${accommodation.occupancy_rate}%` }}
+                  aria-valuenow={accommodation.occupancy_rate}
+                  aria-valuemin="0"
                   aria-valuemax="100"
                 ></div>
               </div>

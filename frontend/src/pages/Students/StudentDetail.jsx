@@ -101,9 +101,9 @@ export const StudentDetail = () => {
           <div className="card slaf-card p-4 text-center">
             <div className="position-relative mx-auto mb-3" style={{ width: '120px', height: '120px' }}>
               {student.profile_photo_path ? (
-                <img 
-                  src={student.profile_photo_path} 
-                  alt="Student Profile" 
+                <img
+                  src={student.profile_photo_path}
+                  alt="Student Profile"
                   className="rounded-circle border border-primary border-3 w-100 h-100 object-fit-cover"
                 />
               ) : (
@@ -125,10 +125,10 @@ export const StudentDetail = () => {
 
             <div className="mt-3">
               <h6 className="text-start fw-semibold text-muted text-uppercase mb-3" style={{ fontSize: '0.75rem' }}>Digital QR Badge</h6>
-              <img 
-                src={student.qr_code_data} 
-                alt="Validation QR Code" 
-                className="img-fluid border p-2 bg-white mb-2" 
+              <img
+                src={student.qr_code_data}
+                alt="Validation QR Code"
+                className="img-fluid border p-2 bg-white mb-2"
                 style={{ width: '150px' }}
               />
               <p className="text-muted" style={{ fontSize: '0.7rem' }}>SLAF TTS Identity Authentication System</p>
