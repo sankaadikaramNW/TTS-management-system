@@ -444,10 +444,10 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       {/* Course Selector & Actions */}
       <div className="card slaf-card p-3 mb-3 shadow-sm border-0 bg-white">
         <div className="row align-items-center g-2">
-          <div className="col-md-3">
+          <div className="col-12 col-md-3">
             <label className="fw-bold text-dark small">Select Course / Specialization:</label>
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-sm-8 col-md-6">
             <select 
               className="form-select form-select-sm fw-semibold"
               value={selectedCourseId}
@@ -458,9 +458,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
               ))}
             </select>
           </div>
-          <div className="col-md-3 text-end">
+          <div className="col-12 col-sm-4 col-md-3 text-start text-sm-end">
             {(activeSubTab === 'phase-tests' || activeSubTab === 'final-exams') && (
-              <button className="btn btn-primary btn-sm fw-semibold shadow-sm" onClick={() => setShowExamModal(true)}>
+              <button className="btn btn-primary btn-sm fw-semibold shadow-sm w-100 w-sm-auto" onClick={() => setShowExamModal(true)}>
                 <i className="bi bi-journal-plus me-1"></i> Schedule Exam
               </button>
             )}
@@ -469,7 +469,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       </div>
 
       {/* Sub Tabs */}
-      <ul className="nav nav-pills custom-pills mb-3 border-bottom pb-2">
+      <ul className="nav nav-pills custom-pills nav-pills-responsive mb-3 border-bottom pb-2">
         <li className="nav-item">
           <button className={`nav-link btn-sm ${activeSubTab === 'attendance' ? 'active fw-bold' : ''}`} onClick={() => setActiveSubTab('attendance')}>
             <i className="bi bi-calendar-check me-1.5"></i> Class Attendance
@@ -593,7 +593,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       {/* Create Exam Modal */}
       {showExamModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card shadow-lg border-0">
               <div className="modal-header border-bottom bg-light">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -602,7 +602,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                 <button type="button" className="btn-close" onClick={() => setShowExamModal(false)}></button>
               </div>
               <form onSubmit={handleCreateExam}>
-                <div className="modal-body p-4">
+                <div className="modal-body p-3 p-md-4">
                   <div className="mb-3">
                     <label className="form-label small fw-bold text-dark">Exam Type*</label>
                     <select className="form-select" value={examForm.type} onChange={(e) => setExamForm({ ...examForm, type: e.target.value })}>
@@ -637,9 +637,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer border-top bg-light">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowExamModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold shadow-sm">Schedule Exam</button>
+                <div className="modal-footer border-top bg-light d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowExamModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary btn-sm fw-semibold shadow-sm w-100 w-sm-auto">Schedule Exam</button>
                 </div>
               </form>
             </div>
@@ -650,38 +650,38 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       {/* Comprehensive Result Sheet Modal */}
       {showMarksModal && selectedExam && resultSheetData && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 1060, overflowY: 'auto' }}>
-          <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: 'min(98vw, 1500px)', width: '98%', height: '92vh', margin: '4vh auto' }}>
+          <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: 'min(98vw, 1500px)', width: '98%', height: '94vh', margin: '3vh auto' }}>
             <div className="modal-content slaf-card shadow-2xl border-0 overflow-hidden" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               {/* Header */}
-              <div className="modal-header bg-dark text-white py-3 px-4 border-bottom border-secondary flex-shrink-0 d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div className="d-flex align-items-center gap-3">
-                  <div className="bg-primary bg-opacity-25 text-primary rounded-3 p-2 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px' }}>
-                    <i className="bi bi-journal-check fs-4 text-info"></i>
+              <div className="modal-header bg-dark text-white py-2.5 px-3 px-md-4 border-bottom border-secondary flex-shrink-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div className="d-flex align-items-center gap-2 gap-md-3 min-w-0">
+                  <div className="bg-primary bg-opacity-25 text-primary rounded-3 p-2 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '40px', height: '40px' }}>
+                    <i className="bi bi-journal-check fs-5 text-info"></i>
                   </div>
-                  <div>
-                    <div className="d-flex align-items-center flex-wrap gap-2">
-                      <h5 className="modal-title fw-bold text-white mb-0" style={{ letterSpacing: '0.2px' }}>
+                  <div className="min-w-0">
+                    <div className="d-flex align-items-center flex-wrap gap-1.5">
+                      <h6 className="modal-title fw-bold text-white mb-0 text-truncate" style={{ letterSpacing: '0.2px' }}>
                         {resultSheetData.exam_type}: {resultSheetData.subject_name}
-                      </h5>
-                      <span className="badge bg-primary text-white border border-primary-subtle px-2.5 py-1">
-                        {resultSheetData.course_name} {resultSheetData.course_code ? `(${resultSheetData.course_code})` : ''}
+                      </h6>
+                      <span className="badge bg-primary text-white border border-primary-subtle px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
+                        {resultSheetData.course_name}
                       </span>
-                      <span className="badge bg-secondary text-white border border-secondary px-2.5 py-1">
+                      <span className="badge bg-secondary text-white border border-secondary px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
                         Batch: {selectedExam.batch_name || 'All'}
                       </span>
                     </div>
-                    <div className="d-flex align-items-center flex-wrap gap-3 mt-1 text-white-50" style={{ fontSize: '0.8rem' }}>
-                      <span><i className="bi bi-calendar-event text-info me-1"></i>Exam Date: <strong className="text-light">{resultSheetData.exam_date}</strong></span>
-                      <span><i className="bi bi-award text-warning me-1"></i>Max Marks: <strong className="text-light">{resultSheetData.max_marks}</strong></span>
-                      <span><i className="bi bi-check2-circle text-success me-1"></i>Pass Marks: <strong className="text-light">{resultSheetData.pass_marks}</strong></span>
+                    <div className="d-flex align-items-center flex-wrap gap-2 mt-1 text-white-50" style={{ fontSize: '0.75rem' }}>
+                      <span><i className="bi bi-calendar-event text-info me-1"></i>Date: <strong className="text-light">{resultSheetData.exam_date}</strong></span>
+                      <span><i className="bi bi-award text-warning me-1"></i>Max: <strong className="text-light">{resultSheetData.max_marks}</strong></span>
+                      <span><i className="bi bi-check2-circle text-success me-1"></i>Pass: <strong className="text-light">{resultSheetData.pass_marks}</strong></span>
                       <span>
                         {resultSheetData.is_parade_approved ? (
-                          <span className="badge bg-success bg-opacity-25 text-success border border-success px-2 py-0.5">
-                            <i className="bi bi-shield-fill-check me-1"></i>Parade State Approved (SSOT Linked)
+                          <span className="badge bg-success bg-opacity-25 text-success border border-success px-1.5 py-0.5" style={{ fontSize: '0.675rem' }}>
+                            <i className="bi bi-shield-fill-check me-1"></i>Approved
                           </span>
                         ) : (
-                          <span className="badge bg-warning bg-opacity-25 text-warning border border-warning px-2 py-0.5">
-                            <i className="bi bi-exclamation-triangle-fill me-1"></i>Parade State: {resultSheetData.parade_submission_status}
+                          <span className="badge bg-warning bg-opacity-25 text-warning border border-warning px-1.5 py-0.5" style={{ fontSize: '0.675rem' }}>
+                            <i className="bi bi-exclamation-triangle-fill me-1"></i>{resultSheetData.parade_submission_status}
                           </span>
                         )}
                       </span>
@@ -692,11 +692,11 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                 <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
                   <button type="button" className="btn btn-outline-light btn-sm fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" onClick={handlePrintMarksheet} title="Print Formal Marksheet">
                     <i className="bi bi-printer"></i>
-                    <span>Formal Report</span>
+                    <span className="d-none d-sm-inline">Formal Report</span>
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-light border-0 ms-1 flex-shrink-0 d-flex align-items-center justify-content-center"
+                    className="btn btn-sm btn-outline-light border-0 flex-shrink-0 d-flex align-items-center justify-content-center"
                     onClick={() => setShowMarksModal(false)}
                     title="Close Modal"
                     style={{ width: '34px', height: '34px', borderRadius: '6px' }}
@@ -749,12 +749,12 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
               </div>
 
               {/* Filter Controls & Search */}
-              <div className="px-4 py-2 bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 flex-shrink-0">
-                <div className="d-flex flex-wrap align-items-center gap-1.5">
-                  <small className="text-muted fw-bold me-1">View:</small>
+              <div className="px-3 px-md-4 py-2 bg-white border-bottom d-flex flex-column flex-lg-row justify-content-between align-items-stretch align-items-lg-center gap-2 flex-shrink-0">
+                <div className="nav-tabs-responsive d-flex align-items-center gap-1.5 pb-1 pb-lg-0" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <small className="text-muted fw-bold me-1 flex-shrink-0">View:</small>
                   <button 
                     type="button" 
-                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ALL' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ALL' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
                     onClick={() => setModalFilter('ALL')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -762,7 +762,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </button>
                   <button 
                     type="button" 
-                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ELIGIBLE' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ELIGIBLE' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
                     onClick={() => setModalFilter('ELIGIBLE')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -770,7 +770,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </button>
                   <button 
                     type="button" 
-                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'ENTERED' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ENTERED' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'}`}
                     onClick={() => setModalFilter('ENTERED')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -779,7 +779,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   {liveSummary.pendingCount > 0 && (
                     <button 
                       type="button" 
-                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'PENDING' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark'}`}
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'PENDING' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark'}`}
                       onClick={() => setModalFilter('PENDING')}
                       style={{ fontSize: '0.75rem' }}
                     >
@@ -788,7 +788,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   )}
                   <button 
                     type="button" 
-                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'PASSED' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'PASSED' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
                     onClick={() => setModalFilter('PASSED')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -796,7 +796,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </button>
                   <button 
                     type="button" 
-                    className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'FAILED' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
+                    className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'FAILED' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
                     onClick={() => setModalFilter('FAILED')}
                     style={{ fontSize: '0.75rem' }}
                   >
@@ -805,7 +805,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   {liveSummary.ineligibleCount > 0 && (
                     <button 
                       type="button" 
-                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'INELIGIBLE' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'INELIGIBLE' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
                       onClick={() => setModalFilter('INELIGIBLE')}
                       style={{ fontSize: '0.75rem' }}
                     >
@@ -815,7 +815,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   {liveSummary.overriddenCount > 0 && (
                     <button 
                       type="button" 
-                      className={`btn btn-xs rounded-pill px-2.5 py-1 ${modalFilter === 'OVERRIDDEN' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'}`}
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'OVERRIDDEN' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'}`}
                       onClick={() => setModalFilter('OVERRIDDEN')}
                       style={{ fontSize: '0.75rem' }}
                     >
@@ -824,10 +824,10 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   )}
                 </div>
 
-                <div className="d-flex align-items-center gap-2 ms-auto flex-wrap">
+                <div className="d-flex align-items-center gap-2 flex-wrap">
                   {/* Quick Auto Fill Button */}
                   <button 
-                    className="btn btn-outline-secondary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs" 
+                    className="btn btn-outline-secondary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs flex-shrink-0" 
                     style={{ fontSize: '0.78rem' }} 
                     type="button" 
                     onClick={handleBatchFillPassMarks}
@@ -838,7 +838,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   </button>
 
                   {/* Search Box */}
-                  <div className="input-group input-group-sm" style={{ width: '220px' }}>
+                  <div className="input-group input-group-sm flex-grow-1 flex-lg-grow-0" style={{ minWidth: '180px', maxWidth: '100%' }}>
                     <span className="input-group-text bg-white border-end-0 text-muted"><i className="bi bi-search"></i></span>
                     <input 
                       type="text" 
@@ -1068,20 +1068,20 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                 </div>
 
                 {/* Modal Footer (Sticky, Perfectly Visible, Uncut) */}
-                <div className="modal-footer border-top bg-white py-2.5 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3 flex-shrink-0 shadow-lg">
-                  <div className="d-flex align-items-center flex-wrap gap-3">
-                    <div className="small text-muted d-flex align-items-center gap-1.5">
+                <div className="modal-footer border-top bg-white py-2.5 px-3 px-md-4 d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2 flex-shrink-0 shadow-lg">
+                  <div className="d-flex align-items-center flex-wrap gap-2 gap-md-3">
+                    <div className="small text-muted d-flex align-items-center gap-1.5" style={{ fontSize: '0.75rem' }}>
                       <i className="bi bi-shield-check text-primary fs-6"></i>
-                      <span>Parade State SSOT: <strong>{resultSheetData.exam_date}</strong></span>
+                      <span>Parade SSOT: <strong>{resultSheetData.exam_date}</strong></span>
                     </div>
 
                     <div className="vr d-none d-md-block" style={{ height: '18px' }}></div>
 
                     <div className="d-flex align-items-center gap-2">
-                      <span className="small text-dark fw-semibold">
-                        Progress: {liveSummary.enteredCount} / {liveSummary.eligible} ({liveSummary.progressPct}%)
+                      <span className="small text-dark fw-semibold" style={{ fontSize: '0.75rem' }}>
+                        Progress: {liveSummary.enteredCount}/{liveSummary.eligible} ({liveSummary.progressPct}%)
                       </span>
-                      <div className="progress" style={{ width: '100px', height: '6px' }}>
+                      <div className="progress" style={{ width: '80px', height: '6px' }}>
                         <div 
                           className={`progress-bar ${liveSummary.progressPct === 100 ? 'bg-success' : 'bg-primary'}`} 
                           role="progressbar" 
@@ -1091,13 +1091,13 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     </div>
                   </div>
 
-                  <div className="d-flex align-items-center gap-2 ms-auto">
-                    <button type="button" className="btn btn-outline-secondary btn-sm px-3 fw-semibold" onClick={() => setShowMarksModal(false)}>
+                  <div className="d-flex align-items-center gap-2 justify-content-end">
+                    <button type="button" className="btn btn-outline-secondary btn-sm px-3 fw-semibold flex-grow-1 flex-sm-grow-0" onClick={() => setShowMarksModal(false)}>
                       Close
                     </button>
                     <button 
                       type="submit" 
-                      className="btn btn-primary btn-sm fw-bold shadow-sm px-4 py-1.5 d-inline-flex align-items-center gap-2"
+                      className="btn btn-primary btn-sm fw-bold shadow-sm px-3 px-md-4 py-1.5 d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0"
                       disabled={savingMarks}
                       style={{
                         background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
@@ -1107,15 +1107,15 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                       {savingMarks ? (
                         <>
                           <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                          <span>Saving Official Marksheet...</span>
+                          <span>Saving...</span>
                         </>
                       ) : (
                         <>
                           <i className="bi bi-cloud-check-fill fs-6"></i>
-                          <span>Save Official Marksheet</span>
+                          <span>Save Marksheet</span>
                           {liveSummary.enteredCount > 0 && (
-                            <span className="badge bg-white text-primary rounded-pill px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
-                              {liveSummary.enteredCount} Records
+                            <span className="badge bg-white text-primary rounded-pill px-1.5 py-0.5 d-none d-sm-inline" style={{ fontSize: '0.72rem' }}>
+                              {liveSummary.enteredCount}
                             </span>
                           )}
                         </>
@@ -1132,11 +1132,11 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
       {/* Controlled Officer Override Modal */}
       {showOverrideModal && overrideStudent && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1070 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card shadow-lg border-0">
               <div className="modal-header border-bottom bg-warning-subtle py-2.5 px-3">
-                <h6 className="modal-title display-font text-dark fw-bold mb-0">
-                  <i className="bi bi-shield-lock-fill text-warning me-2"></i>Authorize Examination Eligibility Override
+                <h6 className="modal-title display-font text-dark fw-bold mb-0 text-truncate">
+                  <i className="bi bi-shield-lock-fill text-warning me-2"></i>Authorize Eligibility Override
                 </h6>
                 <button type="button" className="btn-close" onClick={() => setShowOverrideModal(false)}></button>
               </div>
@@ -1185,13 +1185,13 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     />
                   </div>
                 </div>
-                <div className="modal-footer border-top bg-light py-2">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowOverrideModal(false)}>
+                <div className="modal-footer border-top bg-light py-2 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowOverrideModal(false)}>
                     Cancel
                   </button>
                   <button 
                     type="submit" 
-                    className="btn btn-warning btn-sm fw-bold shadow-sm px-3 text-dark"
+                    className="btn btn-warning btn-sm fw-bold shadow-sm px-3 text-dark w-100 w-sm-auto"
                     disabled={submittingOverride}
                   >
                     {submittingOverride ? (

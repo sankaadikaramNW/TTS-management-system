@@ -726,30 +726,30 @@ export const NightParadeTab = ({
 
       {/* ─── 5. Sub-Navigation Tabs ─── */}
       <div className="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3 flex-wrap gap-2">
-        <div className="btn-group btn-group-sm shadow-xs">
+        <div className="d-flex flex-wrap gap-1 shadow-xs">
           <button
-            className={`btn ${activeSubTab === 'rollcall' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm ${activeSubTab === 'rollcall' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
             onClick={() => setActiveSubTab('rollcall')}
           >
             <i className="bi bi-clipboard2-check me-1" />
             Evening Roll Call Table
           </button>
           <button
-            className={`btn ${activeSubTab === 'summary' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm ${activeSubTab === 'summary' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
             onClick={() => setActiveSubTab('summary')}
           >
             <i className="bi bi-grid-3x3 me-1" />
             Trade Breakdown
           </button>
           <button
-            className={`btn ${activeSubTab === 'transitions' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm ${activeSubTab === 'transitions' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
             onClick={() => setActiveSubTab('transitions')}
           >
             <i className="bi bi-arrow-left-right me-1" />
-            Status Transitions Matrix
+            Status Transitions
           </button>
           <button
-            className={`btn ${activeSubTab === 'changes' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm ${activeSubTab === 'changes' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
             onClick={() => setActiveSubTab('changes')}
           >
             <i className="bi bi-person-exclamation me-1" />
@@ -759,22 +759,22 @@ export const NightParadeTab = ({
 
         {/* Quick helper buttons when in rollcall table */}
         {activeSubTab === 'rollcall' && !isCompleted && (
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap w-100 w-md-auto">
             <button
-              className="btn btn-sm btn-outline-secondary shadow-xs fw-semibold"
+              className="btn btn-sm btn-outline-secondary shadow-xs fw-semibold flex-grow-1 flex-md-grow-0"
               onClick={handleInheritMorningBaseline}
               title="Reset all unedited night statuses to morning baseline"
             >
               <i className="bi bi-arrow-counterclockwise me-1" />
-              Inherit Morning Baseline
+              Inherit Morning
             </button>
             <button
-              className="btn btn-sm btn-outline-success shadow-xs fw-semibold"
+              className="btn btn-sm btn-outline-success shadow-xs fw-semibold flex-grow-1 flex-md-grow-0"
               onClick={handleMarkAllOnParade}
               title="Mark all unverified trainees as Present (On Parade)"
             >
-              <i className="bi bi-check-all me-1" />
-              Mark Remaining On Parade
+              <i className="bi bi-check2-all me-1" />
+              Mark All Present
             </button>
           </div>
         )}

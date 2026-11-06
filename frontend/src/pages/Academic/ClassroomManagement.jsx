@@ -116,7 +116,7 @@ export const ClassroomManagement = () => {
 
       <div className="card slaf-card p-3 mb-3 shadow-sm">
         <div className="row g-2">
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <div className="input-group input-group-sm">
               <span className="input-group-text bg-light"><i className="bi bi-search text-muted"></i></span>
               <input 
@@ -132,7 +132,8 @@ export const ClassroomManagement = () => {
       </div>
 
       <div className="card slaf-card p-0 shadow-sm">
-        <div className="table-responsive">
+        {/* Desktop Table View */}
+        <div className="table-responsive d-none d-md-block">
           <table className="table slaf-table align-middle mb-0">
             <thead>
               <tr>
@@ -183,11 +184,48 @@ export const ClassroomManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Record Cards */}
+        <div className="d-md-none p-2">
+          {loading ? (
+            <div className="text-center py-4"><div className="spinner-border text-primary"></div></div>
+          ) : filteredClassrooms.length === 0 ? (
+            <div className="text-center py-4 text-muted">No classrooms registered.</div>
+          ) : (
+            filteredClassrooms.map(c => (
+              <div key={c.id} className="mobile-record-card">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="badge bg-primary-subtle text-primary border fw-bold">{c.code}</span>
+                  <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-2 py-0.5`}>
+                    {c.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <h6 className="fw-bold text-dark mb-1">{c.name}</h6>
+                <div className="small text-muted mb-2">
+                  <i className="bi bi-geo-alt me-1"></i>{c.block || 'Main Block'} &bull; {c.building || 'Building A'}
+                </div>
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                  <span className="badge bg-secondary-subtle text-dark border">{c.capacity} Trainees</span>
+                  {c.is_occupied ? (
+                    <span className="badge bg-warning-subtle text-warning border"><i className="bi bi-person-workspace me-1"></i>Occupied ({c.assigned_batch_name})</span>
+                  ) : (
+                    <span className="badge bg-success-subtle text-success border"><i className="bi bi-check-circle me-1"></i>Available</span>
+                  )}
+                </div>
+                <div className="border-top pt-2 mt-2 text-end">
+                  <button className="btn btn-outline-secondary btn-sm w-100" onClick={() => handleOpenEdit(c)}>
+                    <i className="bi bi-pencil me-1"></i> Edit Classroom
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -198,7 +236,7 @@ export const ClassroomManagement = () => {
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="row g-3">
-                    <div className="col-md-6">
+                    <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold small text-muted">Classroom ID (Code)*</label>
                       <input 
                         type="text" 
@@ -209,7 +247,7 @@ export const ClassroomManagement = () => {
                         required
                       />
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold small text-muted">Seating Capacity*</label>
                       <input 
                         type="number" 
@@ -220,7 +258,7 @@ export const ClassroomManagement = () => {
                         required
                       />
                     </div>
-                    <div className="col-md-12">
+                    <div className="col-12">
                       <label className="form-label fw-semibold small text-muted">Classroom / Lab Name*</label>
                       <input 
                         type="text" 
@@ -231,7 +269,7 @@ export const ClassroomManagement = () => {
                         required
                       />
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold small text-muted">Block / Wing</label>
                       <input 
                         type="text" 
@@ -241,7 +279,7 @@ export const ClassroomManagement = () => {
                         onChange={(e) => setForm({ ...form, block: e.target.value })}
                       />
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold small text-muted">Building Name</label>
                       <input 
                         type="text" 
@@ -251,7 +289,7 @@ export const ClassroomManagement = () => {
                         onChange={(e) => setForm({ ...form, building: e.target.value })}
                       />
                     </div>
-                    <div className="col-md-12">
+                    <div className="col-12">
                       <div className="form-check form-switch">
                         <input 
                           className="form-check-input" 
@@ -265,9 +303,9 @@ export const ClassroomManagement = () => {
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer border-top">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">Save Classroom</button>
+                <div className="modal-footer border-top d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto">Save Classroom</button>
                 </div>
               </form>
             </div>

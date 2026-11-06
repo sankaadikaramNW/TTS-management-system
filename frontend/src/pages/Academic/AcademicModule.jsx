@@ -19,6 +19,7 @@ export const AcademicModule = () => {
   const initialView = searchParams.get('view') || 'dashboard'
   const [activeView, setActiveView] = useState(initialView)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Expanded state for submenu sections
   const [expandedSections, setExpandedSections] = useState({
@@ -37,6 +38,7 @@ export const AcademicModule = () => {
 
   const handleNavigate = (view, extraParams = {}) => {
     setActiveView(view)
+    setMobileMenuOpen(false)
     const newParams = { view }
     if (extraParams.courseId) newParams.course_id = extraParams.courseId
     if (extraParams.entryId) newParams.edit_id = extraParams.entryId
@@ -74,20 +76,28 @@ export const AcademicModule = () => {
   const breadcrumb = getBreadcrumbTitle()
 
   return (
-    <div className="d-flex w-100 min-vh-100 bg-app overflow-hidden">
+    <div className="d-flex w-100 min-vh-100 bg-app overflow-hidden position-relative">
+      {/* Mobile Drawer Backdrop */}
+      {mobileMenuOpen && (
+        <div className="sidebar-backdrop d-lg-none" onClick={() => setMobileMenuOpen(false)} style={{ zIndex: 1055 }} />
+      )}
+
       {/* Module-Specific Enterprise Collapsible Sidebar */}
       <aside 
-        className={`bg-white border-end shadow-sm d-flex flex-column transition-all ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}
+        className={`bg-white border-end shadow-sm d-flex flex-column transition-all ${
+          mobileMenuOpen ? 'position-fixed top-0 start-0 h-100' : 'd-none d-lg-flex'
+        } ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}
         style={{
-          width: sidebarCollapsed ? '70px' : '260px',
-          minWidth: sidebarCollapsed ? '70px' : '260px',
+          width: mobileMenuOpen ? 'min(300px, 85vw)' : (sidebarCollapsed ? '70px' : '260px'),
+          minWidth: mobileMenuOpen ? 'min(300px, 85vw)' : (sidebarCollapsed ? '70px' : '260px'),
           transition: 'width 0.25s ease, min-width 0.25s ease',
-          zIndex: 1020
+          zIndex: mobileMenuOpen ? 1060 : 1020,
+          boxShadow: mobileMenuOpen ? '0 0 35px rgba(0,0,0,0.5)' : undefined
         }}
       >
         {/* Sidebar Header */}
         <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-          {!sidebarCollapsed && (
+          {(!sidebarCollapsed || mobileMenuOpen) && (
             <div className="d-flex align-items-center gap-2">
               <div className="bg-primary text-white rounded p-1.5 d-inline-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
                 <i className="bi bi-journal-bookmark-fill fs-6"></i>
@@ -98,13 +108,23 @@ export const AcademicModule = () => {
               </div>
             </div>
           )}
-          <button 
-            className="btn btn-sm btn-light border p-1 text-muted" 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            <i className={`bi bi-chevron-${sidebarCollapsed ? 'right' : 'left'}`}></i>
-          </button>
+          <div className="d-flex align-items-center gap-1">
+            <button 
+              className="btn btn-sm btn-light border p-1 text-muted d-none d-lg-inline-block" 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              <i className={`bi bi-chevron-${sidebarCollapsed ? 'right' : 'left'}`}></i>
+            </button>
+            <button 
+              className="btn btn-sm btn-light border p-1 text-muted d-lg-none" 
+              onClick={() => setMobileMenuOpen(false)}
+              title="Close Academic Menu"
+              aria-label="Close Academic Menu"
+            >
+              <i className="bi bi-x-lg fs-6"></i>
+            </button>
+          </div>
         </div>
 
         {/* Sidebar Scrollable Nav Menu */}
@@ -343,21 +363,31 @@ export const AcademicModule = () => {
       {/* Main Operational Area */}
       <main className="flex-grow-1 p-3 p-md-4 overflow-auto">
         {/* Top ERP Breadcrumb Header */}
-        <div className="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0 small">
-              <li className="breadcrumb-item text-muted">
-                <i className="bi bi-house-door me-1"></i>Academic Module
-              </li>
-              <li className="breadcrumb-item text-muted">{breadcrumb.category}</li>
-              <li className="breadcrumb-item active fw-bold text-primary" aria-current="page">{breadcrumb.title}</li>
-            </ol>
-          </nav>
+        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center pb-2 mb-3 border-bottom gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <button 
+              className="btn btn-primary btn-sm d-lg-none d-inline-flex align-items-center gap-1.5 shadow-xs" 
+              onClick={() => setMobileMenuOpen(true)}
+              title="Open Academic Navigation Menu"
+            >
+              <i className="bi bi-layout-sidebar-inset"></i>
+              <span>Academic Menu</span>
+            </button>
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb mb-0 small">
+                <li className="breadcrumb-item text-muted d-none d-sm-inline">
+                  <i className="bi bi-house-door me-1"></i>Academic
+                </li>
+                <li className="breadcrumb-item text-muted d-none d-md-inline">{breadcrumb.category}</li>
+                <li className="breadcrumb-item active fw-bold text-primary" aria-current="page">{breadcrumb.title}</li>
+              </ol>
+            </nav>
+          </div>
           
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 ms-auto ms-sm-0">
             {activeView !== 'dashboard' && (
               <button className="btn btn-outline-secondary btn-sm fw-semibold" onClick={() => handleNavigate('dashboard')}>
-                <i className="bi bi-speedometer2 me-1"></i> Academic Dashboard
+                <i className="bi bi-speedometer2 me-1"></i> Dashboard
               </button>
             )}
           </div>

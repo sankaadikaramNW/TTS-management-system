@@ -437,8 +437,13 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           </div>
 
           {/* Mobile Close Button */}
-          <button className="btn btn-link text-white-50 d-lg-none position-absolute top-0 end-0 me-3 mt-1 p-1" onClick={onClose} title="Close Menu">
-            <i className="bi bi-x-lg fs-5"></i>
+          <button 
+            className="btn btn-link text-white-50 d-lg-none position-absolute top-0 end-0 me-2 mt-1 p-2 touch-target" 
+            onClick={onClose} 
+            title="Close Menu"
+            aria-label="Close Navigation Menu"
+          >
+            <i className="bi bi-x-lg fs-4 text-white"></i>
           </button>
 
           {/* Sidebar Header Logo */}

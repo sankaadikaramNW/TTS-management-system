@@ -22,7 +22,7 @@ export const ReportGenerator = () => {
   const [exportingExcel, setExportingExcel] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
   const [reportData, setReportData] = useState(null)
-  
+
   // Master Filter Metadata
   const [filterMeta, setFilterMeta] = useState({
     trades: [],
@@ -221,7 +221,7 @@ export const ReportGenerator = () => {
     if (!tableSearch.trim()) return reportData.rows
     const q = tableSearch.toLowerCase()
     return reportData.rows.filter(r => {
-      return Object.values(r).some(val => 
+      return Object.values(r).some(val =>
         val !== null && val !== undefined && String(val).toLowerCase().includes(q)
       )
     })
@@ -251,46 +251,46 @@ export const ReportGenerator = () => {
   return (
     <div className="fade-in-slide">
       {/* Top Application Header Bar */}
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
-        <div className="d-flex align-items-center gap-2" style={{ minWidth: '220px' }}>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3 no-print">
+        <div className="d-flex align-items-center gap-2 min-w-0">
           <Link
             to={originInfo.path}
-            className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold px-2.5 py-1.5 rounded-pill"
+            className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold px-2.5 py-1.5 rounded-pill flex-shrink-0"
             title={`Return to ${originInfo.label}`}
           >
             <i className="bi bi-arrow-left"></i>
-            <span>{originInfo.label}</span>
+            <span className="d-none d-sm-inline">{originInfo.label}</span>
           </Link>
-          <div>
-            <h4 className="fw-bold text-primary mb-0 display-font">
-              <i className="bi bi-file-earmark-text-fill me-2"></i>Institutional & Academic Reporting System
+          <div className="min-w-0">
+            <h4 className="fw-bold text-primary mb-0 display-font fs-5 fs-md-4 text-truncate">
+              <i className="bi bi-file-earmark-text-fill me-2"></i>Institutional Reporting
             </h4>
-            <small className="text-muted">Formal, Database-Compiled Official SLAF Registers & Statistical Tables</small>
+            <small className="text-muted d-none d-sm-block">Formal, Database-Compiled Official SLAF Registers & Tables</small>
           </div>
         </div>
-        <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
+        <div className="d-flex align-items-center flex-wrap gap-2 w-100 w-md-auto justify-content-start justify-content-md-end">
           {/* Orientation Toggle */}
-          <div className="btn-group btn-group-sm shadow-xs" role="group">
-            <button 
-              type="button" 
+          <div className="btn-group btn-group-sm shadow-xs flex-grow-1 flex-sm-grow-0" role="group">
+            <button
+              type="button"
               className={`btn ${orientation === 'portrait' ? 'btn-secondary fw-bold' : 'btn-outline-secondary'}`}
               onClick={() => setOrientation('portrait')}
               title="A4 Portrait Orientation (210mm x 297mm)"
             >
-              <i className="bi bi-file-earmark me-1"></i> A4 Portrait
+              <i className="bi bi-file-earmark me-1"></i> Portrait
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={`btn ${orientation === 'landscape' ? 'btn-secondary fw-bold' : 'btn-outline-secondary'}`}
               onClick={() => setOrientation('landscape')}
               title="A4 Landscape Orientation (297mm x 210mm)"
             >
-              <i className="bi bi-file-earmark-landscape me-1"></i> A4 Landscape
+              <i className="bi bi-file-earmark-landscape me-1"></i> Landscape
             </button>
           </div>
 
-          <button 
-            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" 
+          <button
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0"
             onClick={handleExportExcel}
             disabled={loading || exportingExcel || !reportData?.rows?.length}
           >
@@ -299,10 +299,10 @@ export const ReportGenerator = () => {
             ) : (
               <i className="bi bi-file-earmark-excel me-1 text-success"></i>
             )}
-            Export Excel (.xlsx)
+            <span className="d-none d-sm-inline">Export </span>Excel
           </button>
-          <button 
-            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" 
+          <button
+            className="btn btn-outline-dark btn-sm fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0"
             onClick={handleExportPdf}
             disabled={loading || exportingPdf || !reportData?.rows?.length}
           >
@@ -311,23 +311,23 @@ export const ReportGenerator = () => {
             ) : (
               <i className="bi bi-file-earmark-pdf me-1 text-danger"></i>
             )}
-            Download PDF
+            PDF
           </button>
-          <button 
-            className="btn btn-primary btn-sm fw-semibold shadow-xs" 
+          <button
+            className="btn btn-primary btn-sm fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0"
             onClick={handlePrintReport}
             disabled={loading || !reportData?.rows?.length}
           >
-            <i className="bi bi-printer me-1"></i> Print Formal Report
+            <i className="bi bi-printer me-1"></i> Print
           </button>
         </div>
       </div>
 
       {/* Module Selector Navigation Tabs */}
       <div className="card slaf-card p-2 mb-3 shadow-xs bg-white no-print">
-        <ul className="nav nav-pills custom-pills flex-nowrap overflow-auto">
+        <ul className="nav nav-pills custom-pills nav-pills-responsive flex-nowrap">
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'student' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('student')}
             >
@@ -335,7 +335,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'parade' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('parade')}
             >
@@ -343,7 +343,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'academic_results' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('academic_results')}
             >
@@ -351,7 +351,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'attendance' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('attendance')}
             >
@@ -359,7 +359,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'accommodation' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('accommodation')}
             >
@@ -367,7 +367,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'course_calendar' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('course_calendar')}
             >
@@ -375,7 +375,7 @@ export const ReportGenerator = () => {
             </button>
           </li>
           <li className="nav-item">
-            <button 
+            <button
               className={`nav-link btn-sm ${activeTab === 'occurrences' ? 'active fw-bold' : ''}`}
               onClick={() => setActiveTab('occurrences')}
             >
@@ -400,7 +400,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Trade</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={studentParams.trade}
                 onChange={(e) => setStudentParams({ ...studentParams, trade: e.target.value })}
@@ -411,7 +411,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Course</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={studentParams.course_id}
                 onChange={(e) => setStudentParams({ ...studentParams, course_id: e.target.value })}
@@ -422,7 +422,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Batch</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={studentParams.batch}
                 onChange={(e) => setStudentParams({ ...studentParams, batch: e.target.value })}
@@ -433,7 +433,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Rank</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={studentParams.rank}
                 onChange={(e) => setStudentParams({ ...studentParams, rank: e.target.value })}
@@ -444,7 +444,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Status</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={studentParams.status}
                 onChange={(e) => setStudentParams({ ...studentParams, status: e.target.value })}
@@ -466,7 +466,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Parade Date*</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={paradeParams.parade_date}
@@ -475,7 +475,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Trade</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={paradeParams.trade}
                 onChange={(e) => setParadeParams({ ...paradeParams, trade: e.target.value })}
@@ -486,7 +486,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Parade Status</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={paradeParams.status}
                 onChange={(e) => setParadeParams({ ...paradeParams, status: e.target.value })}
@@ -497,7 +497,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Approval State</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={paradeParams.approval_status}
                 onChange={(e) => setParadeParams({ ...paradeParams, approval_status: e.target.value })}
@@ -521,7 +521,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-4">
               <label className="form-label small fw-bold mb-1">Course*</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={academicParams.course_id}
                 onChange={(e) => setAcademicParams({ ...academicParams, course_id: e.target.value })}
@@ -532,7 +532,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Subject</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={academicParams.subject_id}
                 onChange={(e) => setAcademicParams({ ...academicParams, subject_id: e.target.value })}
@@ -543,7 +543,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Outcome Status</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={academicParams.result_status}
                 onChange={(e) => setAcademicParams({ ...academicParams, result_status: e.target.value })}
@@ -570,7 +570,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Course</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={attendanceParams.course_id}
                 onChange={(e) => setAttendanceParams({ ...attendanceParams, course_id: e.target.value })}
@@ -581,7 +581,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Subject</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={attendanceParams.subject_id}
                 onChange={(e) => setAttendanceParams({ ...attendanceParams, subject_id: e.target.value })}
@@ -592,7 +592,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Date From</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={attendanceParams.date_from}
@@ -601,7 +601,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Date To</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={attendanceParams.date_to}
@@ -621,7 +621,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Billet</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={accommodationParams.billet_id}
                 onChange={(e) => setAccommodationParams({ ...accommodationParams, billet_id: e.target.value })}
@@ -632,7 +632,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Status</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={accommodationParams.status}
                 onChange={(e) => setAccommodationParams({ ...accommodationParams, status: e.target.value })}
@@ -645,7 +645,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Bunk Level</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={accommodationParams.bunk_level}
                 onChange={(e) => setAccommodationParams({ ...accommodationParams, bunk_level: e.target.value })}
@@ -657,7 +657,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Trade</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={accommodationParams.trade}
                 onChange={(e) => setAccommodationParams({ ...accommodationParams, trade: e.target.value })}
@@ -679,7 +679,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-4">
               <label className="form-label small fw-bold mb-1">Course Schedule*</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={calendarParams.course_id}
                 onChange={(e) => setCalendarParams({ ...calendarParams, course_id: e.target.value })}
@@ -690,7 +690,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Phase</label>
-              <input 
+              <input
                 type="text"
                 className="form-control form-control-sm"
                 placeholder="e.g. Phase 1"
@@ -700,7 +700,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Date From</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={calendarParams.date_from}
@@ -720,7 +720,7 @@ export const ReportGenerator = () => {
           <div className="row g-2 align-items-end">
             <div className="col-md-3">
               <label className="form-label small fw-bold mb-1">Occurrence Category</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={occurrenceParams.occurrence_type}
                 onChange={(e) => setOccurrenceParams({ ...occurrenceParams, occurrence_type: e.target.value })}
@@ -732,7 +732,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Trade</label>
-              <select 
+              <select
                 className="form-select form-select-sm"
                 value={occurrenceParams.trade}
                 onChange={(e) => setOccurrenceParams({ ...occurrenceParams, trade: e.target.value })}
@@ -743,7 +743,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Date From</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={occurrenceParams.date_from}
@@ -752,7 +752,7 @@ export const ReportGenerator = () => {
             </div>
             <div className="col-md-2">
               <label className="form-label small fw-bold mb-1">Date To</label>
-              <input 
+              <input
                 type="date"
                 className="form-control form-control-sm"
                 value={occurrenceParams.date_to}
@@ -775,8 +775,8 @@ export const ReportGenerator = () => {
           Showing <strong>{filteredRows.length}</strong> of <strong>{reportData?.total_records || 0}</strong> compiled records • Formal A4 Preview ({orientation.toUpperCase()})
         </div>
         <div style={{ width: '280px' }}>
-          <input 
-            type="text" 
+          <input
+            type="text"
             className="form-control form-control-sm"
             placeholder="Search within compiled records..."
             value={tableSearch}
@@ -816,7 +816,7 @@ export const ReportGenerator = () => {
               <h5 className="fw-bold mb-1" style={{ fontSize: '1.05rem', color: '#1f2937' }}>
                 {reportData.header?.school_name || 'TRADE TRAINING SCHOOL (TTS EKALA)'}
               </h5>
-              
+
               <div className="fs-6 fw-bold text-uppercase mt-2" style={{ letterSpacing: '0.4px', textDecoration: 'underline' }}>
                 {reportData.header?.title}
               </div>
@@ -904,14 +904,14 @@ export const ReportGenerator = () => {
             <div className="text-muted small mb-1" style={{ fontSize: '0.75rem' }}>
               <em>Table 2: Trainee Master Register & Logged Records</em>
             </div>
-            
+
             <div className="table-responsive">
               <table className="report-formal-table mb-2">
                 <thead>
                   <tr>
                     {reportData.columns?.map((col, cIdx) => (
-                      <th 
-                        key={cIdx} 
+                      <th
+                        key={cIdx}
                         style={{ minWidth: col.min_width || 'auto', textAlign: col.align || 'left' }}
                       >
                         {col.label.toUpperCase()}
@@ -933,9 +933,9 @@ export const ReportGenerator = () => {
                           const val = row[col.field]
                           const isNumericOrStatus = ['s_no', 'service_number', 'status', 'result_status', 'marks_obtained', 'batch'].includes(col.field)
                           return (
-                            <td 
+                            <td
                               key={cIdx}
-                              style={{ 
+                              style={{
                                 textAlign: col.align || 'left',
                                 fontWeight: isNumericOrStatus ? '600' : 'normal'
                               }}

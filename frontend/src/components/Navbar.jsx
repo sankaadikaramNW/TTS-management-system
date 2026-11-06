@@ -93,20 +93,26 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
   return (
     <header className={`glass-header app-navbar d-flex align-items-center justify-content-between px-3 px-md-4 py-2 fixed-top ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Header Module Name, Back Button, and Current DateTime */}
-      <div className="d-flex align-items-center gap-2">
-        <button className="btn btn-link text-primary p-0 d-lg-none me-1" onClick={onToggleSidebar} title="Open Navigation Menu">
+      <div className="d-flex align-items-center gap-1 gap-sm-2 flex-grow-1 overflow-hidden me-2">
+        <button 
+          className="btn btn-link text-primary p-1 d-lg-none me-1 touch-target d-flex align-items-center justify-content-center" 
+          onClick={onToggleSidebar} 
+          title="Open Navigation Menu"
+          aria-label="Open Navigation Menu"
+        >
           <i className="bi bi-list fs-1"></i>
         </button>
 
         {!isHome && (
-          <div className="d-flex align-items-center gap-1.5 me-1">
+          <div className="d-flex align-items-center gap-1 me-1 flex-shrink-0">
             <button 
-              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-xs px-2.5 py-1 rounded-pill"
+              className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-xs px-2 px-sm-2.5 py-1 rounded-pill"
               onClick={() => navigate('/dashboard')}
               title="Back to Home Portal"
             >
               <i className="bi bi-arrow-left-circle-fill"></i>
               <span className="d-none d-md-inline small fw-semibold">Back to Home Portal</span>
+              <span className="d-none d-sm-inline d-md-none small fw-semibold">Home</span>
             </button>
             {moduleInfo.parent && moduleInfo.parent !== '/dashboard' && (
               <button 
@@ -121,13 +127,13 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
           </div>
         )}
 
-        <div>
+        <div className="overflow-hidden">
           <div className="d-flex align-items-center gap-2">
-            <h4 className="mb-0 display-font text-primary fw-bold navbar-title" style={{ letterSpacing: '0.3px' }}>
+            <h4 className="mb-0 display-font text-primary fw-bold navbar-title text-truncate" style={{ letterSpacing: '0.3px' }} title={moduleInfo.title}>
               {moduleInfo.title}
             </h4>
           </div>
-          <small className="text-muted d-none d-md-block" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
+          <small className="text-muted d-none d-md-block text-truncate" style={{ fontSize: '0.75rem', fontWeight: 500 }}>
             {currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | {currentDateTime.toLocaleTimeString()}
           </small>
         </div>
@@ -156,7 +162,7 @@ export const Navbar = ({ onToggleSidebar, isCollapsed }) => {
           </button>
 
           {showNotifications && (
-            <div className="card slaf-card position-absolute end-0 mt-3 p-0" style={{ width: '290px', zIndex: 1100, maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="card slaf-card position-absolute end-0 mt-3 p-0 shadow-lg" style={{ width: 'min(300px, calc(100vw - 24px))', zIndex: 1100, maxHeight: '400px', overflowY: 'auto' }}>
               <div className="card-header bg-app d-flex justify-content-between align-items-center py-2 px-3">
                 <span className="fw-semibold">Alert Center</span>
                 <span className="badge bg-secondary">{notifications.length} new</span>

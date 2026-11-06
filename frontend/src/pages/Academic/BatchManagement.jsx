@@ -209,7 +209,7 @@ export const BatchManagement = () => {
       {/* Status Filter Tabs */}
       <div className="card slaf-card p-3 mb-3 shadow-sm">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-          <div className="nav nav-pills gap-1">
+          <div className="nav nav-pills nav-pills-responsive gap-1">
             {[
               { key: 'ALL', label: 'All Batches', icon: 'bi-grid' },
               { key: 'Active', label: 'Active / Ongoing', icon: 'bi-play-circle text-primary' },
@@ -217,7 +217,7 @@ export const BatchManagement = () => {
             ].map(tab => (
               <button
                 key={tab.key}
-                className={`btn btn-sm ${statusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5`}
+                className={`btn btn-sm ${statusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5 text-nowrap flex-shrink-0`}
                 onClick={() => setStatusFilter(tab.key)}
               >
                 <i className={`bi ${tab.icon}`}></i>
@@ -322,7 +322,7 @@ export const BatchManagement = () => {
       {/* Batch Workflow Modal */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -521,11 +521,11 @@ export const BatchManagement = () => {
 
                   </div>
                 </div>
-                <div className="modal-footer border-top">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
+                <div className="modal-footer border-top d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowModal(false)}>Cancel</button>
                   <button 
                     type="submit" 
-                    className="btn btn-primary btn-sm fw-semibold"
+                    className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto"
                     disabled={!dateValidation.isValid || !form.intake_date || !form.passing_out_date}
                   >
                     Save &amp; Assign Batch

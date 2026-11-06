@@ -25,7 +25,7 @@ export const Login = () => {
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-app fade-in-slide">
+    <div className="d-flex justify-content-center align-items-center min-vh-100 py-4 px-3 bg-app fade-in-slide">
       <div className="card slaf-card p-4 shadow-lg w-100" style={{ maxWidth: '420px' }}>
         <div className="text-center mb-4">
           <div className="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-3 mb-2" style={{ width: '60px', height: '60px' }}>

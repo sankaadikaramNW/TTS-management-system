@@ -152,51 +152,51 @@ export const ClassicalReportModal = ({
       >
         <div className="modal-content border-0 shadow-lg" style={{ maxHeight: '94vh' }}>
           {/* Modal Header Toolbar (Hidden during print) */}
-          <div className="modal-header bg-dark text-white px-3 py-2.5 no-print d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom border-secondary">
+          <div className="modal-header bg-dark text-white px-3 py-2 no-print d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom border-secondary">
             {/* Left: Brand & Report Title */}
-            <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: '200px', maxWidth: '100%' }}>
-              <div className="bg-info bg-opacity-25 text-info rounded p-1.5 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px' }}>
-                <i className="bi bi-file-earmark-ruled-fill fs-5"></i>
+            <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: '160px', maxWidth: 'calc(100% - 50px)' }}>
+              <div className="bg-info bg-opacity-25 text-info rounded p-1.5 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
+                <i className="bi bi-file-earmark-ruled-fill fs-6"></i>
               </div>
               <div className="overflow-hidden">
-                <h6 className="modal-title fw-bold mb-0 text-truncate text-white" style={{ fontSize: '0.95rem' }} title={reportData?.header?.title || title || 'Official Institutional System Report'}>
+                <h6 className="modal-title fw-bold mb-0 text-truncate text-white" style={{ fontSize: '0.9rem' }} title={reportData?.header?.title || title || 'Official Institutional System Report'}>
                   {reportData?.header?.title || title || 'Official Institutional System Report'}
                 </h6>
-                <small className="text-white-50 d-block text-truncate" style={{ fontSize: '0.72rem' }}>
-                  Sri Lanka Air Force • Trade Training School Ekala
+                <small className="text-white-50 d-block text-truncate" style={{ fontSize: '0.7rem' }}>
+                  Sri Lanka Air Force • TTS Ekala
                 </small>
               </div>
             </div>
 
             {/* Right: Controls & Actions + Close Button */}
-            <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
+            <div className="d-flex align-items-center flex-wrap gap-1.5 ms-auto">
               {/* Orientation Switcher */}
               <div className="btn-group btn-group-sm shadow-xs" role="group">
                 <button
                   type="button"
-                  className={`btn ${orientation === 'portrait' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
+                  className={`btn btn-xs px-2 py-1 ${orientation === 'portrait' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
                   onClick={() => setOrientation('portrait')}
                   title="A4 Portrait (210mm x 297mm)"
                 >
-                  <i className="bi bi-file-earmark me-1"></i>
-                  <span className="d-none d-sm-inline">Portrait</span>
+                  <i className="bi bi-file-earmark me-0.5"></i>
+                  <span className="d-none d-sm-inline">Port</span>
                 </button>
                 <button
                   type="button"
-                  className={`btn ${orientation === 'landscape' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
+                  className={`btn btn-xs px-2 py-1 ${orientation === 'landscape' ? 'btn-info text-dark fw-bold' : 'btn-outline-light'}`}
                   onClick={() => setOrientation('landscape')}
                   title="A4 Landscape (297mm x 210mm)"
                 >
-                  <i className="bi bi-file-earmark-landscape me-1"></i>
-                  <span className="d-none d-sm-inline">Landscape</span>
+                  <i className="bi bi-file-earmark-landscape me-0.5"></i>
+                  <span className="d-none d-sm-inline">Land</span>
                 </button>
               </div>
 
               {/* Action Buttons */}
-              <div className="d-flex align-items-center gap-1.5 flex-wrap">
+              <div className="d-flex align-items-center gap-1">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-success fw-semibold shadow-xs"
+                  className="btn btn-xs btn-outline-success fw-semibold shadow-xs px-2 py-1"
                   onClick={handleExportExcel}
                   disabled={loading || exportingExcel || !rows.length}
                   title="Export to Excel Spreadsheet (.xlsx)"
@@ -204,14 +204,14 @@ export const ClassicalReportModal = ({
                   {exportingExcel ? (
                     <span className="spinner-border spinner-border-sm me-1"></span>
                   ) : (
-                    <i className="bi bi-file-earmark-excel me-1"></i>
+                    <i className="bi bi-file-earmark-excel"></i>
                   )}
-                  <span className="d-none d-md-inline">Excel</span>
+                  <span className="d-none d-md-inline ms-1">Excel</span>
                 </button>
 
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-danger fw-semibold shadow-xs"
+                  className="btn btn-xs btn-outline-danger fw-semibold shadow-xs px-2 py-1"
                   onClick={handleExportPdf}
                   disabled={loading || exportingPdf || !rows.length}
                   title="Download Classical PDF Document"
@@ -219,19 +219,19 @@ export const ClassicalReportModal = ({
                   {exportingPdf ? (
                     <span className="spinner-border spinner-border-sm me-1"></span>
                   ) : (
-                    <i className="bi bi-file-earmark-pdf me-1"></i>
+                    <i className="bi bi-file-earmark-pdf"></i>
                   )}
-                  <span className="d-none d-md-inline">PDF</span>
+                  <span className="d-none d-md-inline ms-1">PDF</span>
                 </button>
 
                 <button
                   type="button"
-                  className="btn btn-sm btn-primary fw-semibold shadow-xs"
+                  className="btn btn-xs btn-primary fw-semibold shadow-xs px-2 py-1"
                   onClick={handlePrint}
                   disabled={loading || !rows.length}
                   title="Print Official Institutional Report"
                 >
-                  <i className="bi bi-printer-fill me-1"></i>
+                  <i className="bi bi-printer-fill me-0.5"></i>
                   <span>Print</span>
                 </button>
               </div>
@@ -239,11 +239,11 @@ export const ClassicalReportModal = ({
               {/* Explicit, Uncrushable Close Button */}
               <button
                 type="button"
-                className="btn btn-sm btn-outline-light border-0 ms-1 flex-shrink-0 d-flex align-items-center justify-content-center"
+                className="btn btn-sm btn-outline-light border-0 ms-1 flex-shrink-0 d-flex align-items-center justify-content-center touch-target"
                 onClick={onClose}
                 aria-label="Close"
                 title="Close Report View"
-                style={{ width: '32px', height: '32px', borderRadius: '6px' }}
+                style={{ width: '36px', height: '36px', borderRadius: '6px' }}
               >
                 <i className="bi bi-x-lg fs-6"></i>
               </button>

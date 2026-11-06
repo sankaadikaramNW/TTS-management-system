@@ -213,24 +213,24 @@ export const Landing = () => {
               <span className="badge bg-primary-subtle text-primary border border-primary px-3 py-2 rounded-pill fw-semibold text-uppercase mb-3" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>
                 <i className="bi bi-shield-check me-1"></i> Centered Military Intelligence Portal
               </span>
-              <h1 className="display-4 fw-extrabold text-white display-font mb-3" style={{ lineHeight: '1.2' }}>
+              <h1 className="display-5 fs-2 fs-md-1 fw-extrabold text-white display-font mb-3" style={{ lineHeight: '1.2' }}>
                 Welcome to the Trade Training School <br/>
                 <span className="text-info">Management Portal</span>
               </h1>
               <p className="lead text-white-50 mb-4" style={{ maxWidth: '680px', fontSize: '1.15rem' }}>
                 A centralized, secure enterprise platform designed to manage trainee logs, academic tracking, room vacancies, parade state reports, and school operations for the Sri Lanka Air Force.
               </p>
-              <div className="d-flex flex-wrap gap-3">
+              <div className="d-flex flex-column flex-sm-row flex-wrap gap-3">
                 {token && user ? (
-                  <Link to="/dashboard" className="btn btn-info text-dark btn-lg px-4 py-2.5 rounded-3 fw-bold shadow-lg d-flex align-items-center gap-2">
+                  <Link to="/dashboard" className="btn btn-info text-dark btn-lg px-4 py-2.5 rounded-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto">
                     Go to Portal Dashboard <i className="bi bi-arrow-right"></i>
                   </Link>
                 ) : (
-                  <Link to="/login" className="btn btn-info text-dark btn-lg px-4 py-2.5 rounded-3 fw-bold shadow-lg d-flex align-items-center gap-2">
+                  <Link to="/login" className="btn btn-info text-dark btn-lg px-4 py-2.5 rounded-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto">
                     Access Portal Login <i className="bi bi-box-arrow-in-right"></i>
                   </Link>
                 )}
-                <button className="btn btn-outline-light btn-lg px-4 py-2.5 rounded-3 fw-semibold" onClick={() => scrollSection('about')}>
+                <button className="btn btn-outline-light btn-lg px-4 py-2.5 rounded-3 fw-semibold w-100 w-sm-auto" onClick={() => scrollSection('about')}>
                   Learn More
                 </button>
               </div>
@@ -242,64 +242,64 @@ export const Landing = () => {
       {/* Quick Statistics Counters Section */}
       <section className="py-5 bg-app border-bottom" style={{ borderColor: 'var(--border-color)' }}>
         <div className="container">
-          <div className="row g-4 justify-content-center">
+          <div className="row g-3 g-md-4 justify-content-center">
             {/* Stat Card 1 */}
-            <div className="col-md-3 col-sm-6">
-              <div className="card slaf-card p-4 text-center">
-                <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle p-3 mx-auto mb-3">
-                  <i className="bi bi-person-badge-fill" style={{ fontSize: '1.75rem' }}></i>
+            <div className="col-6 col-md-3">
+              <div className="card slaf-card p-3 p-md-4 text-center h-100">
+                <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle p-2.5 p-md-3 mx-auto mb-2 mb-md-3">
+                  <i className="bi bi-person-badge-fill" style={{ fontSize: '1.5rem' }}></i>
                 </div>
-                <h2 className="display-6 fw-bold mb-1 text-primary">
+                <h2 className="display-6 fs-3 fs-md-2 fw-bold mb-1 text-primary">
                   {statsLoading ? (
                     <span className="spinner-border spinner-border-sm" role="status"></span>
                   ) : stats.active_trainees}
                 </h2>
-                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.85rem' }}>Active Trainees</p>
+                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.8rem' }}>Active Trainees</p>
               </div>
             </div>
 
             {/* Stat Card 2 */}
-            <div className="col-md-3 col-sm-6">
-              <div className="card slaf-card p-4 text-center">
-                <div className="d-inline-flex bg-success-subtle text-success rounded-circle p-3 mx-auto mb-3">
-                  <i className="bi bi-layers-fill" style={{ fontSize: '1.75rem' }}></i>
+            <div className="col-6 col-md-3">
+              <div className="card slaf-card p-3 p-md-4 text-center h-100">
+                <div className="d-inline-flex bg-success-subtle text-success rounded-circle p-2.5 p-md-3 mx-auto mb-2 mb-md-3">
+                  <i className="bi bi-layers-fill" style={{ fontSize: '1.5rem' }}></i>
                 </div>
-                <h2 className="display-6 fw-bold mb-1 text-success">
+                <h2 className="display-6 fs-3 fs-md-2 fw-bold mb-1 text-success">
                   {statsLoading ? (
                     <span className="spinner-border spinner-border-sm" role="status"></span>
                   ) : stats.active_batches}
                 </h2>
-                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.85rem' }}>Active Batches</p>
+                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.8rem' }}>Active Batches</p>
               </div>
             </div>
 
             {/* Stat Card 3 */}
-            <div className="col-md-3 col-sm-6">
-              <div className="card slaf-card p-4 text-center">
-                <div className="d-inline-flex bg-purple-subtle text-purple rounded-circle p-3 mx-auto mb-3" style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
-                  <i className="bi bi-award-fill" style={{ fontSize: '1.75rem' }}></i>
+            <div className="col-6 col-md-3">
+              <div className="card slaf-card p-3 p-md-4 text-center h-100">
+                <div className="d-inline-flex bg-purple-subtle text-purple rounded-circle p-2.5 p-md-3 mx-auto mb-2 mb-md-3" style={{ backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
+                  <i className="bi bi-award-fill" style={{ fontSize: '1.5rem' }}></i>
                 </div>
-                <h2 className="display-6 fw-bold mb-1" style={{ color: '#8b5cf6' }}>
+                <h2 className="display-6 fs-3 fs-md-2 fw-bold mb-1" style={{ color: '#8b5cf6' }}>
                   {statsLoading ? (
                     <span className="spinner-border spinner-border-sm" role="status"></span>
                   ) : stats.instructors}
                 </h2>
-                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.85rem' }}>Instructors</p>
+                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.8rem' }}>Instructors</p>
               </div>
             </div>
 
             {/* Stat Card 4 */}
-            <div className="col-md-3 col-sm-6">
-              <div className="card slaf-card p-4 text-center">
-                <div className="d-inline-flex bg-warning-subtle text-warning rounded-circle p-3 mx-auto mb-3">
-                  <i className="bi bi-building-fill" style={{ fontSize: '1.75rem' }}></i>
+            <div className="col-6 col-md-3">
+              <div className="card slaf-card p-3 p-md-4 text-center h-100">
+                <div className="d-inline-flex bg-warning-subtle text-warning rounded-circle p-2.5 p-md-3 mx-auto mb-2 mb-md-3">
+                  <i className="bi bi-building-fill" style={{ fontSize: '1.5rem' }}></i>
                 </div>
-                <h2 className="display-6 fw-bold mb-1 text-warning">
+                <h2 className="display-6 fs-3 fs-md-2 fw-bold mb-1 text-warning">
                   {statsLoading ? (
                     <span className="spinner-border spinner-border-sm" role="status"></span>
                   ) : stats.buildings}
                 </h2>
-                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.85rem' }}>Billet Buildings</p>
+                <p className="text-muted fw-semibold mb-0" style={{ fontSize: '0.8rem' }}>Billet Buildings</p>
               </div>
             </div>
           </div>

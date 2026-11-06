@@ -143,7 +143,7 @@ export const StudentList = () => {
       {/* Filter and Search Card */}
       <div className="card slaf-card p-3 mb-4">
         <div className="row g-2">
-          <div className="col-md-4">
+          <div className="col-12 col-md-4">
             <input 
               type="text" 
               className="form-control" 
@@ -152,7 +152,7 @@ export const StudentList = () => {
               onChange={(e) => { setSearch(e.target.value); setSkip(0); }}
             />
           </div>
-          <div className="col-md-2">
+          <div className="col-6 col-md-2">
             <select className="form-select" value={rank} onChange={(e) => { setRank(e.target.value); setSkip(0); }}>
               <option value="">All Ranks</option>
               {ranks.map(r => (
@@ -162,7 +162,7 @@ export const StudentList = () => {
               ))}
             </select>
           </div>
-          <div className="col-md-3">
+          <div className="col-6 col-md-3">
             <select className="form-select" value={trade} onChange={(e) => { setTrade(e.target.value); setSkip(0); }}>
               <option value="">All Trades</option>
               {trades.map(t => (
@@ -172,7 +172,7 @@ export const StudentList = () => {
               ))}
             </select>
           </div>
-          <div className="col-md-3">
+          <div className="col-12 col-md-3">
             <select className="form-select" value={status} onChange={(e) => { setStatus(e.target.value); setSkip(0); }}>
               <option value="">All Statuses</option>
               {statuses.map(st => (
@@ -193,107 +193,183 @@ export const StudentList = () => {
           </div>
         </div>
       ) : (
-        <div className="card slaf-card p-0 mb-4">
-          <div className="table-responsive">
-            <table className="table slaf-table mb-0">
-              <thead>
-                <tr>
-                  <th>Service Number</th>
-                  <th>Rank & Name</th>
-                  <th>NIC</th>
-                  <th>Trade</th>
-                  <th>Course Status</th>
-                  <th>Status</th>
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.length === 0 ? (
+        <>
+          {/* Desktop & Tablet Table (>= 768px) */}
+          <div className="card slaf-card p-0 mb-4 d-none d-md-block shadow-sm">
+            <div className="table-responsive">
+              <table className="table slaf-table mb-0">
+                <thead>
                   <tr>
-                    <td colSpan="7" className="text-center py-5 text-muted">No student profiles found matching filters.</td>
+                    <th>Service Number</th>
+                    <th>Rank & Name</th>
+                    <th>NIC</th>
+                    <th>Trade</th>
+                    <th>Course Status</th>
+                    <th>Status</th>
+                    <th className="text-end">Actions</th>
                   </tr>
-                ) : (
-                  students.map((s) => (
-                    <tr key={s.id}>
-                      <td className="fw-semibold text-primary">{s.service_number}</td>
-                      <td>
-                        <div className="d-flex align-items-center gap-2.5">
-                          <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px' }}>
-                            <i className="bi bi-person-fill fs-6"></i>
-                          </div>
-                          <div>
-                            <span className="fw-bold text-dark d-block text-capitalize" style={{ fontSize: '0.925rem', lineHeight: '1.25' }}>
-                              {s.full_name || s.initials}
-                            </span>
-                            <div className="d-flex align-items-center gap-1.5 mt-1">
-                              <span className="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-0.5 fw-semibold" style={{ fontSize: '0.725rem' }}>
-                                {s.rank}
+                </thead>
+                <tbody>
+                  {students.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="text-center py-5 text-muted">No student profiles found matching filters.</td>
+                    </tr>
+                  ) : (
+                    students.map((s) => (
+                      <tr key={s.id}>
+                        <td className="fw-semibold text-primary">{s.service_number}</td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2.5">
+                            <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px' }}>
+                              <i className="bi bi-person-fill fs-6"></i>
+                            </div>
+                            <div>
+                              <span className="fw-bold text-dark d-block text-capitalize" style={{ fontSize: '0.925rem', lineHeight: '1.25' }}>
+                                {s.full_name || s.initials}
                               </span>
-                              {s.initials && (
-                                <span className="text-muted fw-medium" style={{ fontSize: '0.775rem' }}>
-                                  • {s.initials}
+                              <div className="d-flex align-items-center gap-1.5 mt-1">
+                                <span className="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-0.5 fw-semibold" style={{ fontSize: '0.725rem' }}>
+                                  {s.rank}
                                 </span>
-                              )}
+                                {s.initials && (
+                                  <span className="text-muted fw-medium" style={{ fontSize: '0.775rem' }}>
+                                    • {s.initials}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>{s.nic}</td>
-                      <td>{s.trade}</td>
-                      <td>{s.course_name || 'Unassigned'}</td>
-                      <td>
-                        <span className={`slaf-badge ${s.status.toLowerCase().replace(' ', '-')}`}>
-                          {s.status}
-                        </span>
-                      </td>
-                      <td className="text-end">
-                        <div className="d-inline-flex gap-1">
-                          <Link to={`/students/${s.id}`} className="btn btn-outline-primary btn-sm px-2.5" title="View Profile">
-                            <i className="bi bi-eye"></i>
-                          </Link>
-                          {hasPermission('personal_occurrence:read') && (
-                            <Link to={`/students/occurrences?trainee_id=${s.id}`} className="btn btn-outline-danger btn-sm px-2.5" title="Personal Occurrence Reporting">
-                              <i className="bi bi-shield-exclamation"></i>
+                        </td>
+                        <td>{s.nic}</td>
+                        <td>{s.trade}</td>
+                        <td>{s.course_name || 'Unassigned'}</td>
+                        <td>
+                          <span className={`slaf-badge ${s.status.toLowerCase().replace(' ', '-')}`}>
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          <div className="d-inline-flex gap-1">
+                            <Link to={`/students/${s.id}`} className="btn btn-outline-primary btn-sm px-2.5" title="View Profile">
+                              <i className="bi bi-eye"></i>
                             </Link>
-                          )}
-                          {hasPermission('student:write') && (
-                            <>
-                              <Link to={`/students/${s.id}/edit`} className="btn btn-outline-secondary btn-sm px-2.5" title="Edit Profile">
-                                <i className="bi bi-pencil"></i>
+                            {hasPermission('personal_occurrence:read') && (
+                              <Link to={`/students/occurrences?trainee_id=${s.id}`} className="btn btn-outline-danger btn-sm px-2.5" title="Personal Occurrence Reporting">
+                                <i className="bi bi-shield-exclamation"></i>
                               </Link>
-                              <button className="btn btn-outline-danger btn-sm px-2.5" onClick={() => handleDelete(s.id)} title="Delete Profile">
-                                <i className="bi bi-trash"></i>
-                              </button>
-                            </>
-                          )}
-                        </div>
-
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                            )}
+                            {hasPermission('student:write') && (
+                              <>
+                                <Link to={`/students/${s.id}/edit`} className="btn btn-outline-secondary btn-sm px-2.5" title="Edit Profile">
+                                  <i className="bi bi-pencil"></i>
+                                </Link>
+                                <button className="btn btn-outline-danger btn-sm px-2.5" onClick={() => handleDelete(s.id)} title="Delete Profile">
+                                  <i className="bi bi-trash"></i>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Record Cards (< 768px) */}
+          <div className="d-md-none mb-4">
+            {students.length === 0 ? (
+              <div className="card slaf-card p-5 text-center text-muted">
+                <i className="bi bi-people fs-1 opacity-50 mb-2"></i>
+                <p className="mb-0">No student profiles found matching filters.</p>
+              </div>
+            ) : (
+              students.map((s) => (
+                <div key={s.id} className="mobile-record-card">
+                  <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <span className="fw-bold text-primary fs-6">{s.service_number}</span>
+                    <span className={`slaf-badge ${s.status.toLowerCase().replace(' ', '-')}`}>
+                      {s.status}
+                    </span>
+                  </div>
+
+                  <div className="d-flex align-items-center gap-2.5 mb-3">
+                    <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle align-items-center justify-content-center flex-shrink-0" style={{ width: '42px', height: '42px' }}>
+                      <i className="bi bi-person-fill fs-5"></i>
+                    </div>
+                    <div>
+                      <h6 className="fw-bold text-dark mb-0 text-capitalize">{s.full_name || s.initials}</h6>
+                      <div className="d-flex align-items-center gap-1.5 mt-0.5">
+                        <span className="badge bg-secondary-subtle text-dark border px-2 py-0.5 fw-semibold" style={{ fontSize: '0.7rem' }}>
+                          {s.rank}
+                        </span>
+                        {s.initials && <small className="text-muted">({s.initials})</small>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="row g-2 small mb-3">
+                    <div className="col-6">
+                      <span className="text-muted d-block" style={{ fontSize: '0.72rem' }}>Trade</span>
+                      <strong className="text-dark">{s.trade || '—'}</strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-muted d-block" style={{ fontSize: '0.72rem' }}>Course / Batch</span>
+                      <span className="text-dark fw-semibold">{s.course_name || 'Unassigned'}</span>
+                    </div>
+                    {s.nic && (
+                      <div className="col-12">
+                        <span className="text-muted d-block" style={{ fontSize: '0.72rem' }}>NIC</span>
+                        <span className="text-muted font-monospace">{s.nic}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="d-flex gap-2 pt-2 border-top">
+                    <Link to={`/students/${s.id}`} className="btn btn-outline-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1">
+                      <i className="bi bi-eye"></i> View
+                    </Link>
+                    {hasPermission('personal_occurrence:read') && (
+                      <Link to={`/students/occurrences?trainee_id=${s.id}`} className="btn btn-outline-danger btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1" title="POR">
+                        <i className="bi bi-shield-exclamation"></i> POR
+                      </Link>
+                    )}
+                    {hasPermission('student:write') && (
+                      <>
+                        <Link to={`/students/${s.id}/edit`} className="btn btn-outline-secondary btn-sm px-3" title="Edit">
+                          <i className="bi bi-pencil"></i>
+                        </Link>
+                        <button className="btn btn-outline-danger btn-sm px-3" onClick={() => handleDelete(s.id)} title="Delete">
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
       {/* Pagination controls */}
       {total > limit && (
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <span className="text-muted" style={{ fontSize: '0.85rem' }}>
+        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-3">
+          <span className="text-muted small">
             Showing {skip + 1} - {Math.min(skip + limit, total)} of {total} trainees
           </span>
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 w-100 w-sm-auto justify-content-center">
             <button 
-              className="btn btn-outline-primary btn-sm px-3" 
+              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0" 
               onClick={() => setSkip(prev => Math.max(0, prev - limit))}
               disabled={skip === 0}
             >
               Previous
             </button>
             <button 
-              className="btn btn-outline-primary btn-sm px-3" 
+              className="btn btn-outline-primary btn-sm px-3 flex-grow-1 flex-sm-grow-0" 
               onClick={() => setSkip(prev => prev + limit)}
               disabled={skip + limit >= total}
             >

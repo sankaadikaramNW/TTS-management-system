@@ -51,7 +51,7 @@ export const InstructorAssignment = () => {
 
       <div className="card slaf-card p-3 mb-3 shadow-sm">
         <div className="row g-2">
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <div className="input-group input-group-sm">
               <span className="input-group-text bg-light"><i className="bi bi-search text-muted"></i></span>
               <input 
@@ -67,7 +67,8 @@ export const InstructorAssignment = () => {
       </div>
 
       <div className="card slaf-card p-0 shadow-sm">
-        <div className="table-responsive">
+        {/* Desktop Table */}
+        <div className="table-responsive d-none d-md-block">
           <table className="table slaf-table align-middle mb-0">
             <thead>
               <tr>
@@ -118,6 +119,45 @@ export const InstructorAssignment = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Record Cards */}
+        <div className="d-md-none p-2">
+          {loading ? (
+            <div className="text-center py-4"><div className="spinner-border text-primary"></div></div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-4 text-muted">No instructors found matching search criteria.</div>
+          ) : (
+            filtered.map(i => (
+              <div key={i.id} className="mobile-record-card">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h6 className="fw-bold text-dark mb-0">{i.full_name}</h6>
+                    <small className="text-muted">@{i.username}</small>
+                  </div>
+                  <span className="badge bg-success-subtle text-success border px-2 py-0.5">
+                    <i className="bi bi-check-circle-fill me-1"></i>Active
+                  </span>
+                </div>
+                <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                  <span className="fw-semibold text-primary">{i.service_number || 'N/A'}</span>
+                  <span className="badge bg-secondary-subtle text-dark border px-2 py-0.5" style={{ fontSize: '0.725rem' }}>{i.rank || 'N/A'}</span>
+                  <span className="badge bg-primary-subtle text-primary border px-2 py-0.5" style={{ fontSize: '0.725rem' }}>
+                    {i.assigned_batches_count || 0} Batches
+                  </span>
+                </div>
+                <div className="small text-muted mb-2">
+                  <i className="bi bi-building me-1"></i>{i.department || 'Training Section'} &bull; {i.designation || 'Instructor'}
+                </div>
+                {(i.email || i.mobile_number) && (
+                  <div className="border-top pt-2 mt-2 small text-muted">
+                    {i.email && <div className="text-truncate mb-0.5"><i className="bi bi-envelope me-1.5"></i>{i.email}</div>}
+                    {i.mobile_number && <div><i className="bi bi-telephone me-1.5"></i>{i.mobile_number}</div>}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

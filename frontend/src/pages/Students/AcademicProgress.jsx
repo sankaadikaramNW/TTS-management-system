@@ -445,7 +445,7 @@ export const AcademicProgress = ({ studentId }) => {
           {/* Detailed Phase Test Results Table */}
           <div className="col-12">
             <div className="card slaf-card p-0 shadow-xs">
-              <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-light-subtle">
+              <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-light-subtle flex-wrap gap-2">
                 <h6 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
                   <i className="bi bi-table text-primary"></i>
                   Phase Test Results Breakdown
@@ -455,7 +455,8 @@ export const AcademicProgress = ({ studentId }) => {
                 </span>
               </div>
 
-              <div className="table-responsive">
+              {/* Desktop Table View */}
+              <div className="table-responsive d-none d-md-block">
                 <table className="table slaf-table mb-0 align-middle">
                   <thead>
                     <tr>
@@ -530,13 +531,12 @@ export const AcademicProgress = ({ studentId }) => {
                                 </div>
                                 <div className="progress" style={{ height: '6px' }}>
                                   <div
-                                    className={`progress-bar ${
-                                      pt.percentage >= 75
-                                        ? 'bg-success'
-                                        : pt.percentage >= 50
+                                    className={`progress-bar ${pt.percentage >= 75
+                                      ? 'bg-success'
+                                      : pt.percentage >= 50
                                         ? 'bg-primary'
                                         : 'bg-danger'
-                                    }`}
+                                      }`}
                                     role="progressbar"
                                     style={{ width: `${Math.min(100, Math.max(0, pt.percentage))}%` }}
                                     aria-valuenow={pt.percentage}
@@ -578,6 +578,92 @@ export const AcademicProgress = ({ studentId }) => {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Phase Test Record Cards */}
+              <div className="d-md-none p-2">
+                {phaseTests.map((pt, idx) => {
+                  const isPass = pt.status === 'Pass' || (pt.marks_obtained !== null && pt.marks_obtained >= pt.pass_marks)
+                  const isFail = pt.status === 'Fail' || (pt.marks_obtained !== null && pt.marks_obtained < pt.pass_marks)
+                  const hasMarks = pt.percentage !== null && pt.percentage !== undefined
+
+                  let statusBadgeClass = 'bg-secondary-subtle text-secondary border'
+                  if (isPass) statusBadgeClass = 'bg-success-subtle text-success border border-success-subtle'
+                  else if (isFail) statusBadgeClass = 'bg-danger-subtle text-danger border border-danger-subtle'
+                  else if (pt.status === 'Absent' || pt.status?.includes('LEAVE') || pt.status?.includes('HOSPITAL')) {
+                    statusBadgeClass = 'bg-warning-subtle text-warning border border-warning-subtle'
+                  }
+
+                  return (
+                    <div key={pt.exam_id || idx} className="mobile-record-card">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                          <span className="badge bg-primary-subtle text-primary border me-1.5">
+                            Phase {idx + 1}
+                          </span>
+                          <strong className="text-dark">{pt.phase_test_name || `Phase ${idx + 1}`}</strong>
+                          <span className="text-muted small d-block">{pt.exam_type}</span>
+                        </div>
+                        <span className={`badge px-2 py-0.5 fw-semibold ${statusBadgeClass}`} style={{ fontSize: '0.75rem' }}>
+                          {pt.status || 'Pending'}
+                        </span>
+                      </div>
+
+                      <div className="mb-2">
+                        <span className="fw-semibold text-dark small">{pt.subject_name || 'N/A'}</span>
+                        {pt.subject_code && (
+                          <span className="badge bg-secondary-subtle text-dark border px-1.5 py-0.5 ms-1.5" style={{ fontSize: '0.675rem' }}>
+                            {pt.subject_code}
+                          </span>
+                        )}
+                        <span className="text-muted small d-block mt-0.5">
+                          <i className="bi bi-calendar3 me-1"></i>{pt.date ? new Date(pt.date).toLocaleDateString() : 'Date N/A'}
+                        </span>
+                      </div>
+
+                      <div className="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2 flex-wrap gap-2">
+                        <div>
+                          <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>SCORE</small>
+                          <strong className={isPass ? 'text-primary' : isFail ? 'text-danger' : 'text-dark'}>
+                            {pt.marks_obtained !== null && pt.marks_obtained !== undefined ? `${pt.marks_obtained} / ${pt.max_marks}` : 'N/A'}
+                          </strong>
+                        </div>
+                        <div>
+                          <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>PERCENTAGE</small>
+                          <strong className="text-dark">{hasMarks ? `${pt.percentage}%` : 'N/A'}</strong>
+                        </div>
+                        <div>
+                          <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>GRADE</small>
+                          <strong className="text-dark">{pt.grade || '-'}</strong>
+                        </div>
+                      </div>
+
+                      {hasMarks && (
+                        <div className="progress mb-2" style={{ height: '6px' }}>
+                          <div
+                            className={`progress-bar ${pt.percentage >= 75
+                              ? 'bg-success'
+                              : pt.percentage >= 50
+                                ? 'bg-primary'
+                                : 'bg-danger'
+                              }`}
+                            role="progressbar"
+                            style={{ width: `${Math.min(100, Math.max(0, pt.percentage))}%` }}
+                            aria-valuenow={pt.percentage}
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                          ></div>
+                        </div>
+                      )}
+
+                      {pt.remarks && (
+                        <div className="small text-muted border-top pt-1 mt-1">
+                          <span className="fst-italic">{pt.remarks}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

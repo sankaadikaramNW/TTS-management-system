@@ -165,7 +165,7 @@ export const UserProfile = () => {
       </div>
 
       {/* Tabs */}
-      <ul className="nav nav-tabs slaf-tabs mb-4">
+      <ul className="nav nav-tabs slaf-tabs nav-tabs-responsive mb-4">
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'info' ? 'active fw-bold' : ''}`} onClick={() => setActiveTab('info')}>
             <i className="bi bi-person-vcard me-1.5"></i> Contact & Profile
@@ -219,7 +219,7 @@ export const UserProfile = () => {
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-sm fw-semibold">
+                <button type="submit" className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto">
                   <i className="bi bi-check-circle me-1.5"></i> Save Profile Details
                 </button>
               </form>
@@ -275,7 +275,7 @@ export const UserProfile = () => {
                   )}
                 </div>
 
-                <button type="submit" className="btn btn-warning btn-sm fw-semibold text-dark" disabled={!isPasswordValid}>
+                <button type="submit" className="btn btn-warning btn-sm fw-semibold text-dark w-100 w-sm-auto" disabled={!isPasswordValid}>
                   <i className="bi bi-key-fill me-1.5"></i> Update Account Password
                 </button>
               </form>

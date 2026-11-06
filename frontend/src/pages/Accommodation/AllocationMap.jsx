@@ -76,22 +76,22 @@ export const AllocationMap = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="mb-0 text-primary display-font">Accommodation Map</h2>
-          <p className="text-muted mb-0">Monitor billets occupancy rates and assign beds to incoming trainees</p>
+          <h2 className="mb-0 text-primary display-font fs-4 fs-md-2">Accommodation Map</h2>
+          <p className="text-muted mb-0 small">Monitor billets occupancy rates and assign beds to incoming trainees</p>
         </div>
       </div>
 
       {/* Allocation Drawer/Modal (displayed conditionally) */}
       {selectedBed && (
-        <div className="card slaf-card p-4 border-primary mb-4 border-2">
+        <div className="card slaf-card p-3 p-md-4 border-primary mb-4 border-2">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0 fw-bold">Allocate Bed: {selectedBed.bed_number}</h5>
             <button className="btn-close" onClick={() => setSelectedBed(null)}></button>
           </div>
           <form onSubmit={handleAllocate} className="row g-3 align-items-end">
-            <div className="col-md-8">
+            <div className="col-12 col-md-8">
               <label className="form-label fw-semibold">Search Trainee for Placement</label>
               <select 
                 className="form-select" 
@@ -109,10 +109,10 @@ export const AllocationMap = () => {
                   ))
                 }
               </select>
-              <small className="text-muted">Only active trainees without existing housing allocations are listed.</small>
+              <small className="text-muted d-block mt-1">Only active trainees without existing housing allocations are listed.</small>
             </div>
-            <div className="col-md-4">
-              <button type="submit" className="btn btn-primary w-100 py-2 fw-semibold">
+            <div className="col-12 col-md-4">
+              <button type="submit" className="btn btn-primary w-100 py-2 fw-semibold shadow-xs">
                 Confirm Placement
               </button>
             </div>

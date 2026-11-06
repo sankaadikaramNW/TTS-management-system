@@ -123,8 +123,8 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
 
   return (
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1055 }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <div className="modal-content shadow-lg border-0" style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div className="modal-content shadow-lg border-0" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div className={`modal-header border-0 flex-shrink-0 ${mode === 'replace' ? 'bg-warning bg-opacity-10' : 'bg-info bg-opacity-10'}`}>
             <h5 className={`modal-title fw-bold ${mode === 'replace' ? 'text-warning' : 'text-info'}`}>
@@ -134,7 +134,7 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
             <button type="button" className="btn-close" onClick={onClose} disabled={submitting}></button>
           </div>
 
-          <div className="modal-body px-4 py-3" style={{ overflowY: 'auto', flex: '1 1 auto' }}>
+          <div className="modal-body px-3 px-sm-4 py-3" style={{ overflowY: 'auto', flex: '1 1 auto' }}>
             {/* Current Document Info */}
             <div className="bg-light rounded-3 p-3 mb-4 border">
               <div className="d-flex align-items-center gap-3">
@@ -170,7 +170,7 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
                   {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                 </div>
 
-                <div className="col-md-6">
+                <div className="col-12 col-md-6">
                   <label className="form-label small fw-semibold text-muted">Subject / Lesson</label>
                   <input
                     type="text"
@@ -182,7 +182,7 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-12 col-sm-6 col-md-3">
                   <label className="form-label small fw-semibold text-muted">Version</label>
                   <input
                     type="text"
@@ -194,7 +194,7 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-12 col-sm-6 col-md-3">
                   <label className="form-label small fw-semibold text-muted">Academic Year</label>
                   <input
                     type="text"
@@ -311,12 +311,12 @@ export const LessonPlanEditModal = ({ show, document: doc, mode, onClose, onSucc
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-0 pt-0 px-4 pb-3 flex-shrink-0">
-            <button type="button" className="btn btn-light px-4" onClick={onClose} disabled={submitting}>
+          <div className="modal-footer border-0 pt-0 px-3 px-sm-4 pb-3 flex-shrink-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+            <button type="button" className="btn btn-light px-4 w-100 w-sm-auto" onClick={onClose} disabled={submitting}>
               Cancel
             </button>
             <button
-              className={`btn ${mode === 'replace' ? 'btn-warning' : 'btn-info'} px-4 d-flex align-items-center gap-2`}
+              className={`btn ${mode === 'replace' ? 'btn-warning' : 'btn-info'} px-4 d-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto`}
               onClick={mode === 'replace' ? handleSubmitReplace : handleSubmitEdit}
               disabled={submitting}
               id="btn-submit-edit"

@@ -258,20 +258,20 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
   return (
     <div className="fade-in-slide">
       {/* Header Banner */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3">
         <div>
-          <h4 className="fw-extrabold text-dark mb-0 display-font">Personal Occurrence Reporting</h4>
+          <h4 className="fw-extrabold text-dark mb-0 display-font fs-4">Personal Occurrence Reporting</h4>
           <p className="text-muted small mb-0">
             Restricted Personnel Management SSOT for Trainee Achievements & Misconduct Records.
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap w-100 w-sm-auto justify-content-start justify-content-sm-end">
           <button className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
-            <i className="bi bi-printer me-1 text-primary"></i> Print Official Dossier Report
+            <i className="bi bi-printer me-1 text-primary"></i> Print Dossier
           </button>
           {hasPermission('personal_occurrence:write') && (
             <button className="btn btn-primary btn-sm fw-bold shadow-sm" onClick={handleOpenCreate}>
-              <i className="bi bi-plus-lg me-1"></i> Add Personal Occurrence
+              <i className="bi bi-plus-lg me-1"></i> Add Occurrence
             </button>
           )}
         </div>
@@ -439,7 +439,7 @@ export const PersonalOccurrenceReporting = ({ initialTraineeId = null }) => {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }} tabIndex="-1">
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card border-0 shadow-lg">
               <div className="modal-header bg-primary text-white py-3">
                 <div className="d-flex align-items-center gap-2">

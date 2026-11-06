@@ -488,7 +488,7 @@ export const UserManagement = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <ul className="nav nav-tabs slaf-tabs mb-4">
+      <ul className="nav nav-tabs slaf-tabs nav-tabs-responsive mb-4">
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'users' ? 'active fw-bold' : ''}`} onClick={() => setActiveTab('users')}>
             <i className="bi bi-person-gear me-1.5"></i> User Accounts
@@ -656,8 +656,8 @@ export const UserManagement = () => {
                         </td>
                         <td className="text-end">
                           <div className="dropdown position-relative">
-                            <button 
-                              className="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                            <button
+                              className="btn btn-outline-secondary btn-sm dropdown-toggle"
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -713,8 +713,8 @@ export const UserManagement = () => {
                       </span>
                     </div>
                     <div className="dropdown position-relative">
-                      <button 
-                        className="btn btn-link text-muted p-0" 
+                      <button
+                        className="btn btn-link text-muted p-0"
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -730,7 +730,7 @@ export const UserManagement = () => {
                     </div>
                   </div>
                   <p className="text-muted small mb-3 flex-grow-1">{r.description || 'No description provided.'}</p>
-                  
+
                   <div className="border-top pt-2">
                     <span className="text-muted small fw-semibold d-block mb-1">Granted Permissions ({r.permissions?.length || 0}):</span>
                     <div className="d-flex flex-wrap gap-1" style={{ maxHeight: '80px', overflowY: 'auto' }}>
@@ -1017,7 +1017,7 @@ export const UserManagement = () => {
       {/* ========================================================================= */}
       {showUserModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -1026,7 +1026,7 @@ export const UserManagement = () => {
                 <button type="button" className="btn-close" onClick={() => setShowUserModal(false)}></button>
               </div>
               <form onSubmit={handleSaveUser}>
-                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label fw-semibold">Service Number *</label>
@@ -1158,9 +1158,9 @@ export const UserManagement = () => {
                   </div>
                 </div>
 
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowUserModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">
+                <div className="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowUserModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto">
                     <i className="bi bi-check-lg me-1"></i> {editingUser ? 'Save Account Changes' : 'Create User Account'}
                   </button>
                 </div>
@@ -1175,7 +1175,7 @@ export const UserManagement = () => {
       {/* ========================================================================= */}
       {showResetModal && targetResetUser && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1070 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">Reset Password: @{targetResetUser.username}</h5>
@@ -1231,9 +1231,9 @@ export const UserManagement = () => {
                   </div>
                 </div>
 
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowResetModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-warning btn-sm fw-semibold text-dark" disabled={!isResetPwValid}>
+                <div className="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowResetModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-warning btn-sm fw-semibold text-dark w-100 w-sm-auto" disabled={!isResetPwValid}>
                     Reset Password Now
                   </button>
                 </div>
@@ -1248,7 +1248,7 @@ export const UserManagement = () => {
       {/* ========================================================================= */}
       {showRoleModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -1257,7 +1257,7 @@ export const UserManagement = () => {
                 <button type="button" className="btn-close" onClick={() => setShowRoleModal(false)}></button>
               </div>
               <form onSubmit={handleSaveRole}>
-                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Role Name *</label>
                     <input
@@ -1321,9 +1321,9 @@ export const UserManagement = () => {
                   )}
                 </div>
 
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowRoleModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">
+                <div className="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowRoleModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto">
                     <i className="bi bi-shield-check me-1"></i> {isCloning ? 'Confirm Role Clone' : 'Save Role Configuration'}
                   </button>
                 </div>

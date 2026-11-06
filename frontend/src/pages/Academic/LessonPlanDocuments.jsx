@@ -186,7 +186,7 @@ export const LessonPlanDocuments = () => {
         </div>
         {canWrite && (
           <button
-            className="btn btn-primary d-flex align-items-center gap-2 px-4 py-2 shadow-sm"
+            className="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-4 py-2 shadow-sm w-100 w-sm-auto"
             onClick={() => setShowUploadModal(true)}
             id="btn-upload-lesson-plan"
           >
@@ -201,7 +201,7 @@ export const LessonPlanDocuments = () => {
         <div className="card-body py-3">
           <div className="row g-3 align-items-end">
             {/* Trade Filter */}
-            <div className="col-md-3 col-sm-6">
+            <div className="col-12 col-sm-6 col-md-3">
               <label className="form-label small fw-semibold text-muted mb-1">
                 <i className="bi bi-wrench me-1"></i>Trade
               </label>
@@ -219,7 +219,7 @@ export const LessonPlanDocuments = () => {
             </div>
 
             {/* Course Filter */}
-            <div className="col-md-3 col-sm-6">
+            <div className="col-12 col-sm-6 col-md-3">
               <label className="form-label small fw-semibold text-muted mb-1">
                 <i className="bi bi-book-half me-1"></i>Course
               </label>
@@ -246,7 +246,7 @@ export const LessonPlanDocuments = () => {
             </div>
 
             {/* Status Filter */}
-            <div className="col-md-2 col-sm-6">
+            <div className="col-12 col-sm-6 col-md-2">
               <label className="form-label small fw-semibold text-muted mb-1">
                 <i className="bi bi-funnel me-1"></i>Status
               </label>
@@ -263,7 +263,7 @@ export const LessonPlanDocuments = () => {
             </div>
 
             {/* Search */}
-            <div className="col-md-3 col-sm-6">
+            <div className="col-12 col-sm-6 col-md-3">
               <label className="form-label small fw-semibold text-muted mb-1">
                 <i className="bi bi-search me-1"></i>Search
               </label>
@@ -278,14 +278,16 @@ export const LessonPlanDocuments = () => {
             </div>
 
             {/* Clear */}
-            <div className="col-md-1 col-sm-6 d-flex align-items-end">
+            <div className="col-12 col-sm-6 col-md-1 d-flex align-items-end">
               <button
                 className="btn btn-outline-secondary btn-sm w-100"
                 onClick={handleClearFilters}
                 title="Clear all filters"
                 id="btn-clear-filters"
               >
-                <i className="bi bi-x-circle"></i>
+                <i className="bi bi-x-circle me-1 d-md-none"></i>
+                <span className="d-md-none">Clear Filters</span>
+                <i className="bi bi-x-circle d-none d-md-inline"></i>
               </button>
             </div>
           </div>
@@ -339,7 +341,8 @@ export const LessonPlanDocuments = () => {
         </div>
       ) : (
         <div className="card shadow-sm border-0">
-          <div className="table-responsive">
+          {/* Desktop Table View */}
+          <div className="table-responsive d-none d-md-block">
             <table className="table table-hover align-middle mb-0">
               <thead className="bg-light">
                 <tr>
@@ -471,6 +474,93 @@ export const LessonPlanDocuments = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Record Cards */}
+          <div className="d-md-none p-2">
+            {documents.map(doc => (
+              <div key={doc.id} className="mobile-record-card">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div className="d-flex align-items-center gap-2 overflow-hidden">
+                    <div className="bg-danger bg-opacity-10 text-danger rounded d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: '34px', height: '34px' }}>
+                      <i className="bi bi-file-earmark-pdf-fill fs-5"></i>
+                    </div>
+                    <div className="overflow-hidden">
+                      <h6 className="fw-bold text-dark mb-0 text-truncate">{doc.title}</h6>
+                      <small className="text-muted text-truncate d-block" style={{ fontSize: '0.72rem' }}>
+                        {doc.original_file_name}
+                      </small>
+                    </div>
+                  </div>
+                  <span className={`badge ${doc.status === 'Active' ? 'bg-success' : 'bg-warning text-dark'} bg-opacity-75 ms-1`}>
+                    {doc.status}
+                  </span>
+                </div>
+
+                <div className="small text-muted mb-2">
+                  <div><strong>Course:</strong> {doc.course_name || 'N/A'} {doc.trade_name && `(${doc.trade_name})`}</div>
+                  {doc.subject_name && <div><strong>Subject:</strong> {doc.subject_name}</div>}
+                  <div className="d-flex justify-content-between align-items-center mt-1">
+                    <span><i className="bi bi-calendar3 me-1"></i>{formatDate(doc.uploaded_at)}</span>
+                    <span>{formatFileSize(doc.file_size)} {doc.version && `• v${doc.version}`}</span>
+                  </div>
+                </div>
+
+                <div className="border-top pt-2 mt-2 d-flex flex-wrap gap-1.5 justify-content-between align-items-center">
+                  <div className="d-flex gap-1.5 flex-grow-1">
+                    <button
+                      className="btn btn-outline-primary btn-sm flex-fill"
+                      onClick={() => handlePreview(doc)}
+                    >
+                      <i className="bi bi-eye-fill me-1"></i> Preview
+                    </button>
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => handleDownload(doc)}
+                      title="Download"
+                    >
+                      <i className="bi bi-download"></i>
+                    </button>
+                  </div>
+                  {canWrite && (
+                    <div className="d-flex gap-1">
+                      <button
+                        className="btn btn-outline-info btn-sm"
+                        onClick={() => handleEdit(doc)}
+                        title="Edit Metadata"
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        className="btn btn-outline-warning btn-sm"
+                        onClick={() => handleReplace(doc)}
+                        title="Replace PDF"
+                      >
+                        <i className="bi bi-arrow-repeat"></i>
+                      </button>
+                      {doc.status === 'Active' ? (
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => handleArchive(doc)}
+                          title="Archive"
+                        >
+                          <i className="bi bi-archive"></i>
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => handleDelete(doc)}
+                          title="Delete"
+                        >
+                          <i className="bi bi-trash3"></i>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -520,7 +610,7 @@ export const LessonPlanDocuments = () => {
       {/* Confirmation Modal */}
       {confirmAction && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content shadow-lg border-0">
               <div className="modal-header border-0 pb-0">
                 <h5 className="modal-title fw-bold">
@@ -532,10 +622,10 @@ export const LessonPlanDocuments = () => {
               <div className="modal-body">
                 <p className="text-muted">{confirmAction.message}</p>
               </div>
-              <div className="modal-footer border-0 pt-0">
-                <button className="btn btn-light" onClick={() => setConfirmAction(null)}>Cancel</button>
+              <div className="modal-footer border-0 pt-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                <button className="btn btn-light w-100 w-sm-auto" onClick={() => setConfirmAction(null)}>Cancel</button>
                 <button
-                  className={`btn ${confirmAction.type === 'delete' ? 'btn-danger' : 'btn-warning'}`}
+                  className={`btn ${confirmAction.type === 'delete' ? 'btn-danger' : 'btn-warning'} w-100 w-sm-auto`}
                   onClick={executeConfirmAction}
                 >
                   <i className={`bi ${confirmAction.type === 'delete' ? 'bi-trash3' : 'bi-archive'} me-1`}></i>

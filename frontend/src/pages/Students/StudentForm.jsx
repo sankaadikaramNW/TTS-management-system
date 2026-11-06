@@ -292,18 +292,18 @@ export const StudentForm = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
         <div>
-          <h2 className="mb-0 text-primary display-font">{isEdit ? 'Modify Profile' : 'Register New Trainee'}</h2>
-          <p className="text-muted mb-0">{isEdit ? `Edit details for service number ${formData.service_number}` : 'Add a new student profile to single source of truth'}</p>
+          <h2 className="mb-0 text-primary display-font fs-3">{isEdit ? 'Modify Profile' : 'Register New Trainee'}</h2>
+          <p className="text-muted mb-0 small">{isEdit ? `Edit details for service number ${formData.service_number}` : 'Add a new student profile to single source of truth'}</p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
           {!isEdit && (
-            <button type="button" onClick={handleResetForm} className="btn btn-outline-secondary d-flex align-items-center gap-1.5">
+            <button type="button" onClick={handleResetForm} className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5 flex-grow-1 flex-sm-grow-0 justify-content-center">
               <i className="bi bi-arrow-counterclockwise"></i> Clear Form
             </button>
           )}
-          <Link to="/students" className="btn btn-outline-secondary">
+          <Link to="/students" className="btn btn-outline-secondary btn-sm flex-grow-1 flex-sm-grow-0 text-center">
             Cancel
           </Link>
         </div>
@@ -780,13 +780,13 @@ export const StudentForm = () => {
             )}
           </div>
 
-          <div className="d-flex justify-content-end gap-2 mt-4">
+          <div className="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
             {!isEdit ? (
               <>
                 <button 
                   type="button" 
                   onClick={(e) => handleSubmit(e, 'save_and_new')}
-                  className="btn btn-outline-primary px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-xs"
+                  className="btn btn-outline-primary px-4 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-xs w-100 w-sm-auto"
                   disabled={loading}
                 >
                   <i className="bi bi-person-plus-fill"></i>
@@ -795,7 +795,7 @@ export const StudentForm = () => {
                 <button 
                   type="button" 
                   onClick={(e) => handleSubmit(e, 'save_and_view')}
-                  className="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-xs"
+                  className="btn btn-primary px-4 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-xs w-100 w-sm-auto"
                   disabled={loading}
                 >
                   <i className="bi bi-check-circle-fill"></i>
@@ -805,7 +805,7 @@ export const StudentForm = () => {
             ) : (
               <button 
                 type="submit" 
-                className="btn btn-primary px-5 py-2 fw-semibold"
+                className="btn btn-primary px-5 py-2 fw-semibold w-100 w-sm-auto"
                 disabled={loading}
               >
                 {loading ? 'Saving Trainee Profile...' : 'Save Trainee Profile'}

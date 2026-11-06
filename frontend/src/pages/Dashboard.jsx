@@ -104,9 +104,9 @@ export const Dashboard = () => {
   return (
     <div className="fade-in-slide">
       {/* Top Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div className="d-flex justify-content-between align-items-start align-items-sm-center mb-4 flex-column flex-sm-row gap-2">
         <div>
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
             <h2 className="mb-0 text-primary display-font fw-bold">Executive Dashboard</h2>
             <span className={`badge ${isAdmin ? 'bg-primary' : 'bg-secondary'} px-2.5 py-1 fw-semibold`}>
               <i className={`bi ${isAdmin ? 'bi-shield-fill-check' : 'bi-person-badge'} me-1`}></i>
@@ -117,39 +117,39 @@ export const Dashboard = () => {
             Central operational gateway and status overview for Sri Lanka Air Force Trade Training School
           </p>
         </div>
-        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-xs fw-semibold" onClick={fetchSummary}>
+        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-xs fw-semibold w-100 w-sm-auto justify-content-center" onClick={fetchSummary}>
           <i className="bi bi-arrow-clockwise"></i> Refresh Status
         </button>
       </div>
 
       {/* KPI Cards Row */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3 col-sm-6">
+      <div className="row g-2 g-sm-3 mb-4">
+        <div className="col-6 col-md-3">
           <div className="card slaf-card kpi-card p-3 d-flex flex-column h-100 shadow-xs">
-            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Total Enrolled</span>
+            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Total Enrolled</span>
             <h3 className="mb-0 mt-2 fw-bold">{parade.total_enrolled}</h3>
-            <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Registered trainees</span>
+            <span className="text-muted mt-1 small" style={{ fontSize: '0.68rem' }}>Registered trainees</span>
           </div>
         </div>
-        <div className="col-md-3 col-sm-6">
+        <div className="col-6 col-md-3">
           <div className="card slaf-card kpi-card success p-3 d-flex flex-column h-100 shadow-xs">
-            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Present Strength</span>
+            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Present Strength</span>
             <h3 className="mb-0 mt-2 fw-bold text-success">{parade.present}</h3>
-            <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>On-duty strength</span>
+            <span className="text-muted mt-1 small" style={{ fontSize: '0.68rem' }}>On-duty strength</span>
           </div>
         </div>
-        <div className="col-md-3 col-sm-6">
+        <div className="col-6 col-md-3">
           <div className="card slaf-card kpi-card warning p-3 d-flex flex-column h-100 shadow-xs">
-            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Sick Report / Hospital</span>
+            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Sick / Hospital</span>
             <h3 className="mb-0 mt-2 fw-bold text-warning">{parade.sick_report + parade.hospital}</h3>
-            <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Medical category</span>
+            <span className="text-muted mt-1 small" style={{ fontSize: '0.68rem' }}>Medical category</span>
           </div>
         </div>
-        <div className="col-md-3 col-sm-6">
+        <div className="col-6 col-md-3">
           <div className="card slaf-card kpi-card danger p-3 d-flex flex-column h-100 shadow-xs">
-            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>Absent / AWOL</span>
+            <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.72rem' }}>Absent / AWOL</span>
             <h3 className="mb-0 mt-2 fw-bold text-danger">{parade.leave + parade.awol}</h3>
-            <span className="text-muted mt-1" style={{ fontSize: '0.7rem' }}>Out of camp limits</span>
+            <span className="text-muted mt-1 small" style={{ fontSize: '0.68rem' }}>Out of camp limits</span>
           </div>
         </div>
       </div>
@@ -251,9 +251,9 @@ export const Dashboard = () => {
       {/* Parade State Submission Monitoring Quick Widget */}
       {paradeMonitoring && (
         <div className="card slaf-card p-3 mb-4 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff' }}>
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div className="d-flex align-items-center gap-3">
-              <div className="rounded p-2 bg-primary bg-opacity-25 text-primary">
+          <div className="d-flex justify-content-between align-items-center flex-column flex-lg-row gap-3">
+            <div className="d-flex align-items-center gap-3 text-center text-sm-start flex-column flex-sm-row">
+              <div className="rounded p-2 bg-primary bg-opacity-25 text-primary flex-shrink-0">
                 <i className="bi bi-clipboard2-check-fill fs-3 text-info" />
               </div>
               <div>
@@ -266,26 +266,26 @@ export const Dashboard = () => {
               </div>
             </div>
 
-            <div className="d-flex align-items-center gap-3 flex-wrap">
-              <div className="d-flex gap-2">
-                <div className="px-3 py-1 rounded bg-white bg-opacity-10 text-center">
+            <div className="d-flex align-items-center gap-3 flex-wrap justify-content-center justify-content-lg-end w-100 w-lg-auto">
+              <div className="d-flex gap-1.5 gap-sm-2 flex-wrap justify-content-center">
+                <div className="px-2.5 px-sm-3 py-1 rounded bg-white bg-opacity-10 text-center">
                   <div className="fw-bold fs-6 text-white">{paradeMonitoring.total_required}</div>
                   <div className="text-white-50" style={{ fontSize: '0.68rem' }}>Required</div>
                 </div>
-                <div className="px-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
+                <div className="px-2.5 px-sm-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
                   <div className="fw-bold fs-6 text-danger">{paradeMonitoring.not_submitted}</div>
                   <div className="text-danger" style={{ fontSize: '0.68rem' }}>Not Submitted</div>
                 </div>
-                <div className="px-3 py-1 rounded bg-warning bg-opacity-20 text-center border border-warning border-opacity-25">
+                <div className="px-2.5 px-sm-3 py-1 rounded bg-warning bg-opacity-20 text-center border border-warning border-opacity-25">
                   <div className="fw-bold fs-6 text-warning">{paradeMonitoring.pending_approval}</div>
                   <div className="text-warning" style={{ fontSize: '0.68rem' }}>Pending</div>
                 </div>
-                <div className="px-3 py-1 rounded bg-success bg-opacity-20 text-center border border-success border-opacity-25">
+                <div className="px-2.5 px-sm-3 py-1 rounded bg-success bg-opacity-20 text-center border border-success border-opacity-25">
                   <div className="fw-bold fs-6 text-success">{paradeMonitoring.approved}</div>
                   <div className="text-success" style={{ fontSize: '0.68rem' }}>Approved</div>
                 </div>
                 {paradeMonitoring.returned > 0 && (
-                  <div className="px-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
+                  <div className="px-2.5 px-sm-3 py-1 rounded bg-danger bg-opacity-20 text-center border border-danger border-opacity-25">
                     <div className="fw-bold fs-6 text-danger">{paradeMonitoring.returned}</div>
                     <div className="text-danger" style={{ fontSize: '0.68rem' }}>Returned</div>
                   </div>
@@ -294,7 +294,7 @@ export const Dashboard = () => {
 
               <button 
                 onClick={() => openModule(navigate, SYSTEM_MODULES.find(m => m.id === 'parade'), user, hasPermission)}
-                className="btn btn-info btn-sm fw-semibold text-dark shadow-sm"
+                className="btn btn-info btn-sm fw-semibold text-dark shadow-sm w-100 w-sm-auto"
               >
                 <i className="bi bi-speedometer2 me-1" />
                 Manage Monitoring
@@ -307,17 +307,19 @@ export const Dashboard = () => {
       {/* Main Graphs Layout */}
       <div className="row g-4 mb-4">
         <div className="col-lg-6 col-md-12">
-          <div className="card slaf-card p-4 h-100 shadow-xs">
+          <div className="card slaf-card p-3 p-sm-4 h-100 shadow-xs">
             <h5 className="card-title mb-3 fw-bold">Trainee Strength Distribution</h5>
-            <div className="mx-auto" style={{ maxWidth: '300px' }}>
-              <Pie data={pieData} />
+            <div className="mx-auto position-relative" style={{ maxWidth: '320px', height: '260px' }}>
+              <Pie data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }} />
             </div>
           </div>
         </div>
         <div className="col-lg-6 col-md-12">
-          <div className="card slaf-card p-4 h-100 shadow-xs">
+          <div className="card slaf-card p-3 p-sm-4 h-100 shadow-xs">
             <h5 className="card-title mb-3 fw-bold">Performance & Accommodation</h5>
-            <Bar data={barData} />
+            <div className="position-relative" style={{ height: '260px' }}>
+              <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }} />
+            </div>
           </div>
         </div>
       </div>

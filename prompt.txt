@@ -1,0 +1,283 @@
+I have an existing presentation for the **SLAF Trade Training School (TTS) Management System**. I will provide the existing presentation/content to you.
+
+Your task is to **expand the scope of the existing presentation**, specifically by adding and improving the **functionalities of each system module**.
+
+### Main Objective
+
+Do NOT redesign the entire system or change the existing requirements unnecessarily.
+
+Instead:
+
+1. Carefully analyze the existing presentation.
+2. Identify every system module already mentioned.
+3. Expand each module with its complete and realistic functional scope.
+4. Add missing functionalities that are logically required for the module to operate as a centralized TTS management system.
+5. Maintain consistency between modules, users, roles, workflows, and shared data.
+6. Do not introduce unnecessary modules or technologies that are outside the current system scope.
+
+### Modules to Consider
+
+The system may include modules such as:
+
+* Executive Dashboard
+* User Management
+* Trainee / Personnel Management
+* Academic Management
+* Course Management
+* Course Registration / Enrollment
+* Instructor Management
+* Parade State
+* Night Parade / Evening Roll Call
+* Attendance Management
+* Discipline Management
+* Accommodation Management
+* Examination / Assessment Management
+* Phase Test Management
+* Occurrences / Achievements / Misconduct
+* Course Calendar
+* Lesson Plan Management
+* Reports
+* Notifications / Alerts
+* Audit Trail / Activity Logs
+* System Administration
+
+If a module already exists in the presentation under a different name, preserve the existing terminology.
+
+### For EACH Module, Explain
+
+For every module, provide the following structure:
+
+**1. Module Purpose**
+
+* What the module is responsible for.
+* Why it is required in the TTS system.
+
+**2. Main Users / Roles**
+Identify which users can access and perform actions in the module.
+
+Consider roles such as:
+
+* Administrator
+* Instructor
+* Officer IC
+* OCT / Officer Commanding In Training
+* OIC Training
+* Other authorized personnel
+
+Do not give every role unrestricted access. Define access according to responsibility.
+
+**3. Core Functionalities**
+List the actual functions available inside the module.
+
+For example:
+
+* Create
+* View
+* Edit
+* Update
+* Search
+* Filter
+* Approve
+* Submit
+* Assign
+* Transfer
+* Archive
+* Print
+* Export
+* Track history
+* Generate reports
+
+Only include functions that logically belong to the module.
+
+**4. Workflow**
+Explain the normal operational workflow step-by-step.
+
+Example:
+
+User → Select Course → Select Batch → Select Trainees → Submit → Instructor Review → Approval → Update Central Records
+
+Make the workflow realistic and consistent with the other modules.
+
+**5. Data Handled**
+Explain what important information the module stores or retrieves.
+
+For example:
+
+* Trainee information
+* Course information
+* Batch information
+* Attendance
+* Parade status
+* Instructor assignments
+* Examination results
+* Accommodation status
+* Discipline records
+
+**6. Integration With Other Modules**
+Clearly explain how this module communicates with other modules.
+
+For example:
+
+Parade State
+→ Trainee Status
+→ Attendance
+→ Daily Strength
+→ Academic Records
+→ Reports
+
+Show these relationships clearly.
+
+**7. Business Rules / Validations**
+Identify important rules.
+
+Examples:
+
+* Duplicate records should not be allowed.
+* Only authorized users can approve records.
+* A trainee cannot be registered twice in the same course.
+* Course dates cannot overlap incorrectly.
+* Changes to important records must be logged.
+* Approved records should not be freely modified without authorization.
+* Status changes should update relevant system modules.
+
+**8. Dashboard / Statistics**
+Explain what useful information should appear on the module dashboard.
+
+Examples:
+
+* Total trainees
+* Active courses
+* Ongoing batches
+* Present strength
+* Absent strength
+* Pending approvals
+* Upcoming examinations
+* Upcoming course events
+* Outstanding submissions
+
+**9. Reports**
+Identify the important reports that can be generated from that module.
+
+**10. Permissions**
+Clearly distinguish:
+
+* View
+* Create
+* Edit
+* Delete
+* Approve
+* Print
+* Export
+* Administrative actions
+
+### Important System-Wide Requirement
+
+The system must operate as a **centralized management platform**.
+
+Avoid designing each module as an isolated system.
+
+For example, if a trainee's status changes in Parade State, determine whether that information should affect:
+
+* Daily strength
+* Attendance
+* Course records
+* Examination eligibility
+* Reports
+* Dashboard statistics
+
+Similarly, if a trainee is registered for a course, determine which other modules should automatically be able to access that information.
+
+### Existing System Rules
+
+Preserve these important requirements from the existing system:
+
+* The system uses role-based access control.
+* The Executive Dashboard is the main system landing area.
+* The **Back to Home Portal** button must return the user to the Executive Dashboard.
+* When a user selects a module, the system must verify the user's authenticated role and permissions.
+* Administrators have broader system access.
+* Instructors should only access information relevant to their assigned courses/responsibilities.
+* Officer IC responsibilities must be maintained separately from Instructor responsibilities.
+* Instructor assignment is associated with course registration/batch management.
+* Parade State is submitted trade-by-trade.
+* Officer IC is selected based on the appropriate appointment.
+* Instructor approval is required where defined by the existing workflow.
+* Only approved Parade State information should affect the official daily strength.
+* Night Parade / Evening Roll Call must support status changes independently from the morning parade state and must provide a clear **Save/Submit** mechanism.
+* Trainee status changes should be properly persisted in the database and reflected in relevant modules.
+* Accommodation management should handle billet/room-related information and bed allocation without unnecessarily introducing a separate room-management concept.
+* Academic module landing should initially display dashboard/summary tiles rather than immediately displaying a large record list.
+* Course, batch, trainee, instructor, attendance, examination and academic information should be interconnected.
+* Course calendar should prevent duplicate/conflicting events where applicable.
+* Lesson plans should support document upload and preview.
+* Course completion/passed-out status should be handled according to course dates and academic results.
+* Reports should use actual system data rather than placeholder information.
+* Important user actions and changes should be auditable.
+
+### Presentation Requirement
+
+The final output should be suitable for expanding an existing **system presentation / software project presentation**.
+
+For each module, provide concise but sufficiently detailed presentation-ready content.
+
+Use this format:
+
+**MODULE NAME**
+
+**Purpose**
+
+* ...
+
+**Users**
+
+* ...
+
+**Key Functionalities**
+
+* ...
+* ...
+* ...
+
+**Workflow**
+
+1. ...
+2. ...
+3. ...
+
+**Data**
+
+* ...
+
+**Integration**
+
+* ...
+
+**Business Rules**
+
+* ...
+
+**Reports**
+
+* ...
+
+**Dashboard**
+
+* ...
+
+Do NOT write excessively technical implementation details such as source code unless specifically required.
+
+Focus primarily on **WHAT THE SYSTEM DOES, WHO USES IT, HOW IT WORKS, AND HOW MODULES INTERACT**.
+
+### Important Instruction
+
+Before generating the expanded scope:
+
+1. Analyze my existing presentation.
+2. Preserve the existing terminology and requirements.
+3. Identify missing functionality.
+4. Identify inconsistencies between modules.
+5. Expand the system scope without changing the original business purpose.
+6. Avoid duplicate functionality between modules.
+7. Ensure every proposed functionality has a clear user, purpose, workflow, and relationship with the database/system.
+
+Finally, provide a **complete module-by-module functional scope** that can be directly used to expand my existing presentation.

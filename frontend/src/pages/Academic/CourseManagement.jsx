@@ -34,7 +34,7 @@ export const CourseManagement = () => {
   const [showStudentDetailModal, setShowStudentDetailModal] = useState(false)
   const [selectedStudentDetail, setSelectedStudentDetail] = useState(null)
   const [loadingStudentDetail, setLoadingStudentDetail] = useState(false)
-  
+
   const [form, setForm] = useState({
     code: '',
     name: '',
@@ -226,12 +226,12 @@ export const CourseManagement = () => {
     document.body.removeChild(link)
   }
 
-  const filteredCourses = courses.filter(c => 
+  const filteredCourses = courses.filter(c =>
     c.code.toLowerCase().includes(query.toLowerCase()) ||
     c.name.toLowerCase().includes(query.toLowerCase())
   )
 
-  const filteredStudents = courseStudents.filter(s => 
+  const filteredStudents = courseStudents.filter(s =>
     (s.full_name && s.full_name.toLowerCase().includes(studentSearchQuery.toLowerCase())) ||
     (s.service_number && s.service_number.toLowerCase().includes(studentSearchQuery.toLowerCase())) ||
     (s.rank && s.rank.toLowerCase().includes(studentSearchQuery.toLowerCase())) ||
@@ -253,15 +253,15 @@ export const CourseManagement = () => {
           <small className="text-muted">Manage training courses linked to Trades (Basic, Advance, Special) with automated batch lifecycle</small>
         </div>
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          <button 
+          <button
             className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
             onClick={() => setShowCourseReportModal(true)}
             title="Print Official Course Directory & Trainee Nominal Roll"
           >
             <i className="bi bi-printer me-1 text-primary"></i> Print Trainee Register
           </button>
-          <button 
-            className="btn btn-outline-secondary btn-sm fw-semibold" 
+          <button
+            className="btn btn-outline-secondary btn-sm fw-semibold"
             onClick={handleRunAutoClose}
             disabled={isProcessingAutoClose}
             title="Scan active courses and automatically transition expired batches to PASSED OUT state"
@@ -287,7 +287,7 @@ export const CourseManagement = () => {
       {/* Filters & Status Tabs */}
       <div className="card slaf-card p-3 mb-3 shadow-sm">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-2 border-bottom">
-          <div className="nav nav-pills gap-1">
+          <div className="nav nav-pills nav-pills-responsive gap-1">
             {[
               { key: 'ALL', label: 'All Courses', icon: 'bi-grid' },
               { key: 'ONGOING', label: 'Ongoing / Active', icon: 'bi-play-circle text-primary' },
@@ -296,7 +296,7 @@ export const CourseManagement = () => {
             ].map(tab => (
               <button
                 key={tab.key}
-                className={`btn btn-sm ${selectedStatusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5`}
+                className={`btn btn-sm ${selectedStatusFilter === tab.key ? 'btn-primary shadow-sm' : 'btn-light text-dark border-0'} fw-semibold d-flex align-items-center gap-1.5 px-3 py-1.5 text-nowrap flex-shrink-0`}
                 onClick={() => setSelectedStatusFilter(tab.key)}
               >
                 <i className={`bi ${tab.icon}`}></i>
@@ -307,8 +307,8 @@ export const CourseManagement = () => {
         </div>
 
         <div className="row g-2">
-          <div className="col-md-4">
-            <select 
+          <div className="col-12 col-md-4">
+            <select
               className="form-select form-select-sm"
               value={selectedTradeFilter}
               onChange={(e) => setSelectedTradeFilter(e.target.value)}
@@ -319,13 +319,13 @@ export const CourseManagement = () => {
               ))}
             </select>
           </div>
-          <div className="col-md-5">
+          <div className="col-12 col-md-8">
             <div className="input-group input-group-sm">
               <span className="input-group-text bg-light"><i className="bi bi-search text-muted"></i></span>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Search Course Number or Name..." 
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search Course Number or Name..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -359,97 +359,97 @@ export const CourseManagement = () => {
                 filteredCourses.map(c => {
                   const isPassedOut = c.status === 'PASSED OUT' || c.date_status === 'PASSED OUT' || (!c.is_active && c.date_status === 'PASSED OUT');
                   return (
-                  <tr key={c.id} className={isPassedOut ? 'table-light opacity-75' : ''}>
-                    <td>
-                      <div className="d-flex align-items-center gap-1">
-                        <span className={`badge ${isPassedOut ? 'bg-secondary-subtle text-secondary border' : 'bg-primary-subtle text-primary border'} fw-bold`}>{c.code}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center justify-content-between gap-2">
-                        <div>
-                          <strong 
-                            className="text-primary d-block cursor-pointer text-decoration-underline" 
-                            onClick={() => handleViewCourseStudents(c)}
-                            title="Click to view enrolled student details list"
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {c.name}
-                          </strong>
-                          <div className="d-flex align-items-center gap-1 mt-0.5">
-                            {isPassedOut ? (
-                              <span className="badge bg-secondary text-white border px-1.5 py-0" style={{ fontSize: '0.675rem' }}>
-                                <i className="bi bi-mortarboard me-1"></i>PASSED OUT
-                              </span>
-                            ) : (
-                              <>
-                                <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
-                                  {c.is_active ? 'Active' : 'Inactive'}
+                    <tr key={c.id} className={isPassedOut ? 'table-light opacity-75' : ''}>
+                      <td>
+                        <div className="d-flex align-items-center gap-1">
+                          <span className={`badge ${isPassedOut ? 'bg-secondary-subtle text-secondary border' : 'bg-primary-subtle text-primary border'} fw-bold`}>{c.code}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="d-flex align-items-center justify-content-between gap-2">
+                          <div>
+                            <strong
+                              className="text-primary d-block cursor-pointer text-decoration-underline"
+                              onClick={() => handleViewCourseStudents(c)}
+                              title="Click to view enrolled student details list"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {c.name}
+                            </strong>
+                            <div className="d-flex align-items-center gap-1 mt-0.5">
+                              {isPassedOut ? (
+                                <span className="badge bg-secondary text-white border px-1.5 py-0" style={{ fontSize: '0.675rem' }}>
+                                  <i className="bi bi-mortarboard me-1"></i>PASSED OUT
                                 </span>
-                                {c.date_status && (
-                                  <span className={`badge bg-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
-                                    {c.date_status}
+                              ) : (
+                                <>
+                                  <span className={`badge bg-${c.is_active ? 'success' : 'danger'}-subtle text-${c.is_active ? 'success' : 'danger'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                                    {c.is_active ? 'Active' : 'Inactive'}
                                   </span>
-                                )}
-                              </>
-                            )}
+                                  {c.date_status && (
+                                    <span className={`badge bg-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'}-subtle text-${c.date_status === 'ONGOING' ? 'primary' : c.date_status === 'UPCOMING' ? 'info' : 'secondary'} border px-1.5 py-0`} style={{ fontSize: '0.675rem' }}>
+                                      {c.date_status}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td><span className="badge bg-secondary-subtle text-dark border">{c.trade_name || 'General'}</span></td>
-                    <td><span className="badge bg-info-subtle text-info border">{c.course_type || 'Basic'}</span></td>
-                    <td>
-                      <small className="fw-bold text-dark d-block">
-                        <i className="bi bi-clock-history me-1 text-primary"></i>
-                        {c.duration_formatted || `${c.duration_weeks} Weeks`}
-                      </small>
-                      {c.start_date && c.end_date ? (
-                        <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>
-                          <i className="bi bi-calendar-range me-1 text-secondary"></i>
-                          {formatDate(c.start_date)} - {formatDate(c.end_date)}
+                      </td>
+                      <td><span className="badge bg-secondary-subtle text-dark border">{c.trade_name || 'General'}</span></td>
+                      <td><span className="badge bg-info-subtle text-info border">{c.course_type || 'Basic'}</span></td>
+                      <td>
+                        <small className="fw-bold text-dark d-block">
+                          <i className="bi bi-clock-history me-1 text-primary"></i>
+                          {c.duration_formatted || `${c.duration_weeks} Weeks`}
                         </small>
-                      ) : (
-                        <small className="text-muted" style={{ fontSize: '0.72rem' }}>No schedule set</small>
-                      )}
-                    </td>
-                    <td>
-                      <button 
-                        className="btn btn-link p-0 text-decoration-none" 
-                        onClick={() => handleViewCourseStudents(c)}
-                        title="Click to view enrolled trainees list"
-                      >
-                        <small className="text-dark fw-semibold text-decoration-underline">{c.intake_capacity} Trainees</small>
-                      </button>
-                    </td>
-                    <td>
-                      <button 
-                        className="btn btn-link p-0 text-decoration-none" 
-                        onClick={() => handleViewCourseStudents(c)}
-                        title="Click to view enrolled trainees list"
-                      >
-                        <span className="badge bg-success-subtle text-success border">{c.batches_count || 0} Batches</span>
-                      </button>
-                    </td>
-                    <td className="text-end pe-3">
-                      <div className="btn-group btn-group-sm">
-                        <button 
-                          className="btn btn-primary btn-sm px-2.5 py-1 fw-semibold shadow-sm" 
-                          onClick={() => handleOpenEdit(c)} 
-                          title="Edit Course Details, Schedule & Duration"
+                        {c.start_date && c.end_date ? (
+                          <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>
+                            <i className="bi bi-calendar-range me-1 text-secondary"></i>
+                            {formatDate(c.start_date)} - {formatDate(c.end_date)}
+                          </small>
+                        ) : (
+                          <small className="text-muted" style={{ fontSize: '0.72rem' }}>No schedule set</small>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-link p-0 text-decoration-none"
+                          onClick={() => handleViewCourseStudents(c)}
+                          title="Click to view enrolled trainees list"
                         >
-                          <i className="bi bi-pencil-square me-1"></i> Edit
+                          <small className="text-dark fw-semibold text-decoration-underline">{c.intake_capacity} Trainees</small>
                         </button>
-                        <button 
-                          className="btn btn-outline-primary btn-sm px-2 py-1" 
-                          onClick={() => handleViewCourseStudents(c)} 
-                          title="View Course Student Details List"
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-link p-0 text-decoration-none"
+                          onClick={() => handleViewCourseStudents(c)}
+                          title="Click to view enrolled trainees list"
                         >
-                          <i className="bi bi-people me-1"></i> Trainees
+                          <span className="badge bg-success-subtle text-success border">{c.batches_count || 0} Batches</span>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="text-end pe-3">
+                        <div className="btn-group btn-group-sm">
+                          <button
+                            className="btn btn-primary btn-sm px-2.5 py-1 fw-semibold shadow-sm"
+                            onClick={() => handleOpenEdit(c)}
+                            title="Edit Course Details, Schedule & Duration"
+                          >
+                            <i className="bi bi-pencil-square me-1"></i> Edit
+                          </button>
+                          <button
+                            className="btn btn-outline-primary btn-sm px-2 py-1"
+                            onClick={() => handleViewCourseStudents(c)}
+                            title="View Course Student Details List"
+                          >
+                            <i className="bi bi-people me-1"></i> Trainees
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })
               )}
@@ -482,10 +482,10 @@ export const CourseManagement = () => {
                   <div className="col-md-6">
                     <div className="input-group input-group-sm">
                       <span className="input-group-text bg-light"><i className="bi bi-search text-muted"></i></span>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        placeholder="Search by Service No, Rank, Name, or Batch..." 
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Search by Service No, Rank, Name, or Batch..."
                         value={studentSearchQuery}
                         onChange={(e) => setStudentSearchQuery(e.target.value)}
                       />
@@ -495,8 +495,8 @@ export const CourseManagement = () => {
                     <span className="badge bg-primary-subtle text-primary border px-3 py-2 fw-bold">
                       Total Enrolled: {filteredStudents.length}
                     </span>
-                    <button 
-                      className="btn btn-outline-dark btn-sm fw-semibold shadow-xs" 
+                    <button
+                      className="btn btn-outline-dark btn-sm fw-semibold shadow-xs"
                       onClick={() => setShowCourseReportModal(true)}
                       title="Print SLAF Nominal Roll Document"
                     >
@@ -535,7 +535,7 @@ export const CourseManagement = () => {
                           <tr key={s.id || idx}>
                             <td><small className="text-muted">{idx + 1}</small></td>
                             <td>
-                              <button 
+                              <button
                                 className="btn btn-link p-0 fw-bold text-primary text-decoration-none"
                                 onClick={() => handleViewStudentDetail(s.id)}
                               >
@@ -544,7 +544,7 @@ export const CourseManagement = () => {
                             </td>
                             <td><span className="badge bg-secondary-subtle text-dark border">{s.rank || 'Trainee'}</span></td>
                             <td>
-                              <button 
+                              <button
                                 className="btn btn-link p-0 text-start fw-bold text-primary text-decoration-underline"
                                 onClick={() => handleViewStudentDetail(s.id)}
                                 title="Click to view full personal profile"
@@ -560,7 +560,7 @@ export const CourseManagement = () => {
                               </span>
                             </td>
                             <td className="text-end">
-                              <button 
+                              <button
                                 className="btn btn-primary btn-sm fw-semibold shadow-sm"
                                 onClick={() => handleViewStudentDetail(s.id)}
                               >
@@ -782,7 +782,7 @@ export const CourseManagement = () => {
       {/* Edit / Create Course Modal */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -795,7 +795,7 @@ export const CourseManagement = () => {
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Select Trade Category*</label>
-                      <select 
+                      <select
                         className="form-select"
                         value={form.trade_id}
                         onChange={(e) => setForm({ ...form, trade_id: e.target.value })}
@@ -810,7 +810,7 @@ export const CourseManagement = () => {
 
                     <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Course Type</label>
-                      <select 
+                      <select
                         className="form-select"
                         value={form.course_type}
                         onChange={(e) => setForm({ ...form, course_type: e.target.value })}
@@ -824,9 +824,9 @@ export const CourseManagement = () => {
 
                     <div className="col-md-4">
                       <label className="form-label fw-semibold small text-muted">Course Number / Code*</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
+                      <input
+                        type="text"
+                        className="form-control"
                         value={form.code}
                         onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                         placeholder="e.g. 26/1 or CRS-AV-01"
@@ -836,9 +836,9 @@ export const CourseManagement = () => {
 
                     <div className="col-md-8">
                       <label className="form-label fw-semibold small text-muted">Course Title / Name*</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
+                      <input
+                        type="text"
+                        className="form-control"
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
                         placeholder="e.g. Computer Technician Advance Course"
@@ -851,9 +851,9 @@ export const CourseManagement = () => {
                       <label className="form-label fw-semibold small text-muted">
                         Course Start Date <span className="text-danger">*</span>
                       </label>
-                      <input 
-                        type="date" 
-                        className="form-control" 
+                      <input
+                        type="date"
+                        className="form-control"
                         value={form.start_date}
                         onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                         required
@@ -866,8 +866,8 @@ export const CourseManagement = () => {
                       <label className="form-label fw-semibold small text-muted">
                         Course End Date <span className="text-danger">*</span>
                       </label>
-                      <input 
-                        type="date" 
+                      <input
+                        type="date"
                         className={`form-control ${dateValidation.error ? 'is-invalid' : ''}`}
                         value={form.end_date}
                         onChange={(e) => setForm({ ...form, end_date: e.target.value })}
@@ -889,9 +889,9 @@ export const CourseManagement = () => {
                         <span className="input-group-text bg-white text-primary">
                           <i className="bi bi-clock-history"></i>
                         </span>
-                        <input 
-                          type="text" 
-                          className="form-control bg-light fw-bold text-primary" 
+                        <input
+                          type="text"
+                          className="form-control bg-light fw-bold text-primary"
                           value={dateValidation.durationText || (form.duration_weeks ? `${form.duration_weeks} Weeks` : 'Select dates to calculate')}
                           readOnly
                           disabled
@@ -908,9 +908,9 @@ export const CourseManagement = () => {
 
                     <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Intake Capacity</label>
-                      <input 
-                        type="number" 
-                        className="form-control" 
+                      <input
+                        type="number"
+                        className="form-control"
                         value={form.intake_capacity}
                         onChange={(e) => setForm({ ...form, intake_capacity: parseInt(e.target.value) || 0 })}
                         min="1"
@@ -920,9 +920,9 @@ export const CourseManagement = () => {
                     <div className="col-md-6">
                       <label className="form-label fw-semibold small text-muted">Status</label>
                       <div className="form-check form-switch mt-2">
-                        <input 
-                          className="form-check-input" 
-                          type="checkbox" 
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
                           id="cActive"
                           checked={form.is_active}
                           onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
@@ -933,8 +933,8 @@ export const CourseManagement = () => {
 
                     <div className="col-md-12">
                       <label className="form-label fw-semibold small text-muted">Course Syllabus / Description</label>
-                      <textarea 
-                        className="form-control" 
+                      <textarea
+                        className="form-control"
                         rows="2"
                         value={form.description}
                         onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -942,11 +942,11 @@ export const CourseManagement = () => {
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer border-top">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary btn-sm fw-semibold"
+                <div className="modal-footer border-top d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowModal(false)}>Cancel</button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto"
                     disabled={!dateValidation.isValid || !form.start_date || !form.end_date}
                   >
                     Save Course

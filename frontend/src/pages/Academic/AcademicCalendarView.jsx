@@ -236,14 +236,14 @@ export const AcademicCalendarView = ({ onNavigate }) => {
       <div className="card-header bg-white py-3 border-bottom">
         <div className="row align-items-center g-3">
           {/* Title & Date Header */}
-          <div className="col-md-4 col-lg-4">
+          <div className="col-12 col-md-4">
             <div className="d-flex align-items-center gap-2">
-              <div className="bg-primary-subtle text-primary rounded p-2 d-inline-flex">
+              <div className="bg-primary-subtle text-primary rounded p-2 d-inline-flex flex-shrink-0">
                 <i className="bi bi-calendar3 fs-4"></i>
               </div>
-              <div>
-                <h5 className="fw-extrabold display-font text-dark mb-0">Course Calendar</h5>
-                <span className="fw-bold text-primary display-font" style={{ fontSize: '1rem' }}>
+              <div className="min-w-0">
+                <h5 className="fw-extrabold display-font text-dark mb-0 text-truncate">Course Calendar</h5>
+                <span className="fw-bold text-primary display-font d-block text-truncate" style={{ fontSize: '1rem' }}>
                   {dateTitle || 'Academic Schedule'}
                 </span>
               </div>
@@ -251,7 +251,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Navigation Controls */}
-          <div className="col-md-4 col-lg-4 text-center">
+          <div className="col-6 col-md-4 text-start text-md-center">
             <div className="btn-group shadow-sm me-2" role="group">
               <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handlePrev} title="Previous">
                 <i className="bi bi-chevron-left"></i>
@@ -265,12 +265,12 @@ export const AcademicCalendarView = ({ onNavigate }) => {
             </div>
 
             {loading && (
-              <span className="spinner-border spinner-border-sm text-primary align-middle ms-2" role="status"></span>
+              <span className="spinner-border spinner-border-sm text-primary align-middle ms-1" role="status"></span>
             )}
           </div>
 
           {/* View Switcher Buttons */}
-          <div className="col-md-4 col-lg-4 text-md-end">
+          <div className="col-6 col-md-4 text-end">
             <div className="btn-group shadow-sm" role="group">
               <button
                 type="button"
@@ -300,7 +300,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
         {/* Calendar Filters Bar */}
         <div className="row g-2 mt-3 pt-3 border-top bg-light rounded-3 p-2 mx-0">
           {/* Trade Filter */}
-          <div className="col-6 col-md-2.5 col-lg-2">
+          <div className="col-12 col-sm-6 col-lg-2">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>TRADE</label>
             <select
               className="form-select form-select-sm"
@@ -318,7 +318,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Course Filter */}
-          <div className="col-6 col-md-3 col-lg-3">
+          <div className="col-12 col-sm-6 col-lg-3">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>COURSE</label>
             <select
               className="form-select form-select-sm"
@@ -333,7 +333,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Batch Filter */}
-          <div className="col-6 col-md-2.5 col-lg-2">
+          <div className="col-12 col-sm-6 col-lg-2">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>BATCH</label>
             <select
               className="form-select form-select-sm"
@@ -348,7 +348,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Instructor Filter */}
-          <div className="col-6 col-md-2.5 col-lg-2">
+          <div className="col-12 col-sm-6 col-lg-2">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>INSTRUCTOR</label>
             <select
               className="form-select form-select-sm"
@@ -363,7 +363,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Instructor Status Filter */}
-          <div className="col-6 col-md-2 col-lg-2">
+          <div className="col-6 col-sm-6 col-lg-2">
             <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '0.7rem' }}>STATUS</label>
             <select
               className="form-select form-select-sm"
@@ -377,7 +377,7 @@ export const AcademicCalendarView = ({ onNavigate }) => {
           </div>
 
           {/* Clear Filters Button */}
-          <div className="col-6 col-md-1.5 col-lg-1 d-flex align-items-end">
+          <div className="col-6 col-sm-12 col-lg-1 d-flex align-items-end">
             <button
               type="button"
               className="btn btn-outline-secondary btn-sm w-100 fw-semibold"
@@ -410,34 +410,34 @@ export const AcademicCalendarView = ({ onNavigate }) => {
       {/* Complete Event Details Modal */}
       {showDetailModal && selectedEvent && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1055 }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered modal-lg">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div className="modal-content shadow-lg border-0">
               <div className="modal-header bg-primary text-white py-3">
-                <div className="d-flex align-items-center gap-2">
-                  <i className="bi bi-info-circle-fill fs-5"></i>
-                  <h5 className="modal-title fw-bold">Course Calendar Event Details</h5>
+                <div className="d-flex align-items-center gap-2 min-w-0">
+                  <i className="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                  <h5 className="modal-title fw-bold text-truncate">Course Calendar Event Details</h5>
                 </div>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowDetailModal(false)}></button>
               </div>
 
-              <div className="modal-body p-4">
+              <div className="modal-body p-3 p-md-4">
                 {/* Event Header Banner */}
                 <div className={`p-3 rounded mb-4 border ${selectedEvent.instructor_status === 'NOT_ASSIGNED' ? 'bg-warning-subtle border-warning' : 'bg-light border-primary-subtle'}`}>
-                  <div className="d-flex justify-content-between align-items-start">
+                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-2">
                     <div>
                       <span className="badge bg-primary text-white mb-1">{selectedEvent.trade_name || 'General Trade'}</span>
-                      <h4 className="fw-extrabold text-dark mb-1">{selectedEvent.activity}</h4>
-                      <p className="text-secondary fw-semibold mb-0">
+                      <h4 className="fw-extrabold text-dark mb-1 fs-5 fs-md-4">{selectedEvent.activity}</h4>
+                      <p className="text-secondary fw-semibold mb-0 small">
                         {selectedEvent.course_name} ({selectedEvent.course_code})
                       </p>
                     </div>
                     <div>
                       {selectedEvent.instructor_status === 'NOT_ASSIGNED' ? (
-                        <span className="badge bg-danger text-white px-3 py-1.5 fw-bold fs-6 shadow-sm">
+                        <span className="badge bg-danger text-white px-2.5 py-1.5 fw-bold shadow-sm" style={{ fontSize: '0.75rem' }}>
                           <i className="bi bi-exclamation-triangle-fill me-1"></i> INSTRUCTOR NOT ASSIGNED
                         </span>
                       ) : (
-                        <span className="badge bg-success text-white px-3 py-1.5 fw-bold fs-6 shadow-sm">
+                        <span className="badge bg-success text-white px-2.5 py-1.5 fw-bold shadow-sm" style={{ fontSize: '0.75rem' }}>
                           <i className="bi bi-person-check-fill me-1"></i> ASSIGNED
                         </span>
                       )}
@@ -546,11 +546,11 @@ export const AcademicCalendarView = ({ onNavigate }) => {
               </div>
 
               {/* Modal Actions */}
-              <div className="modal-footer bg-light py-2">
-                <button type="button" className="btn btn-secondary btn-sm fw-semibold" onClick={() => setShowDetailModal(false)}>
+              <div className="modal-footer bg-light py-2 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                <button type="button" className="btn btn-secondary btn-sm fw-semibold w-100 w-sm-auto" onClick={() => setShowDetailModal(false)}>
                   Close
                 </button>
-                <button type="button" className="btn btn-primary btn-sm fw-bold shadow-sm" onClick={handleEditActivity}>
+                <button type="button" className="btn btn-primary btn-sm fw-bold shadow-sm w-100 w-sm-auto" onClick={handleEditActivity}>
                   <i className="bi bi-pencil-square me-1"></i> Edit Calendar Activity
                 </button>
               </div>

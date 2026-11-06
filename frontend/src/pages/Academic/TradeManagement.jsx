@@ -103,7 +103,7 @@ export const TradeManagement = () => {
       {/* Filter / Search Bar */}
       <div className="card slaf-card p-3 mb-3 shadow-sm">
         <div className="row g-2">
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <div className="input-group input-group-sm">
               <span className="input-group-text bg-light"><i className="bi bi-search text-muted"></i></span>
               <input 
@@ -120,7 +120,8 @@ export const TradeManagement = () => {
 
       {/* Trades Table */}
       <div className="card slaf-card p-0 shadow-sm">
-        <div className="table-responsive">
+        {/* Desktop Table */}
+        <div className="table-responsive d-none d-md-block">
           <table className="table slaf-table align-middle mb-0">
             <thead>
               <tr>
@@ -160,12 +161,44 @@ export const TradeManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Record Cards */}
+        <div className="d-md-none p-2">
+          {loading ? (
+            <div className="text-center py-4"><div className="spinner-border text-primary"></div></div>
+          ) : filteredTrades.length === 0 ? (
+            <div className="text-center py-4 text-muted">No trade records found.</div>
+          ) : (
+            filteredTrades.map(t => (
+              <div key={t.id} className="mobile-record-card">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="badge bg-primary-subtle text-primary border fw-bold">{t.code}</span>
+                  <span className={`badge bg-${t.is_active ? 'success' : 'danger'}-subtle text-${t.is_active ? 'success' : 'danger'} border px-2 py-0.5`}>
+                    {t.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <h6 className="fw-bold text-dark mb-1">{t.label}</h6>
+                {t.description && (
+                  <p className="text-muted small mb-2">{t.description}</p>
+                )}
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="badge bg-secondary-subtle text-dark border">{t.courses_count || 0} Courses</span>
+                </div>
+                <div className="border-top pt-2 mt-2 text-end">
+                  <button className="btn btn-outline-secondary btn-sm w-100" onClick={() => handleOpenEdit(t)}>
+                    <i className="bi bi-pencil me-1"></i> Edit Trade
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Create / Edit Modal */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card">
               <div className="modal-header border-bottom">
                 <h5 className="modal-title display-font text-primary fw-bold">
@@ -218,9 +251,9 @@ export const TradeManagement = () => {
                     <label className="form-check-label fw-semibold small text-dark" htmlFor="tradeActive">Active Status</label>
                   </div>
                 </div>
-                <div className="modal-footer border-top">
-                  <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary btn-sm fw-semibold">Save Trade</button>
+                <div className="modal-footer border-top d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary btn-sm fw-semibold w-100 w-sm-auto">Save Trade</button>
                 </div>
               </form>
             </div>

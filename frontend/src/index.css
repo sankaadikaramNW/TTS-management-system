@@ -347,13 +347,18 @@ h1, h2, h3, h4, h5, h6, .display-font {
 }
 
 /* Mobile & Tablet Layout (< 992px) */
+body.sidebar-open {
+  overflow: hidden !important;
+}
+
 @media (max-width: 991.98px) {
   .slaf-sidebar {
     transform: translateX(-100%);
+    width: min(280px, 82vw) !important;
   }
   .slaf-sidebar.show-mobile {
     transform: translateX(0);
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.65);
   }
   .sidebar-backdrop {
     position: fixed;
@@ -361,21 +366,40 @@ h1, h2, h3, h4, h5, h6, .display-font {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    z-index: 1040;
+    background-color: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1045;
   }
   .app-navbar {
     margin-left: 0 !important;
     width: 100% !important;
+    height: 64px !important;
   }
   .main-wrapper {
     margin-left: 0 !important;
-    padding-top: 80px;
+    padding-top: 74px !important;
   }
   .navbar-title {
-    font-size: 0.95rem !important;
+    font-size: 0.88rem !important;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-title {
+    max-width: 140px;
+    font-size: 0.82rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar-title {
+    max-width: 110px;
+    font-size: 0.78rem !important;
   }
 }
 
@@ -752,4 +776,141 @@ input[type="number"].marks-input-modern {
 .marks-row-disabled {
   background-color: rgba(243, 244, 246, 0.6) !important;
   opacity: 0.85;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS & TOUCH OPTIMIZATION SUITE
+   ========================================================================== */
+
+/* 1. Responsive Horizontally Scrollable Tabs */
+.nav-tabs-responsive,
+.slaf-tabs-responsive,
+.nav-pills-responsive {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  padding-bottom: 4px;
+}
+.nav-tabs-responsive::-webkit-scrollbar,
+.slaf-tabs-responsive::-webkit-scrollbar,
+.nav-pills-responsive::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+.nav-tabs-responsive .nav-link,
+.slaf-tabs-responsive .nav-link,
+.nav-pills-responsive .nav-link {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 2. Touch-Friendly Interactive Targets */
+@media (max-width: 768px) {
+  .btn, .form-select, .form-control {
+    min-height: 38px;
+  }
+  .btn-sm {
+    min-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* 3. Mobile Record Cards */
+.mobile-record-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mobile-record-card:active {
+  transform: scale(0.99);
+}
+
+/* 4. Table Responsive enhancements with touch momentum */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  border-radius: 10px;
+}
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+/* 5. Mobile Modal Enhancements */
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 0.5rem auto !important;
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+  .modal-content {
+    border-radius: 14px !important;
+    max-height: 92vh;
+  }
+  .modal-header {
+    padding: 12px 16px !important;
+  }
+  .modal-body {
+    padding: 14px 16px !important;
+    max-height: calc(92vh - 120px);
+    overflow-y: auto;
+  }
+  .modal-footer {
+    padding: 10px 16px !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal-footer > * {
+    margin: 0 !important;
+  }
+}
+
+/* 6. FullCalendar Responsive Adjustments */
+@media (max-width: 768px) {
+  .fc {
+    padding: 8px !important;
+  }
+  .fc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fc-toolbar-title {
+    font-size: 1.1rem !important;
+  }
+  .fc-col-header-cell-cushion {
+    font-size: 0.72rem;
+    padding: 4px 2px !important;
+  }
+  .fc-daygrid-day-number {
+    font-size: 0.75rem;
+    padding: 2px 4px !important;
+  }
+  .fc-event-title, .fc-event-time {
+    font-size: 0.7rem;
+  }
+}
+
+/* 7. Typography Fluid Sizing on Small Phones */
+@media (max-width: 375px) {
+  body {
+    font-size: 0.92rem;
+  }
+  h1, .h1 { font-size: 1.6rem !important; }
+  h2, .h2 { font-size: 1.35rem !important; }
+  h3, .h3 { font-size: 1.2rem !important; }
+  h4, .h4 { font-size: 1.05rem !important; }
+  h5, .h5 { font-size: 0.95rem !important; }
 }

@@ -362,7 +362,7 @@ export const AccommodationPanel = () => {
               { title: 'Transfer / Release', desc: 'Transfer or vacate positions', icon: 'bi-arrow-left-right', path: '/accommodation/transfers', color: '#0284c7' },
               { title: 'Visual Bunk Map', desc: 'Physical 2-tier bunk cards', icon: 'bi-geo-alt', path: '/accommodation/map', color: '#c026d3' },
             ].map(act => (
-              <div key={act.title} className="col-md-4 col-lg-2">
+              <div key={act.title} className="col-6 col-md-4 col-lg-2">
                 <div 
                   className="card slaf-card p-3 text-center h-100 cursor-pointer hover-shadow"
                   style={{ borderTop: `4px solid ${act.color}` }}
@@ -1193,7 +1193,7 @@ export const AccommodationPanel = () => {
       {/* ── Building Creation Modal ── */}
       {showBuildingModal && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-primary">
@@ -1237,9 +1237,9 @@ export const AccommodationPanel = () => {
                     />
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBuildingModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Building</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowBuildingModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary w-100 w-sm-auto">Save Building</button>
                 </div>
               </form>
             </div>
@@ -1250,7 +1250,7 @@ export const AccommodationPanel = () => {
       {/* ── Billet Creation Modal ── */}
       {showBilletModal && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-primary">
@@ -1318,9 +1318,9 @@ export const AccommodationPanel = () => {
                     </small>
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBilletModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Create Billet</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowBilletModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary w-100 w-sm-auto">Create Billet</button>
                 </div>
               </form>
             </div>
@@ -1331,7 +1331,7 @@ export const AccommodationPanel = () => {
       {/* ── Single Bunk Bed Creation Modal ── */}
       {showBunkModal && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-primary">
@@ -1369,9 +1369,9 @@ export const AccommodationPanel = () => {
                     <strong>Automatic 2-Tier Creation:</strong> The system will automatically create <strong>{bunkForm.bunk_no || 'Bunk'}-TOP</strong> and <strong>{bunkForm.bunk_no || 'Bunk'}-BOTTOM</strong> positions.
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBunkModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Create Bunk Bed</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowBunkModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary w-100 w-sm-auto">Create Bunk Bed</button>
                 </div>
               </form>
             </div>
@@ -1382,7 +1382,7 @@ export const AccommodationPanel = () => {
       {/* ── Bulk Bunk Bed Creation Modal ── */}
       {showBulkBunkModal && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-primary">
@@ -1428,9 +1428,9 @@ export const AccommodationPanel = () => {
                     Generating <strong>{bulkBunkForm.count} bunk beds</strong> will automatically create <strong>{bulkBunkForm.count * 2} sleeping positions</strong> (TOP & BOTTOM).
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowBulkBunkModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Generate Bunk Units</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowBulkBunkModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary w-100 w-sm-auto">Generate Bunk Units</button>
                 </div>
               </form>
             </div>
@@ -1441,7 +1441,7 @@ export const AccommodationPanel = () => {
       {/* ── Allocation Modal (Direct from Bunk Cards) ── */}
       {showAllocateModal && selectedPositionForAllocation && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-primary">
@@ -1481,9 +1481,9 @@ export const AccommodationPanel = () => {
                     />
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowAllocateModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Confirm Placement</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowAllocateModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary w-100 w-sm-auto">Confirm Placement</button>
                 </div>
               </form>
             </div>
@@ -1494,7 +1494,7 @@ export const AccommodationPanel = () => {
       {/* ── Vacate Modal ── */}
       {showVacateModal && selectedAllocationForAction && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 1055 }}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header border-0">
                 <h5 className="modal-title fw-bold text-danger">
@@ -1533,9 +1533,9 @@ export const AccommodationPanel = () => {
                     />
                   </div>
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowVacateModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-danger">Confirm Release</button>
+                <div className="modal-footer border-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-outline-secondary w-100 w-sm-auto" onClick={() => setShowVacateModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-danger w-100 w-sm-auto">Confirm Release</button>
                 </div>
               </form>
             </div>

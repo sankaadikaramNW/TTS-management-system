@@ -13,6 +13,18 @@ export const Layout = () => {
     setSidebarOpen(false)
   }, [location])
 
+  // Prevent background scrolling while mobile navigation drawer is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add('sidebar-open')
+    } else {
+      document.body.classList.remove('sidebar-open')
+    }
+    return () => {
+      document.body.classList.remove('sidebar-open')
+    }
+  }, [sidebarOpen])
+
   return (
     <div className="d-flex bg-app min-vh-100 position-relative overflow-x-hidden">
       <Sidebar 

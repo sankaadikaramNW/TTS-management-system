@@ -9,7 +9,7 @@ export const ClassroomAttendanceRegister = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0])
   const [timetables, setTimetables] = useState([])
   const [selectedTimetableId, setSelectedTimetableId] = useState('')
-  
+
   const [sessionData, setSessionData] = useState(null)
   const [traineeList, setTraineeList] = useState([])
   const [loadingSession, setLoadingSession] = useState(false)
@@ -20,7 +20,7 @@ export const ClassroomAttendanceRegister = () => {
 
   // Reporting State
   const [activeMode, setActiveMode] = useState('register') // 'register' | 'class-report' | 'student-report' | 'classroom-report'
-  
+
   // Class-wise report
   const [classReport, setClassReport] = useState([])
   const [loadingClassReport, setLoadingClassReport] = useState(false)
@@ -251,24 +251,24 @@ export const ClassroomAttendanceRegister = () => {
               Record period-by-period class attendance synchronized with approved Daily Parade States.
             </p>
           </div>
-          <div className="d-flex flex-wrap gap-2">
+          <div className="d-flex flex-wrap gap-2 w-100 w-lg-auto">
             <button
-              className={`btn btn-sm ${activeMode === 'register' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
+              className={`btn btn-sm flex-grow-1 flex-md-grow-0 ${activeMode === 'register' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
               onClick={() => setActiveMode('register')}
             >
               <i className="bi bi-clipboard-check me-1"></i> Class Register
             </button>
             <button
-              className={`btn btn-sm ${activeMode === 'class-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
+              className={`btn btn-sm flex-grow-1 flex-md-grow-0 ${activeMode === 'class-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
               onClick={() => {
                 setActiveMode('class-report')
                 fetchClassReport()
               }}
             >
-              <i className="bi bi-bar-chart-steps me-1"></i> Class-wise Report
+              <i className="bi bi-bar-chart-steps me-1"></i> Class Report
             </button>
             <button
-              className={`btn btn-sm ${activeMode === 'student-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
+              className={`btn btn-sm flex-grow-1 flex-md-grow-0 ${activeMode === 'student-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
               onClick={() => {
                 setActiveMode('student-report')
                 setSelectedStudentId('')
@@ -278,20 +278,20 @@ export const ClassroomAttendanceRegister = () => {
               <i className="bi bi-person-badge me-1"></i> Trainee History
             </button>
             <button
-              className={`btn btn-sm ${activeMode === 'classroom-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
+              className={`btn btn-sm flex-grow-1 flex-md-grow-0 ${activeMode === 'classroom-report' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
               onClick={() => {
                 setActiveMode('classroom-report')
                 if (selectedLocation) fetchClassroomReport(selectedLocation)
               }}
             >
-              <i className="bi bi-door-open me-1"></i> Classroom Report
+              <i className="bi bi-door-open me-1"></i> Room Report
             </button>
             <button
-              className="btn btn-sm btn-outline-dark fw-semibold shadow-xs"
+              className="btn btn-sm btn-outline-dark fw-semibold shadow-xs flex-grow-1 flex-md-grow-0"
               onClick={() => setShowReportModal(true)}
               title="Print Classical Official Attendance Register"
             >
-              <i className="bi bi-printer me-1 text-primary"></i> Print Official Register
+              <i className="bi bi-printer me-1 text-primary"></i> Print Register
             </button>
           </div>
         </div>
@@ -409,9 +409,9 @@ export const ClassroomAttendanceRegister = () => {
 
               {/* Unapproved Parade State Warning Banner */}
               {!sessionData.is_parade_approved && (
-                <div className="alert alert-warning d-flex align-items-center justify-content-between mb-4 shadow-xs border-start border-warning border-4" role="alert">
+                <div className="alert alert-warning d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mb-4 shadow-xs border-start border-warning border-4" role="alert">
                   <div className="d-flex align-items-center">
-                    <i className="bi bi-shield-exclamation display-6 me-3 text-warning"></i>
+                    <i className="bi bi-shield-exclamation display-6 me-3 text-warning flex-shrink-0"></i>
                     <div>
                       <h6 className="fw-bold mb-1">Parade State Pending / Not Approved</h6>
                       <p className="mb-0 small">
@@ -420,7 +420,7 @@ export const ClassroomAttendanceRegister = () => {
                     </div>
                   </div>
                   <button
-                    className="btn btn-warning btn-sm fw-bold text-dark text-nowrap ms-3 px-3 py-2"
+                    className="btn btn-warning btn-sm fw-bold text-dark text-nowrap ms-0 ms-sm-3 px-3 py-2 w-100 w-sm-auto"
                     onClick={handleApproveParadeState}
                   >
                     <i className="bi bi-check-circle-fill me-1"></i> Approve & Sync Parade State
@@ -430,17 +430,17 @@ export const ClassroomAttendanceRegister = () => {
 
               {/* Action Toolbar */}
               <div className="card slaf-card p-3 mb-3 shadow-sm">
-                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                  <div className="d-flex gap-2">
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                  <div className="d-flex flex-wrap gap-2">
                     <button
-                      className="btn btn-sm btn-outline-success fw-semibold"
+                      className="btn btn-sm btn-outline-success fw-semibold flex-grow-1 flex-sm-grow-0"
                       onClick={handleMarkAllPresent}
                       disabled={!sessionData.is_parade_approved}
                     >
                       <i className="bi bi-check-all me-1"></i> Mark All Present
                     </button>
                     <button
-                      className="btn btn-sm btn-outline-secondary fw-semibold"
+                      className="btn btn-sm btn-outline-secondary fw-semibold flex-grow-1 flex-sm-grow-0"
                       onClick={handleResetToParadeState}
                       disabled={!sessionData.is_parade_approved}
                     >
@@ -450,7 +450,7 @@ export const ClassroomAttendanceRegister = () => {
 
                   <div>
                     <button
-                      className="btn btn-primary fw-bold px-4 shadow-sm"
+                      className="btn btn-primary fw-bold px-4 shadow-sm w-100 w-sm-auto"
                       onClick={handleSaveAttendance}
                       disabled={!sessionData.is_parade_approved || submitting}
                     >
@@ -504,9 +504,8 @@ export const ClassroomAttendanceRegister = () => {
                               <div className="text-muted small">{t.trade}</div>
                             </td>
                             <td>
-                              <span className={`badge ${
-                                t.parade_state === 'Present' ? 'bg-success-subtle text-success border-success' : 'bg-warning-subtle text-dark border-warning'
-                              } px-2 py-1`}>
+                              <span className={`badge ${t.parade_state === 'Present' ? 'bg-success-subtle text-success border-success' : 'bg-warning-subtle text-dark border-warning'
+                                } px-2 py-1`}>
                                 {t.parade_state}
                               </span>
                             </td>
@@ -730,8 +729,8 @@ export const ClassroomAttendanceRegister = () => {
                       </div>
                     </div>
 
-                    <div className="col-md-5 text-md-end border-start border-md-start-0 border-secondary-subtle ps-md-4">
-                      <div className="d-flex justify-content-md-end gap-3 align-items-center">
+                    <div className="col-md-5 text-start text-md-end border-top border-md-top-0 border-md-start pt-3 pt-md-0 ps-md-4">
+                      <div className="d-flex justify-content-start justify-content-md-end gap-3 align-items-center flex-wrap">
                         <div>
                           <span className="text-muted small fw-bold text-uppercase d-block">Overall Attendance</span>
                           <h4 className={`mb-0 fw-bold ${presentRate >= 80 ? 'text-success' : presentRate >= 60 ? 'text-warning' : 'text-danger'}`}>
@@ -794,14 +793,13 @@ export const ClassroomAttendanceRegister = () => {
                               <td>{h.subject_name}</td>
                               <td>{h.classroom_location}</td>
                               <td>
-                                <span className={`badge px-2.5 py-1.5 fw-bold bg-${
-                                  h.status === 'PRESENT' ? 'success' :
+                                <span className={`badge px-2.5 py-1.5 fw-bold bg-${h.status === 'PRESENT' ? 'success' :
                                   h.status === 'LATE' ? 'warning' :
-                                  h.status === 'ABSENT' ? 'danger' :
-                                  h.status === 'SICK_REPORT' ? 'info' :
-                                  h.status === 'COURSE_VISIT' ? 'primary' :
-                                  h.status === 'LEAVE' ? 'secondary' : 'dark'
-                                }`}>
+                                    h.status === 'ABSENT' ? 'danger' :
+                                      h.status === 'SICK_REPORT' ? 'info' :
+                                        h.status === 'COURSE_VISIT' ? 'primary' :
+                                          h.status === 'LEAVE' ? 'secondary' : 'dark'
+                                  }`}>
                                   {h.status}
                                 </span>
                               </td>

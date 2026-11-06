@@ -170,8 +170,8 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
 
   return (
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1055 }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <form onSubmit={handleSubmit} className="modal-content shadow-lg border-0" style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form onSubmit={handleSubmit} className="modal-content shadow-lg border-0" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <div className="modal-header bg-primary bg-opacity-10 border-0 flex-shrink-0">
             <h5 className="modal-title fw-bold text-primary">
@@ -182,10 +182,10 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
           </div>
 
           {/* Scrollable Body */}
-          <div className="modal-body px-4 py-3" style={{ overflowY: 'auto', flex: '1 1 auto' }}>
+          <div className="modal-body px-3 px-sm-4 py-3" style={{ overflowY: 'auto', flex: '1 1 auto' }}>
             <div className="row g-3">
               {/* Trade Selection */}
-              <div className="col-md-6">
+              <div className="col-12 col-md-6">
                 <label className="form-label small fw-semibold">
                   Trade <span className="text-danger">*</span>
                 </label>
@@ -205,7 +205,7 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
               </div>
 
               {/* Course Selection */}
-              <div className="col-md-6">
+              <div className="col-12 col-md-6">
                 <label className="form-label small fw-semibold">
                   Course <span className="text-danger">*</span>
                 </label>
@@ -279,7 +279,7 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
                   />
 
                   {selectedFile ? (
-                    <div className="d-flex align-items-center justify-content-center gap-3">
+                    <div className="d-flex align-items-center justify-content-center gap-3 flex-wrap">
                       <div className="bg-danger bg-opacity-10 text-danger rounded p-2">
                         <i className="bi bi-file-earmark-pdf-fill fs-3"></i>
                       </div>
@@ -316,7 +316,7 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
               </div>
 
               {/* Subject / Lesson */}
-              <div className="col-md-6">
+              <div className="col-12 col-md-6">
                 <label className="form-label small fw-semibold text-muted">Subject / Lesson</label>
                 <input
                   type="text"
@@ -330,7 +330,7 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
               </div>
 
               {/* Version */}
-              <div className="col-md-3">
+              <div className="col-12 col-sm-6 col-md-3">
                 <label className="form-label small fw-semibold text-muted">Version</label>
                 <input
                   type="text"
@@ -344,7 +344,7 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
               </div>
 
               {/* Academic Year */}
-              <div className="col-md-3">
+              <div className="col-12 col-sm-6 col-md-3">
                 <label className="form-label small fw-semibold text-muted">Academic Year</label>
                 <input
                   type="text"
@@ -404,13 +404,13 @@ export const LessonPlanUploadModal = ({ show, onClose, onSuccess, trades }) => {
           </div>
 
           {/* Footer */}
-          <div className="modal-footer border-0 pt-2 px-4 pb-3 flex-shrink-0">
-            <button type="button" className="btn btn-light px-4" onClick={onClose} disabled={uploading}>
+          <div className="modal-footer border-0 pt-2 px-3 px-sm-4 pb-3 flex-shrink-0 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+            <button type="button" className="btn btn-light px-4 w-100 w-sm-auto" onClick={onClose} disabled={uploading}>
               Cancel
             </button>
             <button
               type="submit"
-              className="btn btn-primary px-4 d-flex align-items-center gap-2"
+              className="btn btn-primary px-4 d-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto"
               disabled={uploading}
               id="btn-submit-upload"
             >

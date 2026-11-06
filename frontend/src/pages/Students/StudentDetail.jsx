@@ -72,25 +72,25 @@ export const StudentDetail = () => {
 
   return (
     <div className="fade-in-slide">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
         <div>
-          <h2 className="mb-0 text-primary display-font">Trainee Personal Academic Profile</h2>
-          <p className="text-muted mb-0">Master record for service number {student.service_number}</p>
+          <h2 className="mb-0 text-primary display-font fs-3">Trainee Personal Academic Profile</h2>
+          <p className="text-muted mb-0 small">Master record for service number {student.service_number}</p>
         </div>
-        <div className="d-flex gap-2 flex-wrap">
+        <div className="d-flex gap-2 flex-wrap w-100 w-sm-auto justify-content-start justify-content-sm-end">
           {hasPermission('student:write') && (
-            <Link to="/students/new" className="btn btn-primary d-flex align-items-center gap-1.5 shadow-xs">
-              <i className="bi bi-person-plus-fill"></i> Add Another Trainee
+            <Link to="/students/new" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5 shadow-xs">
+              <i className="bi bi-person-plus-fill"></i> Add Trainee
             </Link>
           )}
-          <Link to="/students" className="btn btn-outline-secondary d-flex align-items-center gap-1.5">
-            <i className="bi bi-arrow-left"></i> Back to list
+          <Link to="/students" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5">
+            <i className="bi bi-arrow-left"></i> List
           </Link>
-          <button className="btn btn-outline-dark d-flex align-items-center gap-1.5 fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
-            <i className="bi bi-file-earmark-text text-primary"></i> Print Official Dossier
+          <button className="btn btn-outline-dark btn-sm d-flex align-items-center gap-1.5 fw-semibold shadow-xs" onClick={() => setShowReportModal(true)}>
+            <i className="bi bi-file-earmark-text text-primary"></i> Dossier
           </button>
-          <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={handlePrintQR}>
-            <i className="bi bi-printer"></i> Print QR Card
+          <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5" onClick={handlePrintQR}>
+            <i className="bi bi-qr-code"></i> QR Card
           </button>
         </div>
       </div>

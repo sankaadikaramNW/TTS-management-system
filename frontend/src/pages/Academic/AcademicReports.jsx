@@ -130,7 +130,7 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
           </h5>
           <small className="text-muted">Formal, Database-Compiled Official SLAF Academic & Curriculum Registers</small>
         </div>
-        <div className="d-flex align-items-center flex-wrap gap-2 ms-auto">
+        <div className="d-flex align-items-center flex-wrap gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
           {/* Orientation Switcher */}
           <div className="btn-group btn-group-sm shadow-xs" role="group">
             <button
@@ -177,7 +177,7 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
 
       {/* Report Selector Tabs */}
       <div className="card slaf-card p-2 mb-3 shadow-xs bg-white no-print">
-        <ul className="nav nav-pills custom-pills flex-nowrap overflow-auto">
+        <ul className="nav nav-pills nav-pills-responsive custom-pills">
           <li className="nav-item">
             <button className={`nav-link btn-sm ${reportType === 'trade' ? 'active fw-bold' : ''}`} onClick={() => setReportType('trade')}>
               <i className="bi bi-wrench me-1"></i> Trade Summary Report
@@ -207,11 +207,11 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
       </div>
 
       {/* Filter and Record counter */}
-      <div className="d-flex justify-content-between align-items-center mb-2 px-1 no-print">
+      <div className="d-flex justify-content-between align-items-center mb-2 px-1 no-print flex-wrap gap-2">
         <div className="small text-muted">
           Showing <strong>{filteredRows.length}</strong> of <strong>{data.length}</strong> compiled database records
         </div>
-        <div style={{ width: '280px' }}>
+        <div className="w-100 w-sm-auto" style={{ maxWidth: '280px' }}>
           <input
             type="text"
             className="form-control form-control-sm"
@@ -223,7 +223,7 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
       </div>
 
       {/* Classical Formal Paper Document */}
-      <div className={`report-paper-classical ${orientation === 'landscape' ? 'orientation-landscape' : 'orientation-portrait'} p-4 p-md-5 bg-white`}>
+      <div className={`report-paper-classical ${orientation === 'landscape' ? 'orientation-landscape' : 'orientation-portrait'} p-3 p-md-5 bg-white`}>
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-dark" role="status"></div>
@@ -255,28 +255,30 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
 
             {/* Section 1: Report Information */}
             <div className="report-section-header">1. REPORT INFORMATION & PARAMETERS</div>
-            <table className="report-formal-table mb-3">
-              <tbody>
-                <tr>
-                  <td style={{ width: '18%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Organization:</td>
-                  <td style={{ width: '32%' }}>Sri Lanka Air Force (TTS Ekala)</td>
-                  <td style={{ width: '20%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Generated Date/Time:</td>
-                  <td style={{ width: '30%' }}>{new Date().toLocaleString()}</td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Security Classification:</td>
-                  <td>RESTRICTED / OFFICIAL USE ONLY</td>
-                  <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Authorized Officer:</td>
-                  <td>{user ? `${user.full_name} (${user.username})` : 'Authorized Officer'}</td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Report Category:</td>
-                  <td>ACADEMIC {reportType.toUpperCase()} REGISTER</td>
-                  <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Total Records Compiled:</td>
-                  <td><strong>{data.length} Records</strong></td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="table-responsive mb-3">
+              <table className="report-formal-table mb-0">
+                <tbody>
+                  <tr>
+                    <td style={{ width: '18%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Organization:</td>
+                    <td style={{ width: '32%' }}>Sri Lanka Air Force (TTS Ekala)</td>
+                    <td style={{ width: '20%', fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Generated Date/Time:</td>
+                    <td style={{ width: '30%' }}>{new Date().toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Security Classification:</td>
+                    <td>RESTRICTED / OFFICIAL USE ONLY</td>
+                    <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Authorized Officer:</td>
+                    <td>{user ? `${user.full_name} (${user.username})` : 'Authorized Officer'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Report Category:</td>
+                    <td>ACADEMIC {reportType.toUpperCase()} REGISTER</td>
+                    <td style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>Total Records Compiled:</td>
+                    <td><strong>{data.length} Records</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             {/* Section 2: Detailed Records */}
             <div className="report-section-header">2. DETAILED SYSTEM RECORDS</div>
@@ -318,7 +320,7 @@ export const AcademicReports = ({ initialReportType = 'trade' }) => {
             {/* Section 3: Signatures */}
             <div className="report-signature-block">
               <div className="report-section-header">OFFICIAL AUTHENTICATION & CERTIFICATION</div>
-              <div className="d-flex justify-content-between text-center mt-3">
+              <div className="d-flex justify-content-between text-center mt-3 flex-wrap gap-4 gap-md-2">
                 <div className="report-sig-col text-start">
                   <div className="fw-bold">PREPARED BY:</div>
                   <div className="report-sig-line"></div>

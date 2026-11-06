@@ -53,17 +53,17 @@ export const AcademicDashboard = ({ onNavigate }) => {
         <div className="position-absolute end-0 bottom-0 opacity-10 pe-4 pb-2 d-none d-md-block">
           <i className="bi bi-journal-bookmark-fill display-1"></i>
         </div>
-        <div className="row align-items-center">
-          <div className="col-lg-8">
+        <div className="row align-items-center g-3">
+          <div className="col-12 col-lg-8">
             <span className="badge bg-white text-primary fw-bold text-uppercase px-3 py-1 mb-2">
               SLAF TTS Academic Portal
             </span>
-            <h3 className="fw-extrabold display-font mb-1">Academic Activities Executive Dashboard</h3>
+            <h3 className="fw-extrabold display-font mb-1 fs-4 fs-md-3">Academic Activities Executive Dashboard</h3>
             <p className="mb-0 text-white-50 small">
               Single Source of Truth (SSOT) for Trade Training, Course Curriculum, Classrooms & Examination Metrics.
             </p>
           </div>
-          <div className="col-lg-4 text-lg-end mt-3 mt-lg-0">
+          <div className="col-12 col-lg-4 text-start text-lg-end">
             <button className="btn btn-light text-primary fw-semibold btn-sm me-2 shadow-sm" onClick={fetchDashboardData}>
               <i className="bi bi-arrow-clockwise me-1"></i> Refresh Data
             </button>

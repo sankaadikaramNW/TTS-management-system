@@ -477,31 +477,31 @@ export const CourseCalendarManagement = () => {
                 <div className="col-lg-6">
                   {/* KPI Summary Cards */}
                   <div className="row g-2 text-center">
-                    <div className="col-4 col-sm-2.4 col-md">
+                    <div className="col-4 col-sm-4 col-md">
                       <div className="bg-white rounded p-2 border shadow-xs">
                         <span className="text-muted extra-small fw-bold text-uppercase d-block">Phases</span>
                         <h5 className="fw-extrabold mb-0 text-dark">{calendarEntries.length}</h5>
                       </div>
                     </div>
-                    <div className="col-4 col-sm-2.4 col-md">
+                    <div className="col-4 col-sm-4 col-md">
                       <div className="bg-white rounded p-2 border shadow-xs">
                         <span className="text-muted extra-small fw-bold text-uppercase d-block">Theory</span>
                         <h5 className="fw-extrabold mb-0 text-primary">{totalTheory}</h5>
                       </div>
                     </div>
-                    <div className="col-4 col-sm-2.4 col-md">
+                    <div className="col-4 col-sm-4 col-md">
                       <div className="bg-white rounded p-2 border shadow-xs">
                         <span className="text-muted extra-small fw-bold text-uppercase d-block">Practical</span>
                         <h5 className="fw-extrabold mb-0 text-info">{totalPractical}</h5>
                       </div>
                     </div>
-                    <div className="col-6 col-sm-2.4 col-md">
+                    <div className="col-6 col-sm-6 col-md">
                       <div className="bg-primary text-white rounded p-2 border shadow-xs">
                         <span className="text-white-50 extra-small fw-bold text-uppercase d-block">Total Periods</span>
                         <h5 className="fw-extrabold mb-0 text-white">{totalPeriods}</h5>
                       </div>
                     </div>
-                    <div className="col-6 col-sm-2.4 col-md">
+                    <div className="col-6 col-sm-6 col-md">
                       <div className="bg-white rounded p-2 border shadow-xs">
                         <span className="text-muted extra-small fw-bold text-uppercase d-block">W/Days</span>
                         <h5 className="fw-extrabold mb-0 text-success">{totalWorkingDays}</h5>
@@ -516,7 +516,7 @@ export const CourseCalendarManagement = () => {
           {/* Action Toolbar */}
           <div className="card slaf-card p-3 mb-3 shadow-sm">
             <div className="row g-2 align-items-center justify-content-between">
-              <div className="col-md-5 col-lg-4">
+              <div className="col-12 col-md-5 col-lg-4">
                 <div className="input-group">
                   <span className="input-group-text bg-white text-muted border-end-0">
                     <i className="bi bi-search"></i>
@@ -536,14 +536,14 @@ export const CourseCalendarManagement = () => {
                 </div>
               </div>
 
-              <div className="col-md-7 col-lg-8 text-md-end d-flex flex-wrap justify-content-md-end gap-2">
-                <button className="btn btn-primary fw-semibold shadow-xs" onClick={handleOpenAddModal}>
-                  <i className="bi bi-plus-circle me-1"></i> Add Calendar Entry
+              <div className="col-12 col-md-7 col-lg-8 text-start text-md-end d-flex flex-wrap justify-content-start justify-content-md-end gap-2">
+                <button className="btn btn-primary fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0" onClick={handleOpenAddModal}>
+                  <i className="bi bi-plus-circle me-1"></i> Add Entry
                 </button>
-                <button className="btn btn-outline-dark fw-semibold shadow-xs" onClick={() => setShowPrintModal(true)}>
-                  <i className="bi bi-printer me-1"></i> Print Calendar
+                <button className="btn btn-outline-dark fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0" onClick={() => setShowPrintModal(true)}>
+                  <i className="bi bi-printer me-1"></i> Print
                 </button>
-                <button className="btn btn-outline-success fw-semibold shadow-xs" onClick={handleExportExcel}>
+                <button className="btn btn-outline-success fw-semibold shadow-xs flex-grow-1 flex-sm-grow-0" onClick={handleExportExcel}>
                   <i className="bi bi-file-earmark-excel me-1"></i> Export Excel
                 </button>
               </div>
@@ -704,7 +704,7 @@ export const CourseCalendarManagement = () => {
       {/* Add / Edit Phase Modal */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex="-1">
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content shadow-lg border-0">
               <div className="modal-header bg-primary text-white p-3">
                 <h5 className="modal-title fw-bold">
@@ -918,11 +918,11 @@ export const CourseCalendarManagement = () => {
                   </div>
                 </div>
 
-                <div className="modal-footer bg-light p-3">
-                  <button type="button" className="btn btn-secondary fw-semibold" onClick={() => setShowModal(false)}>
+                <div className="modal-footer bg-light p-3 d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                  <button type="button" className="btn btn-secondary fw-semibold w-100 w-sm-auto" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary fw-bold" disabled={submitting}>
+                  <button type="submit" className="btn btn-primary fw-bold w-100 w-sm-auto" disabled={submitting}>
                     {submitting ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>

@@ -218,13 +218,13 @@ export const SubjectLessonManagement = () => {
       {/* Course Selection Toolbar */}
       <div className="card slaf-card p-3 mb-4 shadow-sm border-0">
         <div className="row align-items-center g-3">
-          <div className="col-lg-3 col-md-4">
+          <div className="col-12 col-md-4 col-lg-3">
             <label className="fw-bold text-dark small d-flex align-items-center mb-1">
               <i className="bi bi-mortarboard me-1.5 text-primary"></i>
               Select Course Syllabus:
             </label>
           </div>
-          <div className="col-lg-6 col-md-5">
+          <div className="col-12 col-md-5 col-lg-6">
             <select 
               className="form-select form-select-sm border-primary-subtle fw-medium shadow-none"
               value={selectedCourseId}
@@ -235,7 +235,7 @@ export const SubjectLessonManagement = () => {
               ))}
             </select>
           </div>
-          <div className="col-lg-3 col-md-3 text-md-end">
+          <div className="col-12 col-md-3 text-md-end">
             <button 
               className="btn btn-primary btn-sm fw-semibold shadow-sm w-100 w-md-auto d-inline-flex align-items-center justify-content-center"
               onClick={handleOpenAddSubjectModal}
@@ -470,7 +470,7 @@ export const SubjectLessonManagement = () => {
       {/* Add Subject Modal */}
       {showSubModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 1060 }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card border-0 shadow-lg">
               <div className="modal-header border-bottom bg-light py-3">
                 <div>
@@ -533,14 +533,14 @@ export const SubjectLessonManagement = () => {
                     ></textarea>
                   </div>
                 </div>
-                <div className="modal-footer border-top bg-light py-2.5 px-4 d-flex justify-content-between align-items-center">
-                  <button type="button" className="btn btn-outline-secondary btn-sm px-3" onClick={() => setShowSubModal(false)}>
+                <div className="modal-footer border-top bg-light py-2.5 px-4 d-flex flex-column-reverse flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm px-3 w-100 w-sm-auto" onClick={() => setShowSubModal(false)}>
                     Cancel
                   </button>
-                  <div className="d-flex gap-2">
+                  <div className="d-flex flex-column flex-sm-row gap-2">
                     <button 
                       type="button" 
-                      className="btn btn-outline-primary btn-sm fw-semibold"
+                      className="btn btn-outline-primary btn-sm fw-semibold w-100 w-sm-auto"
                       disabled={savingSubject}
                       onClick={(e) => handleCreateSubject(e, true)}
                     >
@@ -557,7 +557,7 @@ export const SubjectLessonManagement = () => {
                     </button>
                     <button 
                       type="submit" 
-                      className="btn btn-primary btn-sm fw-semibold px-3"
+                      className="btn btn-primary btn-sm fw-semibold px-3 w-100 w-sm-auto"
                       disabled={savingSubject}
                     >
                       {savingSubject ? (
@@ -580,7 +580,7 @@ export const SubjectLessonManagement = () => {
       {/* Add Lesson Modal */}
       {showLesModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 1060 }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content slaf-card border-0 shadow-lg">
               <div className="modal-header border-bottom bg-light py-3">
                 <div>
@@ -646,14 +646,14 @@ export const SubjectLessonManagement = () => {
                     ></textarea>
                   </div>
                 </div>
-                <div className="modal-footer border-top bg-light py-2.5 px-4 d-flex justify-content-between align-items-center">
-                  <button type="button" className="btn btn-outline-secondary btn-sm px-3" onClick={() => setShowLesModal(false)}>
+                <div className="modal-footer border-top bg-light py-2.5 px-4 d-flex flex-column-reverse flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                  <button type="button" className="btn btn-outline-secondary btn-sm px-3 w-100 w-sm-auto" onClick={() => setShowLesModal(false)}>
                     Cancel
                   </button>
-                  <div className="d-flex gap-2">
+                  <div className="d-flex flex-column flex-sm-row gap-2">
                     <button 
                       type="button" 
-                      className="btn btn-outline-primary btn-sm fw-semibold"
+                      className="btn btn-outline-primary btn-sm fw-semibold w-100 w-sm-auto"
                       disabled={savingLesson}
                       onClick={(e) => handleCreateLesson(e, true)}
                     >
@@ -670,7 +670,7 @@ export const SubjectLessonManagement = () => {
                     </button>
                     <button 
                       type="submit" 
-                      className="btn btn-primary btn-sm fw-semibold px-3"
+                      className="btn btn-primary btn-sm fw-semibold px-3 w-100 w-sm-auto"
                       disabled={savingLesson}
                     >
                       {savingLesson ? (

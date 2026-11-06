@@ -618,7 +618,7 @@ export const DailyParade = () => {
       </div>
 
       {/* ─── Top-Level Navigation Tabs ─── */}
-      <ul className="nav nav-tabs mb-4" style={{ borderBottom: '2px solid #e2e8f0' }}>
+      <ul className="nav nav-tabs nav-tabs-responsive mb-4" style={{ borderBottom: '2px solid #e2e8f0' }}>
         {[
           {
             key: 'monitoring',
