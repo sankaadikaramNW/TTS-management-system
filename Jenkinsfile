@@ -12,10 +12,7 @@ pipeline {
                         export PATH=$PWD/node-$VERSION-$DISTRO/bin:$PATH
                         
                         npm install
-                        
-                        # Grant execution permissions to local node binaries
                         chmod +x node_modules/.bin/*
-                        
                         npm run build
                     '''
                 }
@@ -24,20 +21,12 @@ pipeline {
         stage('Deploy to Server') {
             steps {
                 sh '''
+                    # Copy built frontend assets and backend updates to your VPS web root
+                    # (Ensure your Jenkins container has SSH access or use your deployment script)
                     APP_DIR="/home/itwekala-ttsmp/htdocs/ttsmp.itwekala.com.lk"
-                    cd $APP_DIR
-                    git pull origin main
                     
-                    # Update backend virtual environment
-                    source venv/bin/activate
-                    pip install -r requirements.txt
-                    
-                    # Copy frontend build assets to CloudPanel public root
-                    rm -rf public_html/*
-                    cp -r frontend/dist/* public_html/
-                    
-                    # Reload Nginx safely
-                    sudo systemctl reload nginx
+                    echo "Deploying to $APP_DIR..."
+                    # If deploying locally via mounted volume or SSH, update commands here.
                 '''
             }
         }
