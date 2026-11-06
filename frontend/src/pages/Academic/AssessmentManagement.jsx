@@ -157,7 +157,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
       await axios.post('/api/v1/academic/exam-marks', payload)
       toast.success('Official examination results saved successfully')
-      
+
       // Refresh result sheet data
       const res = await axios.get(`/api/v1/academic/exams/${selectedExam.id}/result-sheet`)
       setResultSheetData(res.data)
@@ -251,7 +251,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
     const enteredCount = entered.length
     const passMarks = selectedExam?.pass_marks || 50
     const maxMarks = selectedExam?.max_marks || 100
-    
+
     let passedCount = 0
     let failedCount = 0
     let totalMarksSum = 0
@@ -448,7 +448,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
             <label className="fw-bold text-dark small">Select Course / Specialization:</label>
           </div>
           <div className="col-12 col-sm-8 col-md-6">
-            <select 
+            <select
               className="form-select form-select-sm fw-semibold"
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
@@ -752,24 +752,24 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
               <div className="px-3 px-md-4 py-2 bg-white border-bottom d-flex flex-column flex-lg-row justify-content-between align-items-stretch align-items-lg-center gap-2 flex-shrink-0">
                 <div className="nav-tabs-responsive d-flex align-items-center gap-1.5 pb-1 pb-lg-0" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                   <small className="text-muted fw-bold me-1 flex-shrink-0">View:</small>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ALL' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
                     onClick={() => setModalFilter('ALL')}
                     style={{ fontSize: '0.75rem' }}
                   >
                     All ({examMarks.length})
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ELIGIBLE' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
                     onClick={() => setModalFilter('ELIGIBLE')}
                     style={{ fontSize: '0.75rem' }}
                   >
                     Eligible ({liveSummary.eligible})
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'ENTERED' ? 'btn-primary text-white fw-bold' : 'btn-outline-primary'}`}
                     onClick={() => setModalFilter('ENTERED')}
                     style={{ fontSize: '0.75rem' }}
@@ -777,8 +777,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     Entered ({liveSummary.enteredCount})
                   </button>
                   {liveSummary.pendingCount > 0 && (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'PENDING' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark'}`}
                       onClick={() => setModalFilter('PENDING')}
                       style={{ fontSize: '0.75rem' }}
@@ -786,16 +786,16 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                       Pending ({liveSummary.pendingCount})
                     </button>
                   )}
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'PASSED' ? 'btn-success text-white fw-bold' : 'btn-outline-success'}`}
                     onClick={() => setModalFilter('PASSED')}
                     style={{ fontSize: '0.75rem' }}
                   >
                     Passed ({liveSummary.passedCount})
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'FAILED' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
                     onClick={() => setModalFilter('FAILED')}
                     style={{ fontSize: '0.75rem' }}
@@ -803,8 +803,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     Failed ({liveSummary.failedCount})
                   </button>
                   {liveSummary.ineligibleCount > 0 && (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'INELIGIBLE' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger'}`}
                       onClick={() => setModalFilter('INELIGIBLE')}
                       style={{ fontSize: '0.75rem' }}
@@ -813,8 +813,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     </button>
                   )}
                   {liveSummary.overriddenCount > 0 && (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`btn btn-xs rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 ${modalFilter === 'OVERRIDDEN' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'}`}
                       onClick={() => setModalFilter('OVERRIDDEN')}
                       style={{ fontSize: '0.75rem' }}
@@ -826,10 +826,10 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
 
                 <div className="d-flex align-items-center gap-2 flex-wrap">
                   {/* Quick Auto Fill Button */}
-                  <button 
-                    className="btn btn-outline-secondary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs flex-shrink-0" 
-                    style={{ fontSize: '0.78rem' }} 
-                    type="button" 
+                  <button
+                    className="btn btn-outline-secondary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs flex-shrink-0"
+                    style={{ fontSize: '0.78rem' }}
+                    type="button"
                     onClick={handleBatchFillPassMarks}
                     title={`Auto-fill eligible blanks with pass marks (${selectedExam.pass_marks})`}
                   >
@@ -840,9 +840,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   {/* Search Box */}
                   <div className="input-group input-group-sm flex-grow-1 flex-lg-grow-0" style={{ minWidth: '180px', maxWidth: '100%' }}>
                     <span className="input-group-text bg-white border-end-0 text-muted"><i className="bi bi-search"></i></span>
-                    <input 
-                      type="text" 
-                      className="form-control border-start-0" 
+                    <input
+                      type="text"
+                      className="form-control border-start-0"
                       placeholder="Filter trainee name / no..."
                       value={modalSearch}
                       onChange={(e) => setModalSearch(e.target.value)}
@@ -951,7 +951,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                                 {st.marks_entry_allowed || st.is_overridden ? (
                                   <div className="d-inline-block" style={{ width: '120px' }}>
                                     <div className="input-group input-group-sm shadow-xs">
-                                      <input 
+                                      <input
                                         type="number"
                                         id={`mark-input-${originalIdx}`}
                                         step="0.5"
@@ -1034,9 +1034,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                               {/* 8. Remarks & Controlled Override Action */}
                               <td className="px-3 py-2.5">
                                 <div className="d-flex align-items-center gap-1.5">
-                                  <input 
-                                    type="text" 
-                                    className="form-control form-control-sm" 
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm"
                                     placeholder="Optional remarks..."
                                     value={st.remarks}
                                     onChange={(e) => {
@@ -1047,8 +1047,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                                     style={{ minWidth: '120px' }}
                                   />
                                   {!st.can_sit_exam && !st.is_overridden && (
-                                    <button 
-                                      type="button" 
+                                    <button
+                                      type="button"
                                       className="btn btn-outline-warning btn-sm text-nowrap px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-xs"
                                       onClick={() => handleOpenOverrideModal(st)}
                                       title="Authorize officer override for this trainee"
@@ -1082,9 +1082,9 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                         Progress: {liveSummary.enteredCount}/{liveSummary.eligible} ({liveSummary.progressPct}%)
                       </span>
                       <div className="progress" style={{ width: '80px', height: '6px' }}>
-                        <div 
-                          className={`progress-bar ${liveSummary.progressPct === 100 ? 'bg-success' : 'bg-primary'}`} 
-                          role="progressbar" 
+                        <div
+                          className={`progress-bar ${liveSummary.progressPct === 100 ? 'bg-success' : 'bg-primary'}`}
+                          role="progressbar"
                           style={{ width: `${liveSummary.progressPct}%` }}
                         ></div>
                       </div>
@@ -1095,8 +1095,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     <button type="button" className="btn btn-outline-secondary btn-sm px-3 fw-semibold flex-grow-1 flex-sm-grow-0" onClick={() => setShowMarksModal(false)}>
                       Close
                     </button>
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="btn btn-primary btn-sm fw-bold shadow-sm px-3 px-md-4 py-1.5 d-inline-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0"
                       disabled={savingMarks}
                       style={{
@@ -1162,7 +1162,7 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     <label className="form-label small fw-bold text-dark">
                       Mandatory Justification Reason*
                     </label>
-                    <textarea 
+                    <textarea
                       className="form-control form-control-sm"
                       rows="3"
                       placeholder="Enter official justification (e.g. Special medical clearance granted by Senior Medical Officer, Executive approval by OC Training)..."
@@ -1176,8 +1176,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                     <label className="form-label small fw-bold text-dark">
                       Optional Remarks
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className="form-control form-control-sm"
                       placeholder="Additional notes..."
                       value={overrideForm.remarks}
@@ -1189,8 +1189,8 @@ export const AssessmentManagement = ({ initialTab = 'attendance' }) => {
                   <button type="button" className="btn btn-outline-secondary btn-sm w-100 w-sm-auto" onClick={() => setShowOverrideModal(false)}>
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn btn-warning btn-sm fw-bold shadow-sm px-3 text-dark w-100 w-sm-auto"
                     disabled={submittingOverride}
                   >
