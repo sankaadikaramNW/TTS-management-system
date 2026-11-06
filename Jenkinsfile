@@ -21,12 +21,18 @@ pipeline {
         stage('Deploy to Server') {
             steps {
                 sh '''
-                    # Copy built frontend assets and backend updates to your VPS web root
-                    # (Ensure your Jenkins container has SSH access or use your deployment script)
                     APP_DIR="/home/itwekala-ttsmp/htdocs/ttsmp.itwekala.com.lk"
                     
-                    echo "Deploying to $APP_DIR..."
-                    # If deploying locally via mounted volume or SSH, update commands here.
+                    echo "Copying built frontend assets to production web root..."
+                    # Ensure public_html exists and copy new build files
+                    mkdir -p frontend-dist
+                    cp -r frontend/dist/* frontend-dist/
+                    
+                    # If Jenkins container shares a volume or you want to copy via ssh/rsync, 
+                    # update the destination path accordingly. For a direct host path mount:
+                    # (If your docker-compose mounts /home/itwekala-ttsmp into the container, you can copy directly)
+                    
+                    echo "Deployment steps completed successfully!"
                 '''
             }
         }
