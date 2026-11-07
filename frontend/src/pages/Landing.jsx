@@ -466,7 +466,7 @@ export const Landing = () => {
                       <div key={n.id} className="list-group-item bg-transparent border-0 p-3 rounded-3 glass-card d-flex flex-column gap-1">
                         <div className="d-flex justify-content-between align-items-center">
                           <span className={`badge px-2.5 py-1 text-uppercase ${n.type === 'ALERT' ? 'bg-danger text-white' :
-                              n.type === 'WARNING' ? 'bg-warning text-dark' : 'bg-primary text-white'
+                            n.type === 'WARNING' ? 'bg-warning text-dark' : 'bg-primary text-white'
                             }`} style={{ fontSize: '0.65rem', fontWeight: 600 }}>
                             {n.type}
                           </span>
@@ -568,7 +568,7 @@ export const Landing = () => {
             <div className="col-md-4">
               <div className="card slaf-card p-4 text-center">
                 <i className="bi bi-telephone-fill text-primary mb-3" style={{ fontSize: '1.75rem' }}></i>
-                <h5 className="display-font fw-bold">Contact</h5>
+                <h5 className="display-font fw-bold">Contact Us</h5>
                 <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
                   +94 11 2245362 (Ext. 26522)<br />
                   Fax: +94 11 2245363
