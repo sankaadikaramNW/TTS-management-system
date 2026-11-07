@@ -196,7 +196,7 @@ export const Landing = () => {
             {/* Air force icon graphic logo */}
             <div className="d-flex align-items-center justify-content-center bg-primary text-white rounded-circle p-2" style={{ width: '42px', height: '42px', minWidth: '42px' }}>
               <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                <path d="M12 2L2 22h9l1-3 1 3h9L12 2zm0 4.27L18.42 19h-2.58l-1-3h-5.68l-1 3H5.58L12 6.27z"/>
+                <path d="M12 2L2 22h9l1-3 1 3h9L12 2zm0 4.27L18.42 19h-2.58l-1-3h-5.68l-1 3H5.58L12 6.27z" />
               </svg>
             </div>
             <div>
@@ -205,9 +205,9 @@ export const Landing = () => {
             </div>
           </div>
 
-          <button 
-            className="navbar-toggler border-0 p-1 d-flex align-items-center justify-content-center shadow-none" 
-            type="button" 
+          <button
+            className="navbar-toggler border-0 p-1 d-flex align-items-center justify-content-center shadow-none"
+            type="button"
             onClick={() => setIsNavOpen(prev => !prev)}
             aria-expanded={isNavOpen}
             aria-label="Toggle navigation menu"
@@ -261,16 +261,16 @@ export const Landing = () => {
 
       {/* Mobile navigation backdrop */}
       {isNavOpen && (
-        <div 
-          className="landing-nav-backdrop d-lg-none" 
+        <div
+          className="landing-nav-backdrop d-lg-none"
           onClick={() => setIsNavOpen(false)}
-          aria-hidden="true" 
+          aria-hidden="true"
         />
       )}
 
       {/* Hero Banner Section */}
-      <section id="hero" className="position-relative d-flex align-items-center text-white" style={{ 
-        minHeight: '85vh', 
+      <section id="hero" className="position-relative d-flex align-items-center text-white" style={{
+        minHeight: '85vh',
         paddingTop: '75px',
         background: 'linear-gradient(135deg, #091326 0%, #172d54 50%, #0f1d3a 100%)',
         overflow: 'hidden'
@@ -278,7 +278,7 @@ export const Landing = () => {
         {/* Abstract Jet Silhouette Overlay Background */}
         <div className="position-absolute end-0 bottom-0 opacity-10 pointer-events-none" style={{ transform: 'translate(10%, 15%)', zIndex: 1 }}>
           <svg width="600" height="600" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l7 2.5z"/>
+            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l7 2.5z" />
           </svg>
         </div>
 
@@ -295,7 +295,7 @@ export const Landing = () => {
                 <i className="bi bi-shield-check me-1"></i> Centered Military Intelligence Portal
               </span>
               <h1 className="display-5 fs-2 fs-md-1 fw-extrabold text-white display-font mb-3" style={{ lineHeight: '1.2' }}>
-                Welcome to the Trade Training School <br/>
+                Welcome to the Trade Training School <br />
                 <span className="text-info">Management Portal</span>
               </h1>
               <p className="lead text-white-50 mb-4" style={{ maxWidth: '680px', fontSize: '1.15rem' }}>
@@ -400,15 +400,15 @@ export const Landing = () => {
           <div className="row g-4">
             {modulesList.map((m, index) => (
               <div key={index} className="col-lg-4 col-md-6">
-                <div 
+                <div
                   className="card slaf-card h-100 p-4 cursor-pointer"
                   onClick={() => handleModuleClick(m.path)}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="d-flex align-items-center gap-3 mb-3">
-                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white shadow-sm" style={{ 
-                      width: '50px', 
-                      height: '50px', 
+                    <div className="d-flex align-items-center justify-content-center rounded-circle text-white shadow-sm" style={{
+                      width: '50px',
+                      height: '50px',
                       backgroundColor: m.color,
                     }}>
                       <i className={`bi ${m.icon}`} style={{ fontSize: '1.4rem' }}></i>
@@ -451,7 +451,7 @@ export const Landing = () => {
                   <span><i className="bi bi-bell-fill text-warning me-2"></i>Active Circulars</span>
                   <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>Dynamic Feed</span>
                 </h5>
-                
+
                 {noticesLoading ? (
                   <div className="d-flex justify-content-center align-items-center py-5">
                     <div className="spinner-border text-primary" role="status">
@@ -465,15 +465,14 @@ export const Landing = () => {
                     {notices.map((n) => (
                       <div key={n.id} className="list-group-item bg-transparent border-0 p-3 rounded-3 glass-card d-flex flex-column gap-1">
                         <div className="d-flex justify-content-between align-items-center">
-                          <span className={`badge px-2.5 py-1 text-uppercase ${
-                            n.type === 'ALERT' ? 'bg-danger text-white' : 
-                            n.type === 'WARNING' ? 'bg-warning text-dark' : 'bg-primary text-white'
-                          }`} style={{ fontSize: '0.65rem', fontWeight: 600 }}>
+                          <span className={`badge px-2.5 py-1 text-uppercase ${n.type === 'ALERT' ? 'bg-danger text-white' :
+                              n.type === 'WARNING' ? 'bg-warning text-dark' : 'bg-primary text-white'
+                            }`} style={{ fontSize: '0.65rem', fontWeight: 600 }}>
                             {n.type}
                           </span>
                           <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                            {new Date(n.created_at).toLocaleDateString(undefined, { 
-                              year: 'numeric', month: 'short', day: 'numeric' 
+                            {new Date(n.created_at).toLocaleDateString(undefined, {
+                              year: 'numeric', month: 'short', day: 'numeric'
                             })}
                           </span>
                         </div>
@@ -526,7 +525,7 @@ export const Landing = () => {
               {/* Emblem graphics shield placeholder using custom SVG */}
               <div className="d-inline-flex bg-primary-subtle text-primary rounded-circle p-5 shadow-glow" style={{ animation: 'pulse 3s infinite' }}>
                 <svg viewBox="0 0 24 24" width="120" height="120" fill="currentColor">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 12c-2.7 0-5.8-1.28-6-3v-1c0-1.66 1.34-3 3-3h6c1.66 0 3 1.34 3 3v1c-.2 1.72-3.3 3-6 3z"/>
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 12c-2.7 0-5.8-1.28-6-3v-1c0-1.66 1.34-3 3-3h6c1.66 0 3 1.34 3 3v1c-.2 1.72-3.3 3-6 3z" />
                 </svg>
               </div>
             </div>
@@ -548,8 +547,8 @@ export const Landing = () => {
                 <i className="bi bi-geo-alt-fill text-primary mb-3" style={{ fontSize: '1.75rem' }}></i>
                 <h5 className="display-font fw-bold">Office Address</h5>
                 <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
-                  Trade Training School,<br/>
-                  Sri Lanka Air Force Station,<br/>
+                  Trade Training School,<br />
+                  Sri Lanka Air Force Station,<br />
                   Ekala, Sri Lanka.
                 </p>
               </div>
@@ -560,7 +559,7 @@ export const Landing = () => {
                 <i className="bi bi-envelope-at-fill text-primary mb-3" style={{ fontSize: '1.75rem' }}></i>
                 <h5 className="display-font fw-bold">Email Support</h5>
                 <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
-                  tts.admin@slaf.lk<br/>
+                  tts.admin@slaf.lk<br />
                   support.portal@slaf.lk
                 </p>
               </div>
@@ -569,9 +568,9 @@ export const Landing = () => {
             <div className="col-md-4">
               <div className="card slaf-card p-4 text-center">
                 <i className="bi bi-telephone-fill text-primary mb-3" style={{ fontSize: '1.75rem' }}></i>
-                <h5 className="display-font fw-bold">Command Telephone</h5>
+                <h5 className="display-font fw-bold">Contact</h5>
                 <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
-                  +94 11 2245362 (Ext. 2420)<br/>
+                  +94 11 2245362 (Ext. 26522)<br />
                   Fax: +94 11 2245363
                 </p>
               </div>
@@ -589,7 +588,7 @@ export const Landing = () => {
               <span className="text-white-50 ms-2">| Management Portal v1.0</span>
             </div>
             <div className="col-md-6 text-center text-md-end text-white-50" style={{ fontSize: '0.85rem' }}>
-              Copyright © 2026 Sri Lanka Air Force. All rights reserved. <br/>
+              Copyright © 2026 Sri Lanka Air Force. All rights reserved. <br />
               <span className="cursor-pointer text-info" style={{ cursor: 'pointer' }} onClick={() => toast.info('Privacy policy is managed under military data acts.')}>Privacy Policy</span>
             </div>
           </div>
